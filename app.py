@@ -1,30 +1,30 @@
 import streamlit as st
 from supabase import create_client, Client
 
-# CONFIGURACI”N DE SUPABASE
+# CONFIGURACI√ìN DE SUPABASE
 SUPABASE_URL = "https://pmshpvjtiauhbuexdjev.supabase.co"  # Cambia esto
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtc2hwdmp0aWF1aGJ1ZXhkamV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4ODI0MDgsImV4cCI6MjEwMDQ1ODQwOH0.gm_oWPgwjZe_6iN9sLsVjFOus7nN0eUBwkJ2bbbbVc4"  # Cambia esto
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# TÕTULO DE LA APP
+# T√çTULO DE LA APP
 st.set_page_config(page_title="Registro EONIA", page_icon="??")
 st.title("?? Registro de Creadores EONIA")
-st.write("Completa el formulario para unirte al nuevo eÛn.")
+st.write("Completa el formulario para unirte al nuevo e√≥n.")
 
 # FORMULARIO
 with st.form("formulario_registro", clear_on_submit=True):
     nombre = st.text_input("Nombre completo")
-    email = st.text_input("Correo electrÛnico")
-    celular = st.text_input("N˙mero de celular")
+    email = st.text_input("Correo electr√≥nico")
+    celular = st.text_input("N√∫mero de celular")
 
     enviado = st.form_submit_button("Suscribirse")
 
     if enviado:
-        # VALIDACI”N B¡SICA
+        # VALIDACI√ìN B√ÅSICA
         if not nombre or not email or not celular:
             st.error("Todos los campos son obligatorios. Completa el formulario.")
         elif "@" not in email:
-            st.error("Ingresa un correo electrÛnico v·lido.")
+            st.error("Ingresa un correo electr√≥nico v√°lido.")
         else:
             try:
                 # GUARDAR EN SUPABASE
@@ -35,15 +35,15 @@ with st.form("formulario_registro", clear_on_submit=True):
                 }
                 supabase.table("suscriptores").insert(data).execute()
 
-                # MENSAJE DE CONFIRMACI”N
-                st.success(f"°{nombre}, tu registro ha sido exitoso!")
+                # MENSAJE DE CONFIRMACI√ìN
+                st.success(f"¬°{nombre}, tu registro ha sido exitoso!")
                 st.balloons()
-                st.write("Bienvenido a EONIA. El nuevo eÛn comienza contigo.")
+                st.write("Bienvenido a EONIA. El nuevo e√≥n comienza contigo.")
 
             except Exception as e:
                 error_msg = str(e)
                 if "duplicate key" in error_msg.lower():
-                    st.error("Este correo electrÛnico ya est· registrado.")
+                    st.error("Este correo electr√≥nico ya est√° registrado.")
                 else:
                     st.error(f"Error al guardar: {error_msg}")
 
@@ -54,6 +54,6 @@ if st.checkbox("Ver suscriptores registrados"):
         if response.data:
             st.dataframe(response.data)
         else:
-            st.info("No hay suscriptores a˙n.")
+            st.info("No hay suscriptores a√∫n.")
     except:
         st.warning("No se pudieron cargar los registros.")
