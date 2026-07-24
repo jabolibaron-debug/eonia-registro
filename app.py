@@ -1,131 +1,100 @@
-#!/usr/bin/env python3
 """
-COMMUNITY MANAGER AI ULTRA - API Flask con Supabase
-Versión 4.0 - Backend completo con base de datos en la nube
-Autor: DSR
+RED SOCIAL CON STREAMLIT + SUPABASE
+Versión para DSR - ¡Súper fácil!
 """
 
-import os
-import json
-from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
-from flask_cors import CORS
-from dotenv import load_dotenv
-from supabase import create_client, Client
-import random
+import streamlit as st
+from supabase import create_client
 import hashlib
-import secrets
+import os
+from datetime import datetime
+from dotenv import load_dotenv
 
 # Cargar variables de entorno
 load_dotenv()
 
-# Configuración de la aplicación
-app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(32))
-CORS(app)
-
-# Configuración de Supabase
+# ============================================================
+# CONFIGURACIÓN DE SUPABASE
+# ============================================================
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
-SUPABASE_SERVICE_KEY = os.getenv('SUPABASE_SERVICE_KEY')
-
-# Inicializar cliente de Supabase
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# Configuración de la app
-APP_NAME = os.getenv('APP_NAME', 'SocialConnect')
-APP_ICON = os.getenv('APP_ICON', '🚀')
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ============================================================
-# MODELOS DE DATOS (Tablas de Supabase)
+# CONFIGURACIÓN DE LA PÁGINA
 # ============================================================
+st.set_page_config(
+    page_title="SocialConnect",
+    page_icon="🚀",
+    layout="wide",
+    initial_sidebar_state="auto"
+)
 
-def crear_tablas():
-    """Crear tablas en Supabase si no existen"""
-    try:
-        # Tabla de usuarios
-        supabase.table('usuarios').select('*').limit(1).execute()
-    except:
-        print("⚠️ Las tablas no existen. Creando...")
-        
-        # Crear tablas usando SQL (ejecutar manualmente en Supabase SQL Editor)
-        sql_script = """
-        -- Tabla de usuarios
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            email TEXT UNIQUE NOT NULL,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            nombre TEXT,
-            avatar TEXT,
-            bio TEXT,
-            created_at TIMESTAMP DEFAULT NOW(),
-            updated_at TIMESTAMP DEFAULT NOW()
-        );
-
-        -- Tabla de posts
-        CREATE TABLE IF NOT EXISTS posts (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            usuario_id UUID REFERENCES usuarios(id) ON DELETE CASCADE,
-            contenido TEXT NOT NULL,
-            imagen TEXT,
-            video TEXT,
-            created_at TIMESTAMP DEFAULT NOW(),
-            updated_at TIMESTAMP DEFAULT NOW()
-        );
-
-        -- Tabla de likes
-        CREATE TABLE IF NOT EXISTS likes (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            usuario_id UUID REFERENCES usuarios(id) ON DELETE CASCADE,
-            post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
-            created_at TIMESTAMP DEFAULT NOW(),
-            UNIQUE(usuario_id, post_id)
-        );
-
-        -- Tabla de comentarios
-        CREATE TABLE IF NOT EXISTS comentarios (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            usuario_id UUID REFERENCES usuarios(id) ON DELETE CASCADE,
-            post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
-            contenido TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT NOW(),
-            updated_at TIMESTAMP DEFAULT NOW()
-        );
-
-        -- Tabla de seguidores
-        CREATE TABLE IF NOT EXISTS seguidores (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            seguidor_id UUID REFERENCES usuarios(id) ON DELETE CASCADE,
-            seguido_id UUID REFERENCES usuarios(id) ON DELETE CASCADE,
-            created_at TIMESTAMP DEFAULT NOW(),
-            UNIQUE(seguidor_id, seguido_id)
-        );
-
-        -- Tabla de stories
-        CREATE TABLE IF NOT EXISTS stories (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            usuario_id UUID REFERENCES usuarios(id) ON DELETE CASCADE,
-            imagen TEXT,
-            video TEXT,
-            created_at TIMESTAMP DEFAULT NOW(),
-            expires_at TIMESTAMP DEFAULT NOW() + INTERVAL '24 hours'
-        );
-
-        -- Tabla de notificaciones
-        CREATE TABLE IF NOT EXISTS notificaciones (
-            id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-            usuario_id UUID REFERENCES usuarios(id) ON DELETE CASCADE,
-            tipo TEXT NOT NULL,
-            mensaje TEXT NOT NULL,
-            leida BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT NOW()
-        );
-        """
-        
-        print("📝 Ejecutar el siguiente SQL en el editor de Supabase:")
-        print(sql_script)
-        print("\n✅ Tablas creadas correctamente")
+# Estilos personalizados (opcional)
+st.markdown("""
+<style>
+    .main-header {
+        text-align: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }
+    .post-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+        border-left: 4px solid #667eea;
+    }
+    .post-author {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    .post-author img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .post-content {
+        margin: 0.5rem 0;
+    }
+    .post-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid #eee;
+    }
+    .sidebar-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+    }
+    .user-avatar-large {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin: 0 auto;
+        display: block;
+        border: 3px solid #667eea;
+    }
+    .stat-box {
+        text-align: center;
+        padding: 0.5rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # ============================================================
 # FUNCIONES DE AUTENTICACIÓN
@@ -135,537 +104,549 @@ def hash_password(password):
     """Hashear contraseña"""
     return hashlib.sha256(password.encode()).hexdigest()
 
-def verificar_password(password, password_hash):
-    """Verificar contraseña"""
-    return hash_password(password) == password_hash
-
-def obtener_usuario_actual():
-    """Obtener usuario de la sesión actual"""
-    if 'usuario_id' in session:
-        try:
-            response = supabase.table('usuarios').select('*').eq('id', session['usuario_id']).execute()
-            if response.data:
-                return response.data[0]
-        except:
-            pass
+def login_user(email, password):
+    """Iniciar sesión"""
+    try:
+        response = supabase.table('usuarios').select('*').eq('email', email).execute()
+        if response.data:
+            usuario = response.data[0]
+            if hash_password(password) == usuario['password_hash']:
+                return usuario
+    except:
+        pass
     return None
 
-# ============================================================
-# RUTAS DE AUTENTICACIÓN
-# ============================================================
-
-@app.route('/')
-def index():
-    """Página principal"""
-    usuario = obtener_usuario_actual()
-    
-    # Obtener posts para el feed
-    try:
-        posts_response = supabase.table('posts').select('*, usuarios(nombre, username, avatar)').order('created_at', desc=True).limit(20).execute()
-        posts = posts_response.data
-        
-        # Obtener likes del usuario actual
-        if usuario:
-            likes_response = supabase.table('likes').select('post_id').eq('usuario_id', usuario['id']).execute()
-            likes = [like['post_id'] for like in likes_response.data]
-        else:
-            likes = []
-            
-    except:
-        posts = []
-        likes = []
-    
-    return render_template('index.html', 
-                         usuario=usuario, 
-                         posts=posts, 
-                         likes=likes,
-                         app_name=APP_NAME,
-                         app_icon=APP_ICON)
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    """Iniciar sesión"""
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
-        try:
-            # Buscar usuario por email
-            response = supabase.table('usuarios').select('*').eq('email', email).execute()
-            
-            if response.data:
-                usuario = response.data[0]
-                if verificar_password(password, usuario['password_hash']):
-                    session['usuario_id'] = usuario['id']
-                    session['usuario_nombre'] = usuario['nombre']
-                    return redirect(url_for('index'))
-                else:
-                    return render_template('login.html', error='Contraseña incorrecta')
-            else:
-                return render_template('login.html', error='Usuario no encontrado')
-        except Exception as e:
-            return render_template('login.html', error=f'Error: {str(e)}')
-    
-    return render_template('login.html')
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
+def register_user(nombre, username, email, password):
     """Registrar usuario"""
-    if request.method == 'POST':
-        nombre = request.form.get('nombre')
-        username = request.form.get('username')
-        email = request.form.get('email')
-        password = request.form.get('password')
+    try:
+        # Verificar si existe
+        existing = supabase.table('usuarios').select('*').or_(f'email.eq.{email},username.eq.{username}').execute()
+        if existing.data:
+            return None, "El usuario o email ya existe"
         
-        try:
-            # Verificar si el usuario existe
-            existing = supabase.table('usuarios').select('*').or_(f'email.eq.{email},username.eq.{username}').execute()
-            
-            if existing.data:
-                return render_template('register.html', error='El usuario o email ya existe')
-            
-            # Crear usuario
-            nuevo_usuario = {
-                'nombre': nombre,
-                'username': username,
-                'email': email,
-                'password_hash': hash_password(password),
-                'avatar': f"https://api.dicebear.com/7.x/avataaars/svg?seed={username}",
-                'bio': f'Hola, soy {nombre}'
-            }
-            
-            response = supabase.table('usuarios').insert(nuevo_usuario).execute()
-            
-            if response.data:
-                return redirect(url_for('login'))
-            else:
-                return render_template('register.html', error='Error al crear usuario')
-                
-        except Exception as e:
-            return render_template('register.html', error=f'Error: {str(e)}')
-    
-    return render_template('register.html')
-
-@app.route('/logout')
-def logout():
-    """Cerrar sesión"""
-    session.clear()
-    return redirect(url_for('index'))
-
-# ============================================================
-# RUTAS DE API (JSON)
-# ============================================================
-
-@app.route('/api/posts', methods=['GET'])
-def api_get_posts():
-    """Obtener todos los posts"""
-    try:
-        response = supabase.table('posts').select('*, usuarios(nombre, username, avatar)').order('created_at', desc=True).execute()
-        return jsonify({'success': True, 'data': response.data})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/posts', methods=['POST'])
-def api_create_post():
-    """Crear un nuevo post"""
-    usuario = obtener_usuario_actual()
-    if not usuario:
-        return jsonify({'success': False, 'error': 'No autorizado'}), 401
-    
-    data = request.json
-    contenido = data.get('contenido')
-    imagen = data.get('imagen')
-    video = data.get('video')
-    
-    if not contenido:
-        return jsonify({'success': False, 'error': 'El contenido es requerido'}), 400
-    
-    try:
-        nuevo_post = {
-            'usuario_id': usuario['id'],
-            'contenido': contenido,
-            'imagen': imagen,
-            'video': video
+        # Crear usuario
+        nuevo_usuario = {
+            'nombre': nombre,
+            'username': username,
+            'email': email,
+            'password_hash': hash_password(password),
+            'avatar': f"https://api.dicebear.com/7.x/avataaars/svg?seed={username}",
+            'bio': f'Hola, soy {nombre}'
         }
         
-        response = supabase.table('posts').insert(nuevo_post).execute()
-        
+        response = supabase.table('usuarios').insert(nuevo_usuario).execute()
         if response.data:
-            return jsonify({'success': True, 'data': response.data[0]})
-        else:
-            return jsonify({'success': False, 'error': 'Error al crear post'}), 500
-            
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/posts/<post_id>', methods=['DELETE'])
-def api_delete_post(post_id):
-    """Eliminar un post"""
-    usuario = obtener_usuario_actual()
-    if not usuario:
-        return jsonify({'success': False, 'error': 'No autorizado'}), 401
-    
-    try:
-        # Verificar que el post pertenece al usuario
-        response = supabase.table('posts').select('usuario_id').eq('id', post_id).execute()
-        
-        if not response.data:
-            return jsonify({'success': False, 'error': 'Post no encontrado'}), 404
-        
-        if response.data[0]['usuario_id'] != usuario['id']:
-            return jsonify({'success': False, 'error': 'No tienes permiso para eliminar este post'}), 403
-        
-        # Eliminar post
-        supabase.table('posts').delete().eq('id', post_id).execute()
-        
-        return jsonify({'success': True})
+            return response.data[0], None
+        return None, "Error al crear usuario"
         
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return None, f"Error: {str(e)}"
 
-@app.route('/api/posts/<post_id>/like', methods=['POST'])
-def api_like_post(post_id):
-    """Dar like a un post"""
-    usuario = obtener_usuario_actual()
-    if not usuario:
-        return jsonify({'success': False, 'error': 'No autorizado'}), 401
-    
+def get_user_posts(user_id):
+    """Obtener posts de un usuario"""
     try:
-        # Verificar si ya tiene like
-        existing = supabase.table('likes').select('*').eq('usuario_id', usuario['id']).eq('post_id', post_id).execute()
+        response = supabase.table('posts').select('*').eq('usuario_id', user_id).order('created_at', desc=True).execute()
+        return response.data
+    except:
+        return []
+
+def get_all_posts():
+    """Obtener todos los posts"""
+    try:
+        response = supabase.table('posts').select('*, usuarios(nombre, username, avatar)').order('created_at', desc=True).limit(20).execute()
+        return response.data
+    except:
+        return []
+
+def create_post(user_id, contenido, imagen=None):
+    """Crear un post"""
+    try:
+        nuevo_post = {
+            'usuario_id': user_id,
+            'contenido': contenido,
+            'imagen': imagen
+        }
+        response = supabase.table('posts').insert(nuevo_post).execute()
+        return response.data[0] if response.data else None
+    except:
+        return None
+
+def like_post(user_id, post_id):
+    """Dar o quitar like"""
+    try:
+        existing = supabase.table('likes').select('*').eq('usuario_id', user_id).eq('post_id', post_id).execute()
         
         if existing.data:
             # Quitar like
-            supabase.table('likes').delete().eq('usuario_id', usuario['id']).eq('post_id', post_id).execute()
-            return jsonify({'success': True, 'action': 'unliked'})
+            supabase.table('likes').delete().eq('usuario_id', user_id).eq('post_id', post_id).execute()
+            return 'unliked'
         else:
             # Dar like
-            nuevo_like = {
-                'usuario_id': usuario['id'],
+            supabase.table('likes').insert({
+                'usuario_id': user_id,
                 'post_id': post_id
-            }
-            supabase.table('likes').insert(nuevo_like).execute()
-            
-            # Crear notificación
-            post_response = supabase.table('posts').select('usuario_id').eq('id', post_id).execute()
-            if post_response.data:
-                notificacion = {
-                    'usuario_id': post_response.data[0]['usuario_id'],
-                    'tipo': 'like',
-                    'mensaje': f'{usuario["nombre"]} le dio like a tu publicación'
-                }
-                supabase.table('notificaciones').insert(notificacion).execute()
-            
-            return jsonify({'success': True, 'action': 'liked'})
-            
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+            }).execute()
+            return 'liked'
+    except:
+        return None
 
-@app.route('/api/posts/<post_id>/comment', methods=['POST'])
-def api_comment_post(post_id):
-    """Comentar un post"""
-    usuario = obtener_usuario_actual()
-    if not usuario:
-        return jsonify({'success': False, 'error': 'No autorizado'}), 401
-    
-    data = request.json
-    contenido = data.get('contenido')
-    
-    if not contenido:
-        return jsonify({'success': False, 'error': 'El comentario es requerido'}), 400
-    
+def get_likes_count(post_id):
+    """Obtener cantidad de likes"""
+    try:
+        response = supabase.table('likes').select('*').eq('post_id', post_id).execute()
+        return len(response.data)
+    except:
+        return 0
+
+def user_liked_post(user_id, post_id):
+    """Verificar si el usuario dio like"""
+    try:
+        response = supabase.table('likes').select('*').eq('usuario_id', user_id).eq('post_id', post_id).execute()
+        return len(response.data) > 0
+    except:
+        return False
+
+def add_comment(user_id, post_id, contenido):
+    """Añadir comentario"""
     try:
         nuevo_comentario = {
-            'usuario_id': usuario['id'],
+            'usuario_id': user_id,
             'post_id': post_id,
             'contenido': contenido
         }
-        
         response = supabase.table('comentarios').insert(nuevo_comentario).execute()
-        
-        if response.data:
-            # Crear notificación
-            post_response = supabase.table('posts').select('usuario_id').eq('id', post_id).execute()
-            if post_response.data:
-                notificacion = {
-                    'usuario_id': post_response.data[0]['usuario_id'],
-                    'tipo': 'comment',
-                    'mensaje': f'{usuario["nombre"]} comentó tu publicación: "{contenido[:30]}..."'
-                }
-                supabase.table('notificaciones').insert(notificacion).execute()
-            
-            return jsonify({'success': True, 'data': response.data[0]})
-        else:
-            return jsonify({'success': False, 'error': 'Error al comentar'}), 500
-            
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return response.data[0] if response.data else None
+    except:
+        return None
 
-@app.route('/api/comentarios/<post_id>', methods=['GET'])
-def api_get_comentarios(post_id):
+def get_comments(post_id):
     """Obtener comentarios de un post"""
     try:
         response = supabase.table('comentarios').select('*, usuarios(nombre, username, avatar)').eq('post_id', post_id).order('created_at', desc=True).execute()
-        return jsonify({'success': True, 'data': response.data})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return response.data
+    except:
+        return []
 
-@app.route('/api/usuario/<username>', methods=['GET'])
-def api_get_usuario(username):
-    """Obtener información de un usuario"""
-    try:
-        response = supabase.table('usuarios').select('*').eq('username', username).execute()
+# ============================================================
+# INICIALIZAR SESIÓN
+# ============================================================
+
+if 'usuario' not in st.session_state:
+    st.session_state.usuario = None
+
+if 'pagina' not in st.session_state:
+    st.session_state.pagina = 'inicio'
+
+# ============================================================
+# SIDEBAR - NAVEGACIÓN
+# ============================================================
+
+with st.sidebar:
+    st.title("🚀 SocialConnect")
+    
+    if st.session_state.usuario:
+        # Usuario logueado
+        usuario = st.session_state.usuario
         
-        if response.data:
-            usuario = response.data[0]
-            # No enviar información sensible
-            usuario.pop('password_hash', None)
-            return jsonify({'success': True, 'data': usuario})
+        st.image(usuario['avatar'], width=100)
+        st.markdown(f"### {usuario['nombre']}")
+        st.markdown(f"@{usuario['username']}")
+        st.divider()
+        
+        # Menú de navegación
+        opcion = st.radio(
+            "Navegación",
+            ["🏠 Inicio", "👤 Mi Perfil", "🔍 Explorar", "📊 Estadísticas"]
+        )
+        
+        if opcion == "🏠 Inicio":
+            st.session_state.pagina = 'inicio'
+        elif opcion == "👤 Mi Perfil":
+            st.session_state.pagina = 'perfil'
+        elif opcion == "🔍 Explorar":
+            st.session_state.pagina = 'explorar'
+        elif opcion == "📊 Estadísticas":
+            st.session_state.pagina = 'estadisticas'
+        
+        st.divider()
+        
+        if st.button("🚪 Cerrar Sesión", use_container_width=True):
+            st.session_state.usuario = None
+            st.rerun()
+            
+    else:
+        # Usuario no logueado
+        st.info("👋 Inicia sesión o regístrate")
+        
+        opcion_auth = st.radio(
+            "Acceso",
+            ["🔐 Iniciar Sesión", "📝 Registrarse"]
+        )
+        
+        if opcion_auth == "🔐 Iniciar Sesión":
+            st.session_state.pagina = 'login'
         else:
-            return jsonify({'success': False, 'error': 'Usuario no encontrado'}), 404
+            st.session_state.pagina = 'register'
+
+# ============================================================
+# PÁGINA DE LOGIN
+# ============================================================
+
+if st.session_state.pagina == 'login':
+    st.markdown('<div class="main-header"><h1>🔐 Iniciar Sesión</h1></div>', unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        with st.container():
+            st.markdown("### Bienvenido de vuelta")
             
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/buscar', methods=['GET'])
-def api_buscar():
-    """Buscar usuarios y posts"""
-    query = request.args.get('q', '')
-    
-    if not query:
-        return jsonify({'success': True, 'usuarios': [], 'posts': []})
-    
-    try:
-        # Buscar usuarios
-        usuarios_response = supabase.table('usuarios').select('*').ilike('nombre', f'%{query}%').execute()
-        
-        # Buscar posts
-        posts_response = supabase.table('posts').select('*, usuarios(nombre, username, avatar)').ilike('contenido', f'%{query}%').limit(10).execute()
-        
-        return jsonify({
-            'success': True,
-            'usuarios': usuarios_response.data,
-            'posts': posts_response.data
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/notificaciones', methods=['GET'])
-def api_get_notificaciones():
-    """Obtener notificaciones del usuario actual"""
-    usuario = obtener_usuario_actual()
-    if not usuario:
-        return jsonify({'success': False, 'error': 'No autorizado'}), 401
-    
-    try:
-        response = supabase.table('notificaciones').select('*').eq('usuario_id', usuario['id']).order('created_at', desc=True).limit(20).execute()
-        return jsonify({'success': True, 'data': response.data})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/notificaciones/leer', methods=['POST'])
-def api_marcar_notificaciones_leidas():
-    """Marcar notificaciones como leídas"""
-    usuario = obtener_usuario_actual()
-    if not usuario:
-        return jsonify({'success': False, 'error': 'No autorizado'}), 401
-    
-    try:
-        supabase.table('notificaciones').update({'leida': True}).eq('usuario_id', usuario['id']).execute()
-        return jsonify({'success': True})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-# ============================================================
-# RUTAS DE PÁGINAS
-# ============================================================
-
-@app.route('/perfil/<username>')
-def perfil(username):
-    """Perfil de usuario"""
-    usuario_actual = obtener_usuario_actual()
-    
-    try:
-        response = supabase.table('usuarios').select('*').eq('username', username).execute()
-        
-        if not response.data:
-            return "Usuario no encontrado", 404
-        
-        perfil_usuario = response.data[0]
-        
-        # Obtener posts del usuario
-        posts_response = supabase.table('posts').select('*, usuarios(nombre, username, avatar)').eq('usuario_id', perfil_usuario['id']).order('created_at', desc=True).execute()
-        
-        return render_template('perfil.html', 
-                             perfil=perfil_usuario, 
-                             posts=posts_response.data,
-                             usuario_actual=usuario_actual)
-                             
-    except Exception as e:
-        return f"Error: {str(e)}", 500
-
-@app.route('/crear_post', methods=['POST'])
-def crear_post():
-    """Crear post desde formulario"""
-    usuario = obtener_usuario_actual()
-    if not usuario:
-        return redirect(url_for('login'))
-    
-    contenido = request.form.get('contenido')
-    imagen = request.form.get('imagen')
-    video = request.form.get('video')
-    
-    if not contenido:
-        return "El contenido es requerido", 400
-    
-    try:
-        nuevo_post = {
-            'usuario_id': usuario['id'],
-            'contenido': contenido,
-            'imagen': imagen,
-            'video': video
-        }
-        
-        supabase.table('posts').insert(nuevo_post).execute()
-        return redirect(url_for('index'))
-        
-    except Exception as e:
-        return f"Error: {str(e)}", 500
-
-# ============================================================
-# FUNCIONES PARA GENERAR DATOS DE EJEMPLO
-# ============================================================
-
-def generar_datos_ejemplo():
-    """Generar datos de ejemplo para la aplicación"""
-    try:
-        # Verificar si ya hay datos
-        usuarios_response = supabase.table('usuarios').select('*').limit(1).execute()
-        if usuarios_response.data:
-            print("✅ Ya hay datos en la base de datos")
-            return
-        
-        print("📝 Generando datos de ejemplo...")
-        
-        # Crear usuarios de ejemplo
-        usuarios_ejemplo = [
-            {'nombre': 'Ana García', 'username': 'anagarcia', 'email': 'ana@email.com', 'bio': 'Diseñadora UI/UX'},
-            {'nombre': 'Carlos López', 'username': 'carloslopez', 'email': 'carlos@email.com', 'bio': 'Desarrollador FullStack'},
-            {'nombre': 'Laura Martínez', 'username': 'lauramartinez', 'email': 'laura@email.com', 'bio': 'Fotógrafa profesional'},
-            {'nombre': 'David Chen', 'username': 'davidchen', 'email': 'david@email.com', 'bio': 'Data Scientist'}
-        ]
-        
-        usuarios_creados = []
-        for usuario in usuarios_ejemplo:
-            nuevo_usuario = {
-                'nombre': usuario['nombre'],
-                'username': usuario['username'],
-                'email': usuario['email'],
-                'password_hash': hash_password('password123'),
-                'avatar': f"https://api.dicebear.com/7.x/avataaars/svg?seed={usuario['username']}",
-                'bio': usuario['bio']
-            }
+            email = st.text_input("📧 Email")
+            password = st.text_input("🔒 Contraseña", type="password")
             
-            response = supabase.table('usuarios').insert(nuevo_usuario).execute()
-            if response.data:
-                usuarios_creados.append(response.data[0])
-        
-        # Crear posts de ejemplo
-        posts_ejemplo = [
-            {'contenido': '¡Hola mundo! Esta es mi primera publicación en SocialConnect 🚀', 'imagen': 'https://source.unsplash.com/random/800x600/?tech,startup'},
-            {'contenido': 'Acabo de terminar mi nuevo proyecto de diseño web. ¡Qué emoción! 🎨', 'imagen': 'https://source.unsplash.com/random/800x600/?design,web'},
-            {'contenido': 'Disfrutando de un hermoso atardecer en la playa 🌅', 'imagen': 'https://source.unsplash.com/random/800x600/?sunset,beach'},
-            {'contenido': 'Aprendiendo React y Tailwind CSS. ¡Qué buen combo! 💻', 'imagen': 'https://source.unsplash.com/random/800x600/?coding,work'},
-            {'contenido': 'Nuevo reto de fotografía: Capturar la esencia de la ciudad 📸', 'imagen': 'https://source.unsplash.com/random/800x600/?city,night'},
-            {'contenido': 'Recomiendo este libro: "El poder del ahora" 📚', 'imagen': 'https://source.unsplash.com/random/800x600/?book,reading'},
-            {'contenido': '¡Gané el torneo de gaming del fin de semana! 🎮🏆', 'imagen': 'https://source.unsplash.com/random/800x600/?gaming,setup'},
-            {'contenido': 'Primer día en el nuevo trabajo. ¡Emocionado! 🎯', 'imagen': 'https://source.unsplash.com/random/800x600/?office,work'}
-        ]
-        
-        import random
-        for i, post in enumerate(posts_ejemplo):
-            usuario = random.choice(usuarios_creados)
-            nuevo_post = {
-                'usuario_id': usuario['id'],
-                'contenido': post['contenido'],
-                'imagen': post['imagen']
-            }
-            supabase.table('posts').insert(nuevo_post).execute()
-        
-        # Crear algunas interacciones
-        for _ in range(10):
-            post = random.choice(posts_ejemplo)
-            usuario = random.choice(usuarios_creados)
+            if st.button("Ingresar", use_container_width=True):
+                if email and password:
+                    usuario = login_user(email, password)
+                    if usuario:
+                        st.session_state.usuario = usuario
+                        st.session_state.pagina = 'inicio'
+                        st.success("✅ ¡Bienvenido!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Email o contraseña incorrectos")
+                else:
+                    st.warning("⚠️ Completa todos los campos")
             
-            try:
-                # Obtener un post real
-                posts_response = supabase.table('posts').select('id').limit(1).execute()
-                if posts_response.data:
-                    supabase.table('likes').insert({
-                        'usuario_id': usuario['id'],
-                        'post_id': posts_response.data[0]['id']
-                    }).execute()
-            except:
-                pass
+            st.divider()
+            st.markdown("¿No tienes cuenta? **Regístrate** en el menú lateral")
+
+# ============================================================
+# PÁGINA DE REGISTRO
+# ============================================================
+
+elif st.session_state.pagina == 'register':
+    st.markdown('<div class="main-header"><h1>📝 Registrarse</h1></div>', unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        with st.container():
+            st.markdown("### Únete a la comunidad")
+            
+            nombre = st.text_input("👤 Nombre completo")
+            username = st.text_input("🏷️ Usuario (sin espacios)")
+            email = st.text_input("📧 Email")
+            password = st.text_input("🔒 Contraseña", type="password")
+            password_confirm = st.text_input("🔒 Confirmar contraseña", type="password")
+            
+            if st.button("Registrarse", use_container_width=True):
+                if not all([nombre, username, email, password, password_confirm]):
+                    st.warning("⚠️ Completa todos los campos")
+                elif password != password_confirm:
+                    st.warning("⚠️ Las contraseñas no coinciden")
+                elif len(password) < 6:
+                    st.warning("⚠️ La contraseña debe tener al menos 6 caracteres")
+                elif ' ' in username:
+                    st.warning("⚠️ El usuario no puede tener espacios")
+                else:
+                    usuario, error = register_user(nombre, username, email, password)
+                    if usuario:
+                        st.success("✅ ¡Registro exitoso! Ahora inicia sesión")
+                        st.session_state.pagina = 'login'
+                        st.rerun()
+                    else:
+                        st.error(f"❌ {error}")
+
+# ============================================================
+# PÁGINA DE INICIO - FEED
+# ============================================================
+
+elif st.session_state.pagina == 'inicio':
+    if not st.session_state.usuario:
+        st.warning("⚠️ Inicia sesión para ver el feed")
+        st.stop()
+    
+    usuario = st.session_state.usuario
+    
+    # Cabecera
+    st.markdown(f"""
+    <div class="main-header">
+        <h1>🏠 Bienvenido, {usuario['nombre']}!</h1>
+        <p style="opacity: 0.8;">Comparte lo que estás pensando con la comunidad</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Crear post
+    with st.container():
+        st.markdown("### ✍️ Crear publicación")
         
-        print("✅ Datos de ejemplo generados correctamente")
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            contenido = st.text_area("¿Qué estás pensando?", placeholder="Escribe algo interesante...", label_visibility="collapsed")
+        with col2:
+            st.write("")
+            st.write("")
+            publicar = st.button("📤 Publicar", use_container_width=True)
         
-    except Exception as e:
-        print(f"⚠️ Error generando datos de ejemplo: {e}")
+        if publicar and contenido:
+            post = create_post(usuario['id'], contenido)
+            if post:
+                st.success("✅ ¡Publicación creada!")
+                st.rerun()
+            else:
+                st.error("❌ Error al publicar")
+    
+    st.divider()
+    
+    # Mostrar posts
+    st.markdown("### 📱 Feed de publicaciones")
+    
+    posts = get_all_posts()
+    
+    if not posts:
+        st.info("📭 No hay publicaciones aún. ¡Sé el primero en publicar!")
+    
+    for post in posts:
+        with st.container():
+            # Información del autor
+            col1, col2 = st.columns([1, 8])
+            with col1:
+                st.image(post['usuarios']['avatar'], width=50)
+            with col2:
+                st.markdown(f"""
+                **{post['usuarios']['nombre']}**  
+                <small>@{post['usuarios']['username']} • {post['created_at'][:16].replace('T', ' ')}</small>
+                """, unsafe_allow_html=True)
+            
+            # Contenido
+            st.markdown(f"<p style='font-size: 16px;'>{post['contenido']}</p>", unsafe_allow_html=True)
+            
+            if post.get('imagen'):
+                st.image(post['imagen'], use_container_width=True)
+            
+            # Acciones
+            likes_count = get_likes_count(post['id'])
+            user_liked = user_liked_post(usuario['id'], post['id'])
+            
+            col1, col2, col3, col4 = st.columns([1, 1, 1, 2])
+            
+            with col1:
+                like_text = "❤️" if user_liked else "🤍"
+                if st.button(f"{like_text} {likes_count}", key=f"like_{post['id']}"):
+                    result = like_post(usuario['id'], post['id'])
+                    if result:
+                        st.rerun()
+            
+            with col2:
+                if st.button(f"💬 Comentar", key=f"comment_{post['id']}"):
+                    # Mostrar campo de comentario
+                    st.session_state[f'commenting_{post["id"]}'] = True
+            
+            with col3:
+                if st.button("🔗 Compartir", key=f"share_{post['id']}"):
+                    st.info("📋 Enlace copiado al portapapeles")
+            
+            # Comentarios
+            if st.session_state.get(f'commenting_{post["id"]}'):
+                comentario = st.text_input("Escribe un comentario...", key=f"comment_input_{post['id']}")
+                if st.button("Enviar comentario", key=f"send_comment_{post['id']}"):
+                    if comentario:
+                        result = add_comment(usuario['id'], post['id'], comentario)
+                        if result:
+                            st.success("✅ Comentario añadido")
+                            st.session_state[f'commenting_{post["id"]}'] = False
+                            st.rerun()
+            
+            # Mostrar comentarios existentes
+            comentarios = get_comments(post['id'])
+            if comentarios:
+                with st.expander(f"Ver {len(comentarios)} comentarios"):
+                    for comentario in comentarios[:5]:
+                        st.markdown(f"""
+                        <div style="display: flex; gap: 10px; margin: 5px 0; padding: 5px; background: #f8f9fa; border-radius: 8px;">
+                            <img src="{comentario['usuarios']['avatar']}" style="width: 30px; height: 30px; border-radius: 50%;">
+                            <div>
+                                <strong>{comentario['usuarios']['nombre']}</strong>
+                                <p style="margin: 0;">{comentario['contenido']}</p>
+                                <small style="color: #666;">{comentario['created_at'][:16].replace('T', ' ')}</small>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+            st.divider()
 
 # ============================================================
-# CONFIGURACIÓN DE TEMPLATES
+# PÁGINA DE PERFIL
 # ============================================================
 
-@app.context_processor
-def context_processor():
-    """Variables globales para todas las plantillas"""
-    return {
-        'app_name': APP_NAME,
-        'app_icon': APP_ICON,
-        'year': datetime.now().year
-    }
+elif st.session_state.pagina == 'perfil':
+    if not st.session_state.usuario:
+        st.warning("⚠️ Inicia sesión para ver tu perfil")
+        st.stop()
+    
+    usuario = st.session_state.usuario
+    
+    # Cabecera del perfil
+    col1, col2 = st.columns([1, 3])
+    
+    with col1:
+        st.image(usuario['avatar'], width=150)
+    
+    with col2:
+        st.markdown(f"## {usuario['nombre']}")
+        st.markdown(f"<p style='color: #666;'>@{usuario['username']}</p>", unsafe_allow_html=True)
+        st.markdown(f"<p>{usuario.get('bio', 'Sin biografía')}</p>", unsafe_allow_html=True)
+        
+        # Estadísticas
+        mis_posts = get_user_posts(usuario['id'])
+        col_a, col_b, col_c = st.columns(3)
+        with col_a:
+            st.markdown(f"<div class='stat-box'><h3>{len(mis_posts)}</h3><p>Posts</p></div>", unsafe_allow_html=True)
+        with col_b:
+            st.markdown(f"<div class='stat-box'><h3>0</h3><p>Seguidores</p></div>", unsafe_allow_html=True)
+        with col_c:
+            st.markdown(f"<div class='stat-box'><h3>0</h3><p>Siguiendo</p></div>", unsafe_allow_html=True)
+    
+    st.divider()
+    
+    # Mis posts
+    st.markdown("### 📝 Mis Publicaciones")
+    
+    if mis_posts:
+        for post in mis_posts:
+            with st.container():
+                st.markdown(f"<p>{post['contenido']}</p>", unsafe_allow_html=True)
+                if post.get('imagen'):
+                    st.image(post['imagen'], use_container_width=True)
+                st.caption(f"Publicado: {post['created_at'][:16].replace('T', ' ')}")
+                st.divider()
+    else:
+        st.info("📭 No tienes publicaciones aún. ¡Comienza a compartir!")
 
 # ============================================================
-# INICIALIZACIÓN DE LA APLICACIÓN
+# PÁGINA DE EXPLORAR
 # ============================================================
 
-def init_app():
-    """Inicializar la aplicación"""
-    print("="*60)
-    print(f"🚀 {APP_NAME} - API Flask con Supabase")
-    print("="*60)
-    print(f"📡 Conectando a Supabase: {SUPABASE_URL}")
-    print(f"🔄 Verificando tablas...")
+elif st.session_state.pagina == 'explorar':
+    st.markdown('<div class="main-header"><h1>🔍 Explorar Comunidad</h1></div>', unsafe_allow_html=True)
     
-    # Crear tablas si no existen
-    crear_tablas()
+    # Buscador
+    busqueda = st.text_input("🔎 Buscar usuarios o publicaciones", placeholder="Escribe algo para buscar...")
     
-    # Generar datos de ejemplo
-    generar_datos_ejemplo()
-    
-    print("✅ Aplicación lista")
-    print("="*60)
-    
-    # Crear carpetas necesarias
-    os.makedirs('templates', exist_ok=True)
-    os.makedirs('static/css', exist_ok=True)
-    os.makedirs('static/js', exist_ok=True)
+    if busqueda:
+        try:
+            # Buscar usuarios
+            usuarios = supabase.table('usuarios').select('*').ilike('nombre', f'%{busqueda}%').execute()
+            
+            if usuarios.data:
+                st.markdown("### 👤 Usuarios encontrados")
+                for user in usuarios.data:
+                    col1, col2, col3 = st.columns([1, 4, 1])
+                    with col1:
+                        st.image(user['avatar'], width=50)
+                    with col2:
+                        st.markdown(f"**{user['nombre']}**  \n@{user['username']}")
+                    with col3:
+                        if st.button("Ver perfil", key=f"ver_{user['id']}"):
+                            st.session_state.pagina = 'perfil_visitante'
+                            st.session_state.perfil_visitante = user
+                            st.rerun()
+            
+            # Buscar posts
+            posts = supabase.table('posts').select('*, usuarios(nombre, username, avatar)').ilike('contenido', f'%{busqueda}%').limit(10).execute()
+            
+            if posts.data:
+                st.markdown("### 📝 Publicaciones encontradas")
+                for post in posts.data:
+                    with st.container():
+                        st.markdown(f"""
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <img src="{post['usuarios']['avatar']}" style="width: 30px; height: 30px; border-radius: 50%;">
+                            <strong>{post['usuarios']['nombre']}</strong>
+                            <small>@{post['usuarios']['username']}</small>
+                        </div>
+                        <p>{post['contenido']}</p>
+                        """, unsafe_allow_html=True)
+                        if post.get('imagen'):
+                            st.image(post['imagen'], use_container_width=True)
+                        st.divider()
+            
+            if not usuarios.data and not posts.data:
+                st.info("No se encontraron resultados")
+                
+        except Exception as e:
+            st.error(f"Error en la búsqueda: {e}")
+    else:
+        # Mostrar posts recientes
+        st.markdown("### 📰 Publicaciones recientes")
+        posts = get_all_posts()
+        if posts:
+            for post in posts[:5]:
+                with st.container():
+                    st.markdown(f"""
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <img src="{post['usuarios']['avatar']}" style="width: 30px; height: 30px; border-radius: 50%;">
+                        <strong>{post['usuarios']['nombre']}</strong>
+                        <small>@{post['usuarios']['username']}</small>
+                    </div>
+                    <p>{post['contenido']}</p>
+                    """, unsafe_allow_html=True)
+                    st.divider()
 
-# Inicializar la aplicación
-init_app()
+# ============================================================
+# PÁGINA DE ESTADÍSTICAS
+# ============================================================
+
+elif st.session_state.pagina == 'estadisticas':
+    st.markdown('<div class="main-header"><h1>📊 Estadísticas</h1></div>', unsafe_allow_html=True)
+    
+    if st.session_state.usuario:
+        usuario = st.session_state.usuario
+        mis_posts = get_user_posts(usuario['id'])
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("📝 Total Posts", len(mis_posts))
+        
+        with col2:
+            # Total de likes en mis posts
+            total_likes = 0
+            for post in mis_posts:
+                total_likes += get_likes_count(post['id'])
+            st.metric("❤️ Likes Recibidos", total_likes)
+        
+        with col3:
+            # Total de comentarios en mis posts
+            total_comentarios = 0
+            for post in mis_posts:
+                total_comentarios += len(get_comments(post['id']))
+            st.metric("💬 Comentarios", total_comentarios)
+        
+        with col4:
+            st.metric("👥 Seguidores", 0)
+        
+        st.divider()
+        
+        # Gráfico de actividad (simplificado)
+        st.markdown("### 📈 Actividad Reciente")
+        
+        if mis_posts:
+            # Mostrar últimos 5 posts
+            st.markdown("#### Últimas publicaciones:")
+            for post in mis_posts[:5]:
+                st.markdown(f"""
+                <div style="padding: 10px; background: #f8f9fa; border-radius: 8px; margin: 5px 0;">
+                    <p style="margin: 0;">{post['contenido'][:100]}...</p>
+                    <small style="color: #666;">{post['created_at'][:16].replace('T', ' ')}</small>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("No hay actividad para mostrar")
 
 # ============================================================
 # EJECUCIÓN
 # ============================================================
 
-if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
-    debug = os.getenv('FLASK_ENV') == 'development'
-    
-    app.run(
-        host='0.0.0.0',
-        port=port,
-        debug=debug
-    )
+# Si estás en modo desarrollo, ejecuta con:
+# streamlit run app_streamlit.py
