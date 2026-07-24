@@ -33,7 +33,7 @@ with st.form("formulario_registro", clear_on_submit=True):
                     "email": email,
                     "celular": celular
                 }
-                supabase.table("suscriptores").insert(nombre).execute()
+                supabase.table("suscriptores").insert(data).execute()
 
                 # MENSAJE DE CONFIRMACIÓN
                 st.success(f"¡{nombre}, tu registro ha sido exitoso!")
@@ -50,7 +50,7 @@ with st.form("formulario_registro", clear_on_submit=True):
 # MOSTRAR REGISTROS (OPCIONAL, SOLO PARA VERIFICAR)
 if st.checkbox("Ver suscriptores registrados"):
     try:
-        response = supabase.table("suscriptores").select("*").execute()
+        response = supabase.table("suscriptores").select("nombre").execute()
         if response.data:
             st.dataframe(response.data)
         else:
