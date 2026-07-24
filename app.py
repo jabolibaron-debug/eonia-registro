@@ -2,14 +2,19 @@ import streamlit as st
 from supabase import create_client, Client
 
 # CONFIGURACIÓN DE SUPABASE
-SUPABASE_URL = "https://pmshpvjtiauhbuexdjev.supabase.co"  # Cambia esto
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtc2hwdmp0aWF1aGJ1ZXhkamV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4ODI0MDgsImV4cCI6MjEwMDQ1ODQwOH0.gm_oWPgwjZe_6iN9sLsVjFOus7nN0eUBwkJ2bbbbVc4"  # Cambia esto
+SUPABASE_URL = "https://pmshpvjtiauhbuexdjev.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtc2hwdmp0aWF1aGJ1ZXhkamV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4ODI0MDgsImV4cCI6MjEwMDQ1ODQwOH0.gm_oWPgwjZe_6iN9sLsVjFOus7nN0eUBwkJ2bbbbVc4"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # TÍTULO DE LA APP
-st.set_page_config(page_title="Registro EONIA", page_icon="??")
-st.title("Registro de Creadores EONIA")
+st.set_page_config(page_title="Registro EONIA", page_icon="🔷")
+st.title("🔷 Registro de Creadores EONIA")
 st.write("Completa el formulario para unirte al nuevo eón.")
+
+# BOTÓN PARA VOLVER A LA WEB
+st.link_button("🌐 Volver a eoniauniversity.com", "https://eoniauniversity.com")
+
+st.divider()
 
 # FORMULARIO
 with st.form("formulario_registro", clear_on_submit=True):
