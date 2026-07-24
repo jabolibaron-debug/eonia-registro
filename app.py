@@ -8,7 +8,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # TÍTULO DE LA APP
 st.set_page_config(page_title="Registro EONIA", page_icon="??")
-st.title("?? Registro de Creadores EONIA")
+st.title("Registro de Creadores EONIA")
 st.write("Completa el formulario para unirte al nuevo eón.")
 
 # FORMULARIO
