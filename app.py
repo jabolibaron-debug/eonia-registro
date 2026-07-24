@@ -33,7 +33,7 @@ with st.form("formulario_registro", clear_on_submit=True):
                     "email": email,
                     "celular": celular
                 }
-                supabase.table("suscriptores").insert(data).execute()
+                supabase.table("nombre").insert(data).execute()
 
                 # MENSAJE DE CONFIRMACIÓN
                 st.success(f"¡{nombre}, tu registro ha sido exitoso!")
