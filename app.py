@@ -14,7 +14,6 @@ st.set_page_config(page_title="EONIA - Portal del Creador", page_icon="🔷", la
 # -------------------------------------------------------------------
 # FUNCIONES AUXILIARES
 # -------------------------------------------------------------------
-
 def iniciar_sesion(email, password):
     """Inicia sesión con Supabase Auth"""
     try:
@@ -22,34 +21,50 @@ def iniciar_sesion(email, password):
             "email": email,
             "password": password
         })
-        if response and response.user:
+        if response is not None and hasattr(response, 'user') and response.user is not None:
             return response
         return None
-    except Exception:
+    except Exception as e:
+        st.error(f"Error al iniciar sesión: {str(e)}")
         return None
 
 def registrar_usuario(email, password, nombre, celular):
-    """Registra un nuevo usuario y lo loguea automáticamente"""
+    """Registra un nuevo usuario y devuelve la sesión iniciada"""
     try:
-        response = supabase.auth.sign_up({
+        # Paso 1: Crear usuario en Auth
+        signup = supabase.auth.sign_up({
             "email": email,
-            "password": password
+            "password": password,
+            "options": {
+                "email_redirect_to": "https://eoniauniversity.com"
+            }
         })
-        if response and response.user:
+        
+        # Si el registro fue exitoso
+        if signup is not None and hasattr(signup, 'user') and signup.user is not None:
+            # Paso 2: Guardar datos adicionales
             data = {
                 "nombre": nombre,
                 "email": email,
                 "celular": celular
             }
             supabase.table("suscriptores").insert(data).execute()
-            login_response = supabase.auth.sign_in_with_password({
+            
+            # Paso 3: La sesión ya puede estar activa después del sign_up
+            if hasattr(signup, 'session') and signup.session is not None:
+                return signup
+            
+            # Paso 4: Si no hay sesión, intentar iniciar sesión manualmente
+            login = supabase.auth.sign_in_with_password({
                 "email": email,
                 "password": password
             })
-            if login_response and login_response.user:
-                return login_response
+            if login is not None and hasattr(login, 'user') and login.user is not None:
+                return login
+        
         return None
-    except Exception:
+    except Exception as e:
+        st.error(f"Error al registrar: {str(e)}")
         return None
 
 def obtener_fragmentos(user_id):
