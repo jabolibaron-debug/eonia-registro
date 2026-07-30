@@ -12,7 +12,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 st.set_page_config(page_title="EONIA - Portal del Creador", page_icon="🔷", layout="wide")
 
 # -------------------------------------------------------------------
-# FUNCIONES AUXILIARES
+# FUNCIONES AUXILIARES (CORREGIDAS)
 # -------------------------------------------------------------------
 
 def iniciar_sesion(email, password):
@@ -22,27 +22,96 @@ def iniciar_sesion(email, password):
             "email": email,
             "password": password
         })
-        return response
+        if response and response.user:
+            return response
+        return None
     except Exception as e:
         return None
 
 def registrar_usuario(email, password, nombre, celular):
-    """Registra un nuevo usuario en Supabase Auth y guarda sus datos"""
+    """Registra un nuevo usuario y lo loguea automáticamente"""
+    try:
+        # Paso 1: Crear usuario en Auth
+        response = supabase.auth.sign_up({
+            "email": email,
+            "password": password
+        })
+        
+        if response and response.user:
+            # Paso 2: Guardar datos adicionales
+            data = {
+                "nombre": nombre,
+                "email": email,
+                "celular": celular
+            }
+            supabase.table("suscriptores").insert(data).execute()
+            
+            # Paso 3: Iniciar sesión automáticamente
+            login_response = supabase.auth.sign_in_with_password({
+                "email": email,
+                "password": password
+            })
+            if login_response and login_response.user:
+                return login_response
+        
+        return None
+    except Exception as e:
+        return None
+
+# -------------------------------------------------------------------
+# SECCIÓN DE REGISTRO (CORREGIDA)
+# -------------------------------------------------------------------
+
+with tab2:
+    st.subheader("🔷 Crear Cuenta")
+    reg_nombre = st.text_input("Nombre completo", key="reg_nombre")
+    reg_email = st.text_input("Email", key="reg_email")
+    reg_celular = st.text_input("Celular", key="reg_celular")
+    reg_password = st.text_input("Contraseña", type="password", key="reg_password")
+    
+    if st.button("Registrarse"):
+        if not reg_nombre or not reg_email or not reg_celular or not reg_password:
+            st.error("Todos los campos son obligatorios.")
+        elif "@" not in reg_email:
+            st.error("Ingresa un email válido.")
+        elif len(reg_password) < 6:
+            st.error("La contraseña debe tener al menos 6 caracteres.")
+        else:
+            response = registrar_usuario(reg_email, reg_password, reg_nombre, reg_celular)
+            if response and response.user:
+                st.session_state.user = response.user
+                st.success(f"¡Bienvenido a EONIA, {reg_nombre}!")
+                st.rerun()
+            else:
+                st.error("Error al crear la cuenta. ¿Ya existe este email?")
+def registrar_usuario(email, password, nombre, celular):
+    """Registra un nuevo usuario y lo loguea automáticamente"""
     try:
         # Crear usuario en Auth
         response = supabase.auth.sign_up({
             "email": email,
             "password": password
         })
-        # Guardar datos adicionales en la tabla suscriptores (reutilizamos la existente)
-        data = {
-            "nombre": nombre,
-            "email": email,
-            "celular": celular
-        }
-        supabase.table("suscriptores").insert(data).execute()
+        
+        # Si el usuario se creó correctamente, iniciar sesión
+        if response and response.user:
+            # Guardar datos adicionales
+            data = {
+                "nombre": nombre,
+                "email": email,
+                "celular": celular
+            }
+            supabase.table("suscriptores").insert(data).execute()
+            
+            # Iniciar sesión automáticamente
+            supabase.auth.sign_in_with_password({
+                "email": email,
+                "password": password
+            })
+            
         return response
     except Exception as e:
+        st.write(f"Debug: {str(e)}")  # Quita esto en producción
         return None
 
 def obtener_fragmentos(user_id):
