@@ -93,7 +93,6 @@ if st.session_state.user is None:
                 st.rerun()
             else:
                 st.error("Email o contraseña incorrectos.")
-
     with tab2:
         st.subheader("🔷 Crear Cuenta")
         reg_nombre = st.text_input("Nombre completo", key="reg_nombre")
@@ -109,14 +108,45 @@ if st.session_state.user is None:
             elif len(reg_password) < 6:
                 st.error("La contraseña debe tener al menos 6 caracteres.")
             else:
-                response = registrar_usuario(reg_email, reg_password, reg_nombre, reg_celular)
-                if response and response.user:
-                    st.session_state.user = response.user
-                    st.success(f"¡Bienvenido a EONIA, {reg_nombre}!")
-                    st.balloons()
-                    st.rerun()
-                else:
-                    st.error("Error al crear la cuenta. ¿Ya existe este email?")
+                try:
+                    st.write("Intentando registrar...")
+                    
+                    # Paso 1: Crear en Auth
+                    signup = supabase.auth.sign_up({
+                        "email": reg_email,
+                        "password": reg_password
+                    })
+                    st.write(f"Respuesta sign_up: {signup}")
+                    
+                    if signup is None:
+                        st.error("Error: No se recibió respuesta de Supabase.")
+                    elif hasattr(signup, 'user') and signup.user is not None:
+                        st.success("Usuario creado en Auth.")
+                        
+                        # Paso 2: Guardar en suscriptores
+                        data = {"nombre": reg_nombre, "email": reg_email, "celular": reg_celular}
+                        insert_result = supabase.table("suscriptores").insert(data).execute()
+                        st.write(f"Insert resultado: {insert_result}")
+                        
+                        # Paso 3: Iniciar sesión
+                        login = supabase.auth.sign_in_with_password({
+                            "email": reg_email,
+                            "password": reg_password
+                        })
+                        st.write(f"Login resultado: {login}")
+                        
+                        if login and hasattr(login, 'user') and login.user:
+                            st.session_state.user = login.user
+                            st.success(f"¡Bienvenido a EONIA, {reg_nombre}!")
+                            st.balloons()
+                            st.rerun()
+                        else:
+                            st.warning("Cuenta creada pero no se pudo iniciar sesión. Ve a Iniciar Sesión.")
+                    else:
+                        st.error(f"Error en sign_up: {signup}")
+                        
+                except Exception as e:
+                    st.error(f"Excepción: {str(e)}")
 
 else:
     user = st.session_state.user
