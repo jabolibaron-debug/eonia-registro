@@ -1,2 +1,1 @@
-streamlit
-supabase
+pip install streamlit supabase streamlit-option-menu
