@@ -3,60 +3,43 @@ from supabase import create_client, Client
 from streamlit_option_menu import option_menu
 import datetime
 
-# CONFIGURACIÓN DE SUPABASE
 SUPABASE_URL = "https://pmshpvjtiauhbuexdjev.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtc2hwdmp0aWF1aGJ1ZXhkamV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4ODI0MDgsImV4cCI6MjEwMDQ1ODQwOH0.gm_oWPgwjZe_6iN9sLsVjFOus7nN0eUBwkJ2bbbbVc4"
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# CONFIGURACIÓN DE LA PÁGINA
 st.set_page_config(page_title="EONIA - Portal del Creador", page_icon="🔷", layout="wide")
-
-# -------------------------------------------------------------------
-# FUNCIONES AUXILIARES
-# -------------------------------------------------------------------
 
 def iniciar_sesion(email, password):
     try:
         response = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        if response and response.user:
-            return response
-        return None
-    except Exception:
+        return response if response and response.user else None
+    except:
         return None
 
 def registrar_usuario(email, password, nombre, celular):
     try:
         response = supabase.auth.sign_up({"email": email, "password": password})
-        if response is None or response.user is None:
+        if not response or not response.user:
             return "email_existe"
-        data = {"nombre": nombre, "email": email, "celular": celular}
-        supabase.table("suscriptores").insert(data).execute()
-        login_response = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        if login_response and login_response.user:
-            return login_response
-        else:
-            return "login_fallo"
+        supabase.table("suscriptores").insert({"nombre": nombre, "email": email, "celular": celular}).execute()
+        login = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        return login if login and login.user else "login_fallo"
     except Exception as e:
-        error_msg = str(e).lower()
-        if "already registered" in error_msg or "already exists" in error_msg or "duplicate" in error_msg:
+        if any(x in str(e).lower() for x in ["already registered", "already exists", "duplicate"]):
             return "email_existe"
         return "error"
 
 def obtener_fragmentos(user_id):
-    response = supabase.table("fragmentos_obtenidos").select("*").eq("user_id", user_id).execute()
-    return response.data if response.data else []
+    r = supabase.table("fragmentos_obtenidos").select("*").eq("user_id", user_id).execute()
+    return r.data if r.data else []
 
 def obtener_progreso(user_id):
-    response = supabase.table("progreso_biomas").select("*").eq("user_id", user_id).execute()
-    return response.data if response.data else []
+    r = supabase.table("progreso_biomas").select("*").eq("user_id", user_id).execute()
+    return r.data if r.data else []
 
 def obtener_certificados(user_id):
-    response = supabase.table("certificados").select("*").eq("user_id", user_id).execute()
-    return response.data if response.data else []
-
-# -------------------------------------------------------------------
-# INTERFAZ PRINCIPAL
-# -------------------------------------------------------------------
+    r = supabase.table("certificados").select("*").eq("user_id", user_id).execute()
+    return r.data if r.data else []
 
 if "user" not in st.session_state:
     st.session_state.user = None
@@ -64,17 +47,16 @@ if "user" not in st.session_state:
 if st.session_state.user is None:
     st.title("🔷 Portal del Creador EONIA")
     st.write("Inicia sesión o crea una cuenta para comenzar tu viaje.")
-    
     tab1, tab2 = st.tabs(["Iniciar Sesión", "Crear Cuenta"])
 
     with tab1:
         st.subheader("🔑 Iniciar Sesión")
-        login_email = st.text_input("Email", key="login_email")
-        login_password = st.text_input("Contraseña", type="password", key="login_password")
+        e = st.text_input("Email", key="le")
+        p = st.text_input("Contraseña", type="password", key="lp")
         if st.button("Entrar"):
-            response = iniciar_sesion(login_email, login_password)
-            if response and response.user:
-                st.session_state.user = response.user
+            r = iniciar_sesion(e, p)
+            if r and r.user:
+                st.session_state.user = r.user
                 st.success("¡Bienvenido de nuevo, Creador!")
                 st.rerun()
             else:
@@ -82,487 +64,80 @@ if st.session_state.user is None:
 
     with tab2:
         st.subheader("🔷 Crear Cuenta")
-        reg_nombre = st.text_input("Nombre completo", key="reg_nombre")
-        reg_email = st.text_input("Email", key="reg_email")
-        reg_celular = st.text_input("Celular", key="reg_celular")
-        reg_password = st.text_input("Contraseña", type="password", key="reg_password")
+        n = st.text_input("Nombre completo", key="rn")
+        e = st.text_input("Email", key="re")
+        c = st.text_input("Celular", key="rc")
+        p = st.text_input("Contraseña", type="password", key="rp")
         if st.button("Registrarse"):
-            if not reg_nombre or not reg_email or not reg_celular or not reg_password:
+            if not n or not e or not c or not p:
                 st.error("Todos los campos son obligatorios.")
-            elif "@" not in reg_email:
+            elif "@" not in e:
                 st.error("Ingresa un email válido.")
-            elif len(reg_password) < 6:
+            elif len(p) < 6:
                 st.error("La contraseña debe tener al menos 6 caracteres.")
             else:
-                response = registrar_usuario(reg_email, reg_password, reg_nombre, reg_celular)
-                if response == "email_existe":
-                    st.error("Este email ya está registrado. ¿Quieres iniciar sesión en su lugar?")
-                elif response == "login_fallo":
-                    st.warning("Cuenta creada. Intenta iniciar sesión manualmente.")
-                elif response and response.user:
-                    st.session_state.user = response.user
-                    st.success(f"¡Bienvenido a EONIA, {reg_nombre}!")
+                r = registrar_usuario(e, p, n, c)
+                if r == "email_existe":
+                    st.error("Este email ya está registrado.")
+                elif r == "login_fallo":
+                    st.warning("Cuenta creada. Inicia sesión manualmente.")
+                elif r and r.user:
+                    st.session_state.user = r.user
+                    st.success(f"¡Bienvenido a EONIA, {n}!")
                     st.balloons()
                     st.rerun()
                 else:
-                    st.error("Error al crear la cuenta. Intenta con otro email.")
+                    st.error("Error al crear la cuenta.")
 
 else:
     user = st.session_state.user
-
     with st.sidebar:
         st.title(f"🔷 {user.email[:20]}...")
-        menu = option_menu(
-            menu_title="Portal del Creador",
-            options=["Mi Perfil", "Mis Fragmentos", "Progreso", "Certificados", "Cerrar Sesión"],
-            icons=["person", "gem", "bar-chart", "award", "box-arrow-right"],
-            default_index=0
-        )
+        menu = option_menu("Portal del Creador", ["Mi Perfil", "Mis Fragmentos", "Progreso", "Certificados", "Cerrar Sesión"],
+                          icons=["person", "gem", "bar-chart", "award", "box-arrow-right"], default_index=0)
 
     if menu == "Mi Perfil":
         st.title("👤 Mi Perfil")
         st.write(f"**Email:** {user.email}")
-        st.write(f"**ID del Creador:** {user.id}")
-        progreso = obtener_progreso(user.id)
-        biomas_completados = [p["bioma"] for p in progreso if p["completado"]]
-        st.metric("Biomas Completados", len(biomas_completados))
+        st.write(f"**ID:** {user.id}")
+        p = obtener_progreso(user.id)
+        st.metric("Biomas Completados", len([x for x in p if x["completado"]]))
         st.divider()
         st.link_button("🌐 Volver a eoniauniversity.com", "https://eoniauniversity.com")
 
     elif menu == "Mis Fragmentos":
         st.title("💎 Mis Fragmentos")
-        fragmentos = obtener_fragmentos(user.id)
-        if fragmentos:
-            biomas = {}
-            for f in fragmentos:
-                bioma = f["bioma"]
-                if bioma not in biomas:
-                    biomas[bioma] = []
-                biomas[bioma].append(f["fragmento"])
-            for bioma, frags in sorted(biomas.items()):
-                with st.expander(f"🌿 Bioma {bioma} — {len(frags)}/5 Fragmentos"):
-                    for frag in frags:
-                        st.write(f"✅ {frag}")
-                    if len(frags) == 5:
+        f = obtener_fragmentos(user.id)
+        if f:
+            b = {}
+            for x in f:
+                b.setdefault(x["bioma"], []).append(x["fragmento"])
+            for k, v in sorted(b.items()):
+                with st.expander(f"🌿 Bioma {k} — {len(v)}/5 Fragmentos"):
+                    for i in v:
+                        st.write(f"✅ {i}")
+                    if len(v) == 5:
                         st.success("✨ ¡Bioma completado!")
         else:
-            st.info("Aún no has obtenido ningún Fragmento.")
+            st.info("Aún no tienes Fragmentos.")
 
     elif menu == "Progreso":
         st.title("📊 Progreso por Biomas")
-        progreso = obtener_progreso(user.id)
-        for bioma_num in range(1, 11):
-            completado = any(p["bioma"] == bioma_num and p["completado"] for p in progreso)
-            if completado:
-                st.success(f"🌿 Bioma {bioma_num} — ✅ Completado")
+        p = obtener_progreso(user.id)
+        for i in range(1, 11):
+            if any(x["bioma"] == i and x["completado"] for x in p):
+                st.success(f"🌿 Bioma {i} — ✅ Completado")
             else:
-                st.info(f"🌿 Bioma {bioma_num} — 🔒 Pendiente")
+                st.info(f"🌿 Bioma {i} — 🔒 Pendiente")
 
     elif menu == "Certificados":
         st.title("🎓 Mis Certificados")
-        certificados = obtener_certificados(user.id)
-        if certificados:
-            for cert in certificados:
-                st.write(f"📜 Bioma {cert['bioma']} — Emitido: {cert['emitido_en'][:10]}")
+        c = obtener_certificados(user.id)
+        if c:
+            for x in c:
+                st.write(f"📜 Bioma {x['bioma']} — Emitido: {x['emitido_en'][:10]}")
         else:
             st.info("Aún no tienes certificados.")
-
-    elif menu == "Cerrar Sesión":
-        st.session_state.user = None
-        st.rerun()import streamlit as st
-from supabase import create_client, Client
-from streamlit_option_menu import option_menu
-import datetime
-
-# CONFIGURACIÓN DE SUPABASE
-SUPABASE_URL = "https://pmshpvjtiauhbuexdjev.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtc2hwdmp0aWF1aGJ1ZXhkamV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4ODI0MDgsImV4cCI6MjEwMDQ1ODQwOH0.gm_oWPgwjZe_6iN9sLsVjFOus7nN0eUBwkJ2bbbbVc4"
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# CONFIGURACIÓN DE LA PÁGINA
-st.set_page_config(page_title="EONIA - Portal del Creador", page_icon="🔷", layout="wide")
-
-# -------------------------------------------------------------------
-# FUNCIONES AUXILIARES
-# -------------------------------------------------------------------
-
-def iniciar_sesion(email, password):
-    """Inicia sesión con Supabase Auth"""
-    try:
-        response = supabase.auth.sign_in_with_password({
-            "email": email,
-            "password": password
-        })
-        if response and response.user:
-            return response
-        return None
-    except Exception:
-        return None
-
-def registrar_usuario(email, password, nombre, celular):
-    """Registra un nuevo usuario y lo loguea automáticamente"""
-    try:
-        response = supabase.auth.sign_up({
-            "email": email,
-            "password": password
-        })
-        
-        if response is None or response.user is None:
-            return "email_existe"
-        
-        data = {
-            "nombre": nombre,
-            "email": email,
-            "celular": celular
-        }
-        supabase.table("suscriptores").insert(data).execute()
-        
-        login_response = supabase.auth.sign_in_with_password({
-            "email": email,
-            "password": password
-        })
-        
-        if login_response and login_response.user:
-            return login_response
-        else:
-            return "login_fallo"
-            
-    except Exception as e:
-        error_msg = str(e).lower()
-        if "already registered" in error_msg or "already exists" in error_msg or "duplicate" in error_msg:
-            return "email_existe"
-        return "error"
-
-def obtener_fragmentos(user_id):
-    """Obtiene los Fragmentos de un Creador"""
-    response = supabase.table("fragmentos_obtenidos").select("*").eq("user_id", user_id).execute()
-    return response.data if response.data else []
-
-def obtener_progreso(user_id):
-    """Obtiene el progreso por Bioma de un Creador"""
-    response = supabase.table("progreso_biomas").select("*").eq("user_id", user_id).execute()
-    return response.data if response.data else []
-
-def obtener_certificados(user_id):
-    """Obtiene los certificados de un Creador"""
-    response = supabase.table("certificados").select("*").eq("user_id", user_id).execute()
-    return response.data if response.data else []
-
-# -------------------------------------------------------------------
-# INTERFAZ PRINCIPAL
-# -------------------------------------------------------------------
-
-if "user" not in st.session_state:
-    st.session_state.user = None
-
-if st.session_state.user is None:
-    st.title("🔷 Portal del Creador EONIA")
-    st.write("Inicia sesión o crea una cuenta para comenzar tu viaje.")
-    
-    tab1, tab2 = st.tabs(["Iniciar Sesión", "Crear Cuenta"])
-
-    with tab1:
-        st.subheader("🔑 Iniciar Sesión")
-        login_email = st.text_input("Email", key="login_email")
-        login_password = st.text_input("Contraseña", type="password", key="login_password")
-        
-        if st.button("Entrar"):
-            response = iniciar_sesion(login_email, login_password)
-            if response and response.user:
-                st.session_state.user = response.user
-                st.success("¡Bienvenido de nuevo, Creador!")
-                st.rerun()
-            else:
-                st.error("Email o contraseña incorrectos.")
-
-    with tab2:
-        st.subheader("🔷 Crear Cuenta")
-        reg_nombre = st.text_input("Nombre completo", key="reg_nombre")
-        reg_email = st.text_input("Email", key="reg_email")
-        reg_celular = st.text_input("Celular", key="reg_celular")
-        reg_password = st.text_input("Contraseña", type="password", key="reg_password")
-        
-        if st.button("Registrarse"):
-            if not reg_nombre or not reg_email or not reg_celular or not reg_password:
-                st.error("Todos los campos son obligatorios.")
-            elif "@" not in reg_email:
-                st.error("Ingresa un email válido.")
-            elif len(reg_password) < 6:
-                st.error("La contraseña debe tener al menos 6 caracteres.")
-            else:
-                response = registrar_usuario(reg_email, reg_password, reg_nombre, reg_celular)
-                
-                if response == "email_existe":
-                    st.error("Este email ya está registrado. ¿Quieres iniciar sesión en su lugar?")
-                elif response == "login_fallo":
-                    st.warning("Cuenta creada pero no se pudo iniciar sesión automáticamente. Intenta iniciar sesión manualmente.")
-                elif response and response.user:
-                    st.session_state.user = response.user
-                    st.success(f"¡Bienvenido a EONIA, {reg_nombre}!")
-                    st.balloons()
-                    st.rerun()
-                else:
-                    st.error("Error al crear la cuenta. Intenta con otro email o revisa tu conexión.")
-
-else:
-    user = st.session_state.user
-
-    with st.sidebar:
-        st.title(f"🔷 {user.email[:20]}...")
-        menu = option_menu(
-            menu_title="Portal del Creador",
-            options=["Mi Perfil", "Mis Fragmentos", "Progreso", "Certificados", "Cerrar Sesión"],
-            icons=["person", "gem", "bar-chart", "award", "box-arrow-right"],
-            default_index=0
-        )
-
-    if menu == "Mi Perfil":
-        st.title("👤 Mi Perfil")
-        st.write(f"**Email:** {user.email}")
-        st.write(f"**ID del Creador:** {user.id}")
-        progreso = obtener_progreso(user.id)
-        biomas_completados = [p["bioma"] for p in progreso if p["completado"]]
-        st.metric("Biomas Completados", len(biomas_completados))
-        st.divider()
-        st.link_button("🌐 Volver a eoniauniversity.com", "https://eoniauniversity.com")
-
-    elif menu == "Mis Fragmentos":
-        st.title("💎 Mis Fragmentos")
-        fragmentos = obtener_fragmentos(user.id)
-        if fragmentos:
-            biomas = {}
-            for f in fragmentos:
-                bioma = f["bioma"]
-                if bioma not in biomas:
-                    biomas[bioma] = []
-                biomas[bioma].append(f["fragmento"])
-            for bioma, frags in sorted(biomas.items()):
-                with st.expander(f"🌿 Bioma {bioma} — {len(frags)}/5 Fragmentos"):
-                    for frag in frags:
-                        st.write(f"✅ {frag}")
-                    if len(frags) == 5:
-                        st.success("✨ ¡Bioma completado!")
-        else:
-            st.info("Aún no has obtenido ningún Fragmento. Completa tu primer Bioma para verlos aquí.")
-
-    elif menu == "Progreso":
-        st.title("📊 Progreso por Biomas")
-        progreso = obtener_progreso(user.id)
-        for bioma_num in range(1, 11):
-            completado = any(p["bioma"] == bioma_num and p["completado"] for p in progreso)
-            if completado:
-                st.success(f"🌿 Bioma {bioma_num} — ✅ Completado")
-            else:
-                st.info(f"🌿 Bioma {bioma_num} — 🔒 Pendiente")
-
-    elif menu == "Certificados":
-        st.title("🎓 Mis Certificados")
-        certificados = obtener_certificados(user.id)
-        if certificados:
-            for cert in certificados:
-                st.write(f"📜 Bioma {cert['bioma']} — Emitido: {cert['emitido_en'][:10]}")
-        else:
-            st.info("Aún no tienes certificados. Completa biomas para obtenerlos.")
-
-    elif menu == "Cerrar Sesión":
-        st.session_state.user = None
-        st.rerun()import streamlit as st
-from supabase import create_client, Client
-from streamlit_option_menu import option_menu
-import datetime
-
-# CONFIGURACIÓN DE SUPABASE
-SUPABASE_URL = "https://pmshpvjtiauhbuexdjev.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtc2hwdmp0aWF1aGJ1ZXhkamV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4ODI0MDgsImV4cCI6MjEwMDQ1ODQwOH0.gm_oWPgwjZe_6iN9sLsVjFOus7nN0eUBwkJ2bbbbVc4"
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# CONFIGURACIÓN DE LA PÁGINA
-st.set_page_config(page_title="EONIA - Portal del Creador", page_icon="🔷", layout="wide")
-
-# -------------------------------------------------------------------
-# FUNCIONES AUXILIARES
-# -------------------------------------------------------------------
-
-def iniciar_sesion(email, password):
-    """Inicia sesión con Supabase Auth"""
-    try:
-        response = supabase.auth.sign_in_with_password({
-            "email": email,
-            "password": password
-        })
-        if response and response.user:
-            return response
-        return None
-    except Exception:
-        return None
-
-def registrar_usuario(email, password, nombre, celular):
-    """Registra un nuevo usuario y lo loguea automáticamente"""
-    try:
-        # Paso 1: Crear usuario en Auth
-        response = supabase.auth.sign_up({
-            "email": email,
-            "password": password
-        })
-        
-        # Verificar si hay error por email duplicado
-        if response is None or response.user is None:
-            return "email_existe"
-        
-        # Paso 2: Guardar datos adicionales
-        data = {
-            "nombre": nombre,
-            "email": email,
-            "celular": celular
-        }
-        supabase.table("suscriptores").insert(data).execute()
-        
-        # Paso 3: Iniciar sesión automáticamente
-        login_response = supabase.auth.sign_in_with_password({
-            "email": email,
-            "password": password
-        })
-        
-        if login_response and login_response.user:
-            return login_response
-        else:
-            return "login_fallo"
-            
-    except Exception as e:
-        error_msg = str(e).lower()
-        if "already registered" in error_msg or "already exists" in error_msg or "duplicate" in error_msg:
-            return "email_existe"
-        return "error"
-        def obtener_fragmentos(user_id):
-    """Obtiene los Fragmentos de un Creador"""
-    response = supabase.table("fragmentos_obtenidos").select("*").eq("user_id", user_id).execute()
-    return response.data if response.data else []
-
-def obtener_progreso(user_id):
-    """Obtiene el progreso por Bioma de un Creador"""
-    response = supabase.table("progreso_biomas").select("*").eq("user_id", user_id).execute()
-    return response.data if response.data else []
-
-def obtener_certificados(user_id):
-    """Obtiene los certificados de un Creador"""
-    response = supabase.table("certificados").select("*").eq("user_id", user_id).execute()
-    return response.data if response.data else []
-
-# -------------------------------------------------------------------
-# INTERFAZ PRINCIPAL
-# -------------------------------------------------------------------
-
-if "user" not in st.session_state:
-    st.session_state.user = None
-
-if st.session_state.user is None:
-    st.title("🔷 Portal del Creador EONIA")
-    st.write("Inicia sesión o crea una cuenta para comenzar tu viaje.")
-    
-    tab1, tab2 = st.tabs(["Iniciar Sesión", "Crear Cuenta"])
-
-    with tab1:
-        st.subheader("🔑 Iniciar Sesión")
-        login_email = st.text_input("Email", key="login_email")
-        login_password = st.text_input("Contraseña", type="password", key="login_password")
-        
-        if st.button("Entrar"):
-            response = iniciar_sesion(login_email, login_password)
-            if response and response.user:
-                st.session_state.user = response.user
-                st.success("¡Bienvenido de nuevo, Creador!")
-                st.rerun()
-            else:
-                st.error("Email o contraseña incorrectos.")
-
-    with tab2:
-    st.subheader("🔷 Crear Cuenta")
-    reg_nombre = st.text_input("Nombre completo", key="reg_nombre")
-    reg_email = st.text_input("Email", key="reg_email")
-    reg_celular = st.text_input("Celular", key="reg_celular")
-    reg_password = st.text_input("Contraseña", type="password", key="reg_password")
-    
-    if st.button("Registrarse"):
-        if not reg_nombre or not reg_email or not reg_celular or not reg_password:
-            st.error("Todos los campos son obligatorios.")
-        elif "@" not in reg_email:
-            st.error("Ingresa un email válido.")
-        elif len(reg_password) < 6:
-            st.error("La contraseña debe tener al menos 6 caracteres.")
-        else:
-            response = registrar_usuario(reg_email, reg_password, reg_nombre, reg_celular)
-            
-            if response == "email_existe":
-                st.error("Este email ya está registrado. ¿Quieres iniciar sesión en su lugar?")
-            elif response == "login_fallo":
-                st.warning("Cuenta creada pero no se pudo iniciar sesión automáticamente. Intenta iniciar sesión manualmente.")
-            elif response and response.user:
-                st.session_state.user = response.user
-                st.success(f"¡Bienvenido a EONIA, {reg_nombre}!")
-                st.balloons()
-                st.rerun()
-            else:
-                st.error("Error al crear la cuenta. Intenta con otro email o revisa tu conexión.")
-
-else:
-    user = st.session_state.user
-
-    with st.sidebar:
-        st.title(f"🔷 {user.email[:20]}...")
-        menu = option_menu(
-            menu_title="Portal del Creador",
-            options=["Mi Perfil", "Mis Fragmentos", "Progreso", "Certificados", "Cerrar Sesión"],
-            icons=["person", "gem", "bar-chart", "award", "box-arrow-right"],
-            default_index=0
-        )
-
-    if menu == "Mi Perfil":
-        st.title("👤 Mi Perfil")
-        st.write(f"**Email:** {user.email}")
-        st.write(f"**ID del Creador:** {user.id}")
-        progreso = obtener_progreso(user.id)
-        biomas_completados = [p["bioma"] for p in progreso if p["completado"]]
-        st.metric("Biomas Completados", len(biomas_completados))
-        st.divider()
-        st.link_button("🌐 Volver a eoniauniversity.com", "https://eoniauniversity.com")
-
-    elif menu == "Mis Fragmentos":
-        st.title("💎 Mis Fragmentos")
-        fragmentos = obtener_fragmentos(user.id)
-        if fragmentos:
-            biomas = {}
-            for f in fragmentos:
-                bioma = f["bioma"]
-                if bioma not in biomas:
-                    biomas[bioma] = []
-                biomas[bioma].append(f["fragmento"])
-            for bioma, frags in sorted(biomas.items()):
-                with st.expander(f"🌿 Bioma {bioma} — {len(frags)}/5 Fragmentos"):
-                    for frag in frags:
-                        st.write(f"✅ {frag}")
-                    if len(frags) == 5:
-                        st.success("✨ ¡Bioma completado!")
-        else:
-            st.info("Aún no has obtenido ningún Fragmento. Completa tu primer Bioma para verlos aquí.")
-
-    elif menu == "Progreso":
-        st.title("📊 Progreso por Biomas")
-        progreso = obtener_progreso(user.id)
-        for bioma_num in range(1, 11):
-            completado = any(p["bioma"] == bioma_num and p["completado"] for p in progreso)
-            if completado:
-                st.success(f"🌿 Bioma {bioma_num} — ✅ Completado")
-            else:
-                st.info(f"🌿 Bioma {bioma_num} — 🔒 Pendiente")
-
-    elif menu == "Certificados":
-        st.title("🎓 Mis Certificados")
-        certificados = obtener_certificados(user.id)
-        if certificados:
-            for cert in certificados:
-                st.write(f"📜 Bioma {cert['bioma']} — Emitido: {cert['emitido_en'][:10]}")
-        else:
-            st.info("Aún no tienes certificados. Completa biomas para obtenerlos.")
 
     elif menu == "Cerrar Sesión":
         st.session_state.user = None
