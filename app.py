@@ -31,28 +31,40 @@ def iniciar_sesion(email, password):
 def registrar_usuario(email, password, nombre, celular):
     """Registra un nuevo usuario y lo loguea automáticamente"""
     try:
+        # Paso 1: Crear usuario en Auth
         response = supabase.auth.sign_up({
             "email": email,
             "password": password
         })
-        if response and response.user:
-            data = {
-                "nombre": nombre,
-                "email": email,
-                "celular": celular
-            }
-            supabase.table("suscriptores").insert(data).execute()
-            login_response = supabase.auth.sign_in_with_password({
-                "email": email,
-                "password": password
-            })
-            if login_response and login_response.user:
-                return login_response
-        return None
-    except Exception:
-        return None
-
-def obtener_fragmentos(user_id):
+        
+        # Verificar si hay error por email duplicado
+        if response is None or response.user is None:
+            return "email_existe"
+        
+        # Paso 2: Guardar datos adicionales
+        data = {
+            "nombre": nombre,
+            "email": email,
+            "celular": celular
+        }
+        supabase.table("suscriptores").insert(data).execute()
+        
+        # Paso 3: Iniciar sesión automáticamente
+        login_response = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+        
+        if login_response and login_response.user:
+            return login_response
+        else:
+            return "login_fallo"
+            
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "already registered" in error_msg or "already exists" in error_msg or "duplicate" in error_msg:
+            return "email_existe"
+        return "error"def obtener_fragmentos(user_id):
     """Obtiene los Fragmentos de un Creador"""
     response = supabase.table("fragmentos_obtenidos").select("*").eq("user_id", user_id).execute()
     return response.data if response.data else []
@@ -95,28 +107,33 @@ if st.session_state.user is None:
                 st.error("Email o contraseña incorrectos.")
 
     with tab2:
-        st.subheader("🔷 Crear Cuenta")
-        reg_nombre = st.text_input("Nombre completo", key="reg_nombre")
-        reg_email = st.text_input("Email", key="reg_email")
-        reg_celular = st.text_input("Celular", key="reg_celular")
-        reg_password = st.text_input("Contraseña", type="password", key="reg_password")
-        
-        if st.button("Registrarse"):
-            if not reg_nombre or not reg_email or not reg_celular or not reg_password:
-                st.error("Todos los campos son obligatorios.")
-            elif "@" not in reg_email:
-                st.error("Ingresa un email válido.")
-            elif len(reg_password) < 6:
-                st.error("La contraseña debe tener al menos 6 caracteres.")
+    st.subheader("🔷 Crear Cuenta")
+    reg_nombre = st.text_input("Nombre completo", key="reg_nombre")
+    reg_email = st.text_input("Email", key="reg_email")
+    reg_celular = st.text_input("Celular", key="reg_celular")
+    reg_password = st.text_input("Contraseña", type="password", key="reg_password")
+    
+    if st.button("Registrarse"):
+        if not reg_nombre or not reg_email or not reg_celular or not reg_password:
+            st.error("Todos los campos son obligatorios.")
+        elif "@" not in reg_email:
+            st.error("Ingresa un email válido.")
+        elif len(reg_password) < 6:
+            st.error("La contraseña debe tener al menos 6 caracteres.")
+        else:
+            response = registrar_usuario(reg_email, reg_password, reg_nombre, reg_celular)
+            
+            if response == "email_existe":
+                st.error("Este email ya está registrado. ¿Quieres iniciar sesión en su lugar?")
+            elif response == "login_fallo":
+                st.warning("Cuenta creada pero no se pudo iniciar sesión automáticamente. Intenta iniciar sesión manualmente.")
+            elif response and response.user:
+                st.session_state.user = response.user
+                st.success(f"¡Bienvenido a EONIA, {reg_nombre}!")
+                st.balloons()
+                st.rerun()
             else:
-                response = registrar_usuario(reg_email, reg_password, reg_nombre, reg_celular)
-                if response and response.user:
-                    st.session_state.user = response.user
-                    st.success(f"¡Bienvenido a EONIA, {reg_nombre}!")
-                    st.balloons()
-                    st.rerun()
-                else:
-                    st.error("Error al crear la cuenta. ¿Ya existe este email?")
+                st.error("Error al crear la cuenta. Intenta con otro email o revisa tu conexión.")
 
 else:
     user = st.session_state.user
