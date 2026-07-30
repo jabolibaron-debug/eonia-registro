@@ -64,7 +64,8 @@ def registrar_usuario(email, password, nombre, celular):
         error_msg = str(e).lower()
         if "already registered" in error_msg or "already exists" in error_msg or "duplicate" in error_msg:
             return "email_existe"
-        return "error"def obtener_fragmentos(user_id):
+        return "error"
+        def obtener_fragmentos(user_id):
     """Obtiene los Fragmentos de un Creador"""
     response = supabase.table("fragmentos_obtenidos").select("*").eq("user_id", user_id).execute()
     return response.data if response.data else []
