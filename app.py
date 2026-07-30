@@ -51,12 +51,12 @@ if st.session_state.user is None:
 
     with tab1:
         st.subheader("🔑 Iniciar Sesión")
-        e = st.text_input("Email", key="le")
-        p = st.text_input("Contraseña", type="password", key="lp")
+        login_email = st.text_input("Email", key="le")
+        login_pass = st.text_input("Contraseña", type="password", key="lp")
         if st.button("Entrar"):
-            r = iniciar_sesion(e, p)
-            if r and r.user:
-                st.session_state.user = r.user
+            sesion = iniciar_sesion(login_email, login_pass)
+            if sesion and sesion.user:
+                st.session_state.user = sesion.user
                 st.success("¡Bienvenido de nuevo, Creador!")
                 st.rerun()
             else:
@@ -64,26 +64,26 @@ if st.session_state.user is None:
 
     with tab2:
         st.subheader("🔷 Crear Cuenta")
-        n = st.text_input("Nombre completo", key="rn")
-        e = st.text_input("Email", key="re")
-        c = st.text_input("Celular", key="rc")
-        p = st.text_input("Contraseña", type="password", key="rp")
+        reg_nombre = st.text_input("Nombre completo", key="rn")
+        reg_email = st.text_input("Email", key="re")
+        reg_celular = st.text_input("Celular", key="rc")
+        reg_pass = st.text_input("Contraseña", type="password", key="rp")
         if st.button("Registrarse"):
-            if not n or not e or not c or not p:
+            if not reg_nombre or not reg_email or not reg_celular or not reg_pass:
                 st.error("Todos los campos son obligatorios.")
-            elif "@" not in e:
+            elif "@" not in reg_email:
                 st.error("Ingresa un email válido.")
-            elif len(p) < 6:
+            elif len(reg_pass) < 6:
                 st.error("La contraseña debe tener al menos 6 caracteres.")
             else:
-                r = registrar_usuario(e, p, n, c)
-                if r == "email_existe":
+                resultado = registrar_usuario(reg_email, reg_pass, reg_nombre, reg_celular)
+                if resultado == "email_existe":
                     st.error("Este email ya está registrado.")
-                elif r == "login_fallo":
+                elif resultado == "login_fallo":
                     st.warning("Cuenta creada. Inicia sesión manualmente.")
-                elif r and r.user:
-                    st.session_state.user = r.user
-                    st.success(f"¡Bienvenido a EONIA, {n}!")
+                elif resultado and resultado.user:
+                    st.session_state.user = resultado.user
+                    st.success(f"¡Bienvenido a EONIA, {reg_nombre}!")
                     st.balloons()
                     st.rerun()
                 else:
