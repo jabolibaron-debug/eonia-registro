@@ -29,42 +29,29 @@ def iniciar_sesion(email, password):
         return None
 
 def registrar_usuario(email, password, nombre, celular):
-    """Registra un nuevo usuario y devuelve la sesión iniciada"""
     try:
-        # Paso 1: Crear usuario en Auth
-        signup = supabase.auth.sign_up({
-            "email": email,
-            "password": password,
-            "options": {
-                "email_redirect_to": "https://eoniauniversity.com"
-            }
-        })
+        # Crear usuario
+        signup = supabase.auth.sign_up({"email": email, "password": password})
         
-        # Si el registro fue exitoso
-        if signup is not None and hasattr(signup, 'user') and signup.user is not None:
-            # Paso 2: Guardar datos adicionales
-            data = {
-                "nombre": nombre,
-                "email": email,
-                "celular": celular
-            }
-            supabase.table("suscriptores").insert(data).execute()
+        if signup and hasattr(signup, 'session') and signup.session:
+            # Si sign_up ya devuelve sesión, guardamos datos y retornamos
+            supabase.table("suscriptores").insert({
+                "nombre": nombre, "email": email, "celular": celular
+            }).execute()
+            return signup
+        
+        elif signup and hasattr(signup, 'user') and signup.user:
+            # Si tiene user pero no session, guardamos datos e intentamos login
+            supabase.table("suscriptores").insert({
+                "nombre": nombre, "email": email, "celular": celular
+            }).execute()
             
-            # Paso 3: La sesión ya puede estar activa después del sign_up
-            if hasattr(signup, 'session') and signup.session is not None:
-                return signup
-            
-            # Paso 4: Si no hay sesión, intentar iniciar sesión manualmente
-            login = supabase.auth.sign_in_with_password({
-                "email": email,
-                "password": password
-            })
-            if login is not None and hasattr(login, 'user') and login.user is not None:
+            login = supabase.auth.sign_in_with_password({"email": email, "password": password})
+            if login and hasattr(login, 'user') and login.user:
                 return login
         
         return None
     except Exception as e:
-        st.error(f"Error al registrar: {str(e)}")
         return None
 
 def obtener_fragmentos(user_id):
