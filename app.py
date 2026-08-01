@@ -201,8 +201,8 @@ else:
             else:
                 st.info(f"🌿 Bioma {bioma_num} — 🔒 Pendiente")
 
-    elif menu == "Reliquias":
-        st.title("🎓 Mis Reliquias")
+    elif menu == "Certificados":
+        st.title("🎓 Mis Certificados")
         certificados = obtener_certificados(user.id)
         if certificados:
             for cert in certificados:
