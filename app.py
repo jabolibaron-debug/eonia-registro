@@ -147,6 +147,9 @@ else:
         st.title("📊 Dashboard del Creador")
         st.write("Tu progreso en el nuevo eón.")
 
+        # MOSTRAR USER_ID (COPIA ESTE ID PARA EL REFLEJO)
+        st.info(f"🆔 Tu ID de Creador: `{user.id}` — Cópialo para usarlo con el Reflejo.")
+
         # Progreso global
         progreso_global = calcular_progreso_global(user.id)
         st.metric("Progreso Global", f"{progreso_global}%")
