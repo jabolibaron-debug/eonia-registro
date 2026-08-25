@@ -711,52 +711,20 @@ else:
     # ========================================================
 
     elif menu == "Progreso por Biomas":
-
         st.title("📊 Progreso por Biomas")
-
         progreso = obtener_progreso(user.id)
-
         for bioma in range(1, 11):
+            p = next((x for x in progreso if x["bioma"] == bioma), None)
+            porcentaje = p["porcentaje"] if p else 0
+            completado = p["completado"] if p else False
 
-            p = next(
-                (
-                    x for x in progreso
-                    if x.get("bioma") == bioma
-                ),
-                None
-            )
-
-            porcentaje = (
-                p.get("porcentaje", 0)
-                if p
-                else 0
-            )
-
-            completado = (
-                p.get("completado", False)
-                if p
-                else False
-            )
-
-            st.write(
-                f"**Bioma {bioma}**"
-            )
-
-            st.progress(
-                porcentaje / 100
-            )
-
+            st.write(f"**Bioma {bioma}**")
+            st.progress(porcentaje / 100)
+            st.write(f"{porcentaje}%")
             if completado:
-
-                st.success(
-                    f"✨ Completado — {porcentaje}%"
-                )
-
+                st.success(f"✅ Completado — {porcentaje}%")
             else:
-
-                st.info(
-                    f"🔒 {porcentaje}% completado"
-                )
+                st.info(f"🔒 {porcentaje}% completado")
 
 
     # ========================================================
