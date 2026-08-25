@@ -89,7 +89,6 @@ def guardar_sesion(response):
 def iniciar_sesion(email, password):
 
     try:
-
         supabase = crear_cliente()
 
         response = supabase.auth.sign_in_with_password({
@@ -101,7 +100,7 @@ def iniciar_sesion(email, password):
 
     except Exception as e:
 
-        print(f"Error login: {e}")
+        st.error(f"❌ ERROR REAL DE SUPABASE: {str(e)}")
         return None
 
 
