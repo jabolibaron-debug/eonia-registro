@@ -628,48 +628,21 @@ else:
         # ----------------------------------------------------
 
         st.subheader("🌿 Progreso por Bioma")
-
+        progreso = obtener_progreso(user.id)
         for bioma in range(1, 11):
+            p = next((x for x in progreso if x["bioma"] == bioma), None)
+            porcentaje = p["porcentaje"] if p else 0
+            completado = p["completado"] if p else False
 
-            p = next(
-                (
-                    x for x in progreso
-                    if x.get("bioma") == bioma
-                ),
-                None
-            )
-
-            porcentaje = (
-                p.get("porcentaje", 0)
-                if p
-                else 0
-            )
-
-            completado = (
-                p.get("completado", False)
-                if p
-                else False
-            )
-
-            col1, col2 = st.columns([1, 4])
-
+            col1, col2, col3 = st.columns([1, 3, 1])
             with col1:
-
-                st.write(
-                    f"**Bioma {bioma}**"
-                )
-
+                st.write(f"**Bioma {bioma}**")
             with col2:
-
-                st.progress(
-                    porcentaje / 100
-                )
-
+                st.progress(porcentaje / 100)
+            with col3:
+                st.write(f"{porcentaje}%")
             if completado:
-
-                st.success(
-                    f"✨ Bioma {bioma} completado"
-                )
+                st.success(f"✅ Bioma {bioma} completado")
 
 
         st.divider()
