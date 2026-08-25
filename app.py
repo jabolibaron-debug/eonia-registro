@@ -2,8 +2,9 @@ import streamlit as st
 from supabase import create_client, Client
 from streamlit_option_menu import option_menu
 
+
 # ============================================================
-# CONFIGURACIÓN
+# CONFIGURACIÓN GENERAL
 # ============================================================
 
 st.set_page_config(
@@ -12,103 +13,54 @@ st.set_page_config(
     layout="wide"
 )
 
-# Por ahora puedes mantener tus valores actuales.
-# Más adelante los moveremos a Streamlit Secrets.
 
-SUPABASE_URL = "TU_SUPABASE_URL"
-SUPABASE_KEY = "TU_SUPABASE_ANON_KEY"
+# ============================================================
+# CONEXIÓN CON SUPABASE
+# ============================================================
+
+@st.cache_resource
+def conectar_supabase() -> Client:
+    return create_client(
+        st.secrets["SUPABASE_URL"],
+        st.secrets["SUPABASE_KEY"]
+    )
+
+
+supabase = conectar_supabase()
 
 
 # ============================================================
-# CLIENTE SUPABASE
+# FUNCIONES AUXILIARES
 # ============================================================
-
-def crear_cliente() -> Client:
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
-
-
-def obtener_supabase():
-    """
-    Crea un cliente y, si existe una sesión guardada,
-    restaura el access_token y refresh_token.
-    """
-
-    supabase = crear_cliente()
-
-    if (
-        "access_token" in st.session_state
-        and "refresh_token" in st.session_state
-        and st.session_state.access_token
-        and st.session_state.refresh_token
-    ):
-        try:
-            supabase.auth.set_session(
-                st.session_state.access_token,
-                st.session_state.refresh_token
-            )
-        except Exception as e:
-            print(f"Error restaurando sesión: {e}")
-
-    return supabase
-
-
-# ============================================================
-# INICIALIZAR SESSION STATE
-# ============================================================
-
-if "user" not in st.session_state:
-    st.session_state.user = None
-
-if "access_token" not in st.session_state:
-    st.session_state.access_token = None
-
-if "refresh_token" not in st.session_state:
-    st.session_state.refresh_token = None
-
-
-# ============================================================
-# FUNCIONES DE AUTENTICACIÓN
-# ============================================================
-
-def guardar_sesion(response):
-    """
-    Guarda usuario y tokens de Supabase dentro de Streamlit.
-    """
-
-    if response and response.user and response.session:
-
-        st.session_state.user = response.user
-        st.session_state.access_token = response.session.access_token
-        st.session_state.refresh_token = response.session.refresh_token
-
-        return True
-
-    return False
-
 
 def iniciar_sesion(email, password):
+    """Inicia sesión con Supabase Auth."""
 
     try:
-        supabase = crear_cliente()
+        email = email.strip().lower()
+
+        if not email or not password:
+            return None, "Debes ingresar email y contraseña."
 
         response = supabase.auth.sign_in_with_password({
             "email": email,
             "password": password
         })
 
-        return response
+        if response and response.user:
+            return response, None
+
+        return None, "No se pudo iniciar sesión."
 
     except Exception as e:
-
-        st.error(f"❌ ERROR REAL DE SUPABASE: {str(e)}")
-        return None
+        return None, str(e)
 
 
 def registrar_usuario(email, password, nombre, celular):
+    """Crea un usuario en Supabase Auth y registra sus datos."""
 
     try:
-
-        supabase = crear_cliente()
+        email = email.strip().lower()
 
         response = supabase.auth.sign_up({
             "email": email,
@@ -116,11 +68,12 @@ def registrar_usuario(email, password, nombre, celular):
         })
 
         if not response or not response.user:
-            return "error"
+            return None, "No se pudo crear el usuario."
 
-        # Crear registro del suscriptor
+        user_id = response.user.id
+
+        # Guardar información adicional del creador
         try:
-
             supabase.table("suscriptores").insert({
                 "nombre": nombre,
                 "email": email,
@@ -128,7 +81,7 @@ def registrar_usuario(email, password, nombre, celular):
             }).execute()
 
         except Exception as e:
-            print(f"Error creando suscriptor: {e}")
+            return None, f"Usuario creado, pero hubo un problema guardando el perfil: {e}"
 
         # Intentar iniciar sesión automáticamente
         login = supabase.auth.sign_in_with_password({
@@ -136,62 +89,47 @@ def registrar_usuario(email, password, nombre, celular):
             "password": password
         })
 
-        return login
+        if login and login.user:
+            return login, None
+
+        return None, (
+            "La cuenta fue creada. "
+            "Si tienes confirmación de email activada en Supabase, "
+            "confirma tu correo antes de iniciar sesión."
+        )
 
     except Exception as e:
+        mensaje = str(e)
 
-        print(f"Error registro: {e}")
-        return "error"
+        if "already registered" in mensaje.lower():
+            return None, "Este email ya está registrado."
 
+        return None, mensaje
 
-def cerrar_sesion():
-
-    try:
-
-        supabase = obtener_supabase()
-        supabase.auth.sign_out()
-
-    except:
-        pass
-
-    st.session_state.user = None
-    st.session_state.access_token = None
-    st.session_state.refresh_token = None
-
-
-# ============================================================
-# FUNCIONES DE DATOS
-# ============================================================
 
 def obtener_fragmentos(user_id):
+    """Obtiene todos los fragmentos del Creador."""
 
     try:
-
-        supabase = obtener_supabase()
-
         r = (
             supabase
             .table("fragmentos_obtenidos")
             .select("*")
             .eq("user_id", user_id)
-            .order("obtenido_en")
+            .order("bioma")
             .execute()
         )
 
         return r.data if r.data else []
 
-    except Exception as e:
-
-        st.error(f"Error obteniendo Fragmentos: {e}")
+    except Exception:
         return []
 
 
 def obtener_progreso(user_id):
+    """Obtiene el progreso de los 10 Biomas."""
 
     try:
-
-        supabase = obtener_supabase()
-
         r = (
             supabase
             .table("progreso_biomas")
@@ -203,92 +141,137 @@ def obtener_progreso(user_id):
 
         return r.data if r.data else []
 
-    except Exception as e:
-
-        st.error(f"Error obteniendo progreso: {e}")
+    except Exception:
         return []
 
 
 def obtener_certificados(user_id):
+    """Obtiene los certificados del Creador."""
 
     try:
-
-        supabase = obtener_supabase()
-
         r = (
             supabase
             .table("certificados")
             .select("*")
             .eq("user_id", user_id)
+            .order("id")
             .execute()
         )
 
         return r.data if r.data else []
 
-    except Exception as e:
-
-        st.error(f"Error obteniendo certificados: {e}")
+    except Exception:
         return []
 
 
 # ============================================================
-# FUNCIONES ADMINISTRATIVAS / PRUEBAS
+# FRAGMENTOS Y PROGRESO
 # ============================================================
 
 def asignar_fragmento(user_id, bioma, fragmento):
     """
-    Asigna un Fragmento y actualiza el progreso.
+    Asigna un Fragmento y actualiza automáticamente
+    el progreso del Bioma.
     """
 
     try:
 
-        supabase = obtener_supabase()
+        # ----------------------------------------------------
+        # 1. Verificar si ese fragmento ya existe
+        # ----------------------------------------------------
 
-        # 1. Insertar Fragmento
+        existente = (
+            supabase
+            .table("fragmentos_obtenidos")
+            .select("id")
+            .eq("user_id", user_id)
+            .eq("bioma", bioma)
+            .eq("fragmento", fragmento)
+            .execute()
+        )
+
+        # Si ya existe, no duplicarlo
+        if existente.data:
+            return False, "Este Fragmento ya había sido obtenido."
+
+
+        # ----------------------------------------------------
+        # 2. Insertar Fragmento
+        # ----------------------------------------------------
+
         supabase.table("fragmentos_obtenidos").insert({
             "user_id": user_id,
             "bioma": bioma,
             "fragmento": fragmento
         }).execute()
 
-        # 2. Obtener Fragmentos actualizados
+
+        # ----------------------------------------------------
+        # 3. Calcular Fragmentos del Bioma
+        # ----------------------------------------------------
+
         frags = obtener_fragmentos(user_id)
 
         frags_bioma = [
             f for f in frags
-            if f["bioma"] == bioma
+            if f.get("bioma") == bioma
         ]
+
+        cantidad_fragmentos = len(frags_bioma)
 
         # 5 Fragmentos = 100%
         porcentaje = min(
             100,
-            len(frags_bioma) * 20
+            cantidad_fragmentos * 20
         )
 
-        # 3. Actualizar progreso
+        completado = porcentaje >= 100
+
+
+        # ----------------------------------------------------
+        # 4. Crear o actualizar progreso
+        # ----------------------------------------------------
+
         supabase.table("progreso_biomas").upsert(
             {
                 "user_id": user_id,
                 "bioma": bioma,
                 "porcentaje": porcentaje,
-                "completado": porcentaje >= 100
+                "completado": completado
             },
             on_conflict="user_id,bioma"
         ).execute()
 
-        return True
+
+        return True, (
+            f"Fragmento '{fragmento}' obtenido. "
+            f"Bioma {bioma}: {porcentaje}%"
+        )
 
     except Exception as e:
+        return False, str(e)
 
-        print(f"Error asignando Fragmento: {e}")
-        return False
 
+# ============================================================
+# CERTIFICADOS
+# ============================================================
 
 def emitir_certificado(user_id, bioma, nombre_reliquia):
+    """Emite una Reliquia al completar un Bioma."""
 
     try:
 
-        supabase = obtener_supabase()
+        existente = (
+            supabase
+            .table("certificados")
+            .select("id")
+            .eq("user_id", user_id)
+            .eq("bioma", bioma)
+            .execute()
+        )
+
+        if existente.data:
+            return False, "El certificado de este Bioma ya existe."
 
         supabase.table("certificados").insert({
             "user_id": user_id,
@@ -297,13 +280,15 @@ def emitir_certificado(user_id, bioma, nombre_reliquia):
             "emision": f"Bioma {bioma} completado"
         }).execute()
 
-        return True
+        return True, "Certificado emitido correctamente."
 
     except Exception as e:
+        return False, str(e)
 
-        print(f"Error certificado: {e}")
-        return False
 
+# ============================================================
+# PROGRESO GLOBAL
+# ============================================================
 
 def calcular_progreso_global(user_id):
 
@@ -317,6 +302,7 @@ def calcular_progreso_global(user_id):
         for p in progreso
     )
 
+    # 10 Biomas, máximo 100% cada uno
     return min(
         100,
         int(total / 10)
@@ -324,7 +310,15 @@ def calcular_progreso_global(user_id):
 
 
 # ============================================================
-# LOGIN / REGISTRO
+# SESSION STATE
+# ============================================================
+
+if "user" not in st.session_state:
+    st.session_state.user = None
+
+
+# ============================================================
+# LOGIN Y REGISTRO
 # ============================================================
 
 if st.session_state.user is None:
@@ -357,7 +351,7 @@ if st.session_state.user is None:
         login_pass = st.text_input(
             "Contraseña",
             type="password",
-            key="login_pass"
+            key="login_password"
         )
 
         if st.button(
@@ -365,32 +359,27 @@ if st.session_state.user is None:
             use_container_width=True
         ):
 
-            if not login_email or not login_pass:
+            sesion, error = iniciar_sesion(
+                login_email,
+                login_pass
+            )
 
-                st.warning(
-                    "Ingresa tu email y contraseña."
+            if sesion and sesion.user:
+
+                st.session_state.user = sesion.user
+
+                st.success(
+                    "¡Bienvenido de nuevo, Creador!"
                 )
+
+                st.rerun()
 
             else:
 
-                sesion = iniciar_sesion(
-                    login_email,
-                    login_pass
+                st.error(
+                    error or
+                    "Email o contraseña incorrectos."
                 )
-
-                if guardar_sesion(sesion):
-
-                    st.success(
-                        "¡Bienvenido de nuevo, Creador!"
-                    )
-
-                    st.rerun()
-
-                else:
-
-                    st.error(
-                        "Email o contraseña incorrectos."
-                    )
 
 
     # --------------------------------------------------------
@@ -401,22 +390,22 @@ if st.session_state.user is None:
 
         st.subheader("🔷 Crear Cuenta")
 
-        rn = st.text_input(
+        nombre = st.text_input(
             "Nombre completo",
             key="registro_nombre"
         )
 
-        re = st.text_input(
+        email = st.text_input(
             "Email",
             key="registro_email"
         )
 
-        rc = st.text_input(
+        celular = st.text_input(
             "Celular",
             key="registro_celular"
         )
 
-        rp = st.text_input(
+        password = st.text_input(
             "Contraseña",
             type="password",
             key="registro_password"
@@ -427,19 +416,25 @@ if st.session_state.user is None:
             use_container_width=True
         ):
 
-            if not rn or not re or not rc or not rp:
+            if not nombre:
 
                 st.error(
-                    "Todos los campos son obligatorios."
+                    "Ingresa tu nombre."
                 )
 
-            elif "@" not in re:
+            elif not email or "@" not in email:
 
                 st.error(
                     "Ingresa un email válido."
                 )
 
-            elif len(rp) < 6:
+            elif not celular:
+
+                st.error(
+                    "Ingresa tu celular."
+                )
+
+            elif len(password) < 6:
 
                 st.error(
                     "La contraseña debe tener al menos 6 caracteres."
@@ -447,23 +442,19 @@ if st.session_state.user is None:
 
             else:
 
-                resultado = registrar_usuario(
-                    re,
-                    rp,
-                    rn,
-                    rc
+                resultado, error = registrar_usuario(
+                    email,
+                    password,
+                    nombre,
+                    celular
                 )
 
-                if resultado == "error":
+                if resultado and resultado.user:
 
-                    st.error(
-                        "Error al crear la cuenta."
-                    )
-
-                elif guardar_sesion(resultado):
+                    st.session_state.user = resultado.user
 
                     st.success(
-                        f"¡Bienvenido a EONIA, {rn}!"
+                        f"¡Bienvenido a EONIA, {nombre}!"
                     )
 
                     st.balloons()
@@ -472,13 +463,14 @@ if st.session_state.user is None:
 
                 else:
 
-                    st.warning(
-                        "Cuenta creada. Inicia sesión."
+                    st.error(
+                        error or
+                        "No se pudo crear la cuenta."
                     )
 
 
 # ============================================================
-# CRM DEL CREADOR
+# ÁREA PRIVADA DEL CREADOR
 # ============================================================
 
 else:
@@ -494,7 +486,9 @@ else:
 
         st.title("🔷 Creador")
 
-        st.write(user.email)
+        st.write(
+            user.email
+        )
 
         menu = option_menu(
 
@@ -532,44 +526,37 @@ else:
             "Tu progreso en el nuevo eón."
         )
 
-        # Botón para actualizar datos
-        col_refresh, col_space = st.columns([1, 5])
 
-        with col_refresh:
-
-            if st.button("🔄 Actualizar"):
-
-                st.rerun()
-
-
+        # ID DEL CREADOR
         st.info(
-            f"🆔 Tu ID de Creador: `{user.id}`"
+            f"🆔 Tu ID de Creador: `{user.id}` "
+            "— Cópialo para usarlo con el Reflejo."
         )
 
 
         # ----------------------------------------------------
-        # CARGAR DATOS
+        # DATOS
         # ----------------------------------------------------
 
-        progreso = obtener_progreso(user.id)
+        progreso = obtener_progreso(
+            user.id
+        )
 
-        certificados = obtener_certificados(user.id)
+        fragmentos = obtener_fragmentos(
+            user.id
+        )
 
-        fragmentos = obtener_fragmentos(user.id)
+        certificados = obtener_certificados(
+            user.id
+        )
 
 
         # ----------------------------------------------------
         # PROGRESO GLOBAL
         # ----------------------------------------------------
 
-        total_progreso = sum(
-            p.get("porcentaje", 0)
-            for p in progreso
-        )
-
-        progreso_global = min(
-            100,
-            int(total_progreso / 10)
+        progreso_global = calcular_progreso_global(
+            user.id
         )
 
         st.metric(
@@ -626,11 +613,13 @@ else:
         # PROGRESO POR BIOMA
         # ----------------------------------------------------
 
-        st.subheader("🌿 Progreso por Bioma")
+        st.subheader(
+            "🌿 Progreso por Bioma"
+        )
 
         for bioma in range(1, 11):
 
-            p = next(
+            registro = next(
                 (
                     x for x in progreso
                     if x.get("bioma") == bioma
@@ -639,18 +628,20 @@ else:
             )
 
             porcentaje = (
-                p.get("porcentaje", 0)
-                if p
+                registro.get("porcentaje", 0)
+                if registro
                 else 0
             )
 
             completado = (
-                p.get("completado", False)
-                if p
+                registro.get("completado", False)
+                if registro
                 else False
             )
 
-            col1, col2 = st.columns([1, 4])
+            col1, col2 = st.columns(
+                [1, 4]
+            )
 
             with col1:
 
@@ -674,7 +665,7 @@ else:
         st.divider()
 
         st.link_button(
-            "🌐 Volver a EONIA",
+            "🌐 Volver a eoniauniversity.com",
             "https://eoniauniversity.com"
         )
 
@@ -687,21 +678,30 @@ else:
 
         st.title("💎 Mis Fragmentos")
 
-        fragmentos = obtener_fragmentos(user.id)
+        fragmentos = obtener_fragmentos(
+            user.id
+        )
 
         if fragmentos:
 
             biomas = {}
 
-            for f in fragmentos:
+            for fragmento in fragmentos:
 
-                bioma = f.get("bioma")
+                numero_bioma = fragmento.get(
+                    "bioma"
+                )
 
-                biomas.setdefault(
-                    bioma,
-                    []
-                ).append(
-                    f.get("fragmento")
+                nombre_fragmento = fragmento.get(
+                    "fragmento"
+                )
+
+                if numero_bioma not in biomas:
+
+                    biomas[numero_bioma] = []
+
+                biomas[numero_bioma].append(
+                    nombre_fragmento
                 )
 
 
@@ -710,7 +710,8 @@ else:
             ):
 
                 with st.expander(
-                    f"🌿 Bioma {bioma} — {len(frags)}/5 Fragmentos"
+                    f"🌿 Bioma {bioma} "
+                    f"— {len(frags)}/5 Fragmentos"
                 ):
 
                     for frag in frags:
@@ -728,7 +729,8 @@ else:
         else:
 
             st.info(
-                "Aún no tienes Fragmentos."
+                "Aún no tienes Fragmentos. "
+                "Completa tu primer Bioma."
             )
 
 
@@ -738,13 +740,17 @@ else:
 
     elif menu == "Progreso por Biomas":
 
-        st.title("📊 Progreso por Biomas")
+        st.title(
+            "📊 Progreso por Biomas"
+        )
 
-        progreso = obtener_progreso(user.id)
+        progreso = obtener_progreso(
+            user.id
+        )
 
         for bioma in range(1, 11):
 
-            p = next(
+            registro = next(
                 (
                     x for x in progreso
                     if x.get("bioma") == bioma
@@ -753,14 +759,14 @@ else:
             )
 
             porcentaje = (
-                p.get("porcentaje", 0)
-                if p
+                registro.get("porcentaje", 0)
+                if registro
                 else 0
             )
 
             completado = (
-                p.get("completado", False)
-                if p
+                registro.get("completado", False)
+                if registro
                 else False
             )
 
@@ -775,7 +781,8 @@ else:
             if completado:
 
                 st.success(
-                    f"✨ Completado — {porcentaje}%"
+                    f"✅ Completado — "
+                    f"{porcentaje}%"
                 )
 
             else:
@@ -792,7 +799,7 @@ else:
     elif menu == "Certificados":
 
         st.title(
-            "🎓 Mis Certificados (Reliquias)"
+            "🏆 Mis Certificados"
         )
 
         certificados = obtener_certificados(
@@ -801,40 +808,39 @@ else:
 
         if certificados:
 
-            for cert in certificados:
+            for certificado in certificados:
 
-                nombre = cert.get(
-                    "nombre_reliquia",
-                    "Reliquia"
+                bioma = certificado.get(
+                    "bioma",
+                    "?"
                 )
 
-                bioma = cert.get(
-                    "bioma"
+                nombre = certificado.get(
+                    "nombre_reliquia",
+                    "Reliquia de EONIA"
+                )
+
+                emision = certificado.get(
+                    "emision",
+                    ""
                 )
 
                 with st.expander(
-                    f"📜 {nombre} — Bioma {bioma}"
+                    f"🏆 Bioma {bioma} — {nombre}"
                 ):
 
                     st.write(
-                        f"**Emisión:** {cert.get('emision', '')}"
+                        f"**Reliquia:** {nombre}"
                     )
 
-                    fecha = cert.get(
-                        "emitido_en",
-                        ""
+                    st.write(
+                        f"**Emisión:** {emision}"
                     )
-
-                    if fecha:
-
-                        st.write(
-                            f"**Fecha:** {fecha[:10]}"
-                        )
 
         else:
 
             st.info(
-                "Aún no tienes certificados."
+                "Aún no has obtenido certificados."
             )
 
 
@@ -844,6 +850,15 @@ else:
 
     elif menu == "Cerrar Sesión":
 
-        cerrar_sesion()
+        try:
+            supabase.auth.sign_out()
+        except Exception:
+            pass
+
+        st.session_state.user = None
+
+        st.success(
+            "Sesión cerrada correctamente."
+        )
 
         st.rerun()
