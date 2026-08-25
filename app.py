@@ -17,8 +17,11 @@ st.set_page_config(
 
 SUPABASE_URL = "https://pmshpvjtiauhbuexdjev.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtc2hwdmp0aWF1aGJ1ZXhkamV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4ODI0MDgsImV4cCI6MjEwMDQ1ODQwOH0.gm_oWPgwjZe_6iN9sLsVjFOus7nN0eUBwkJ2bbbbVc4"
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+st.set_page_config(page_title="EONIA - CRM del Creador", page_icon="🔷", layout="wide")
 
-
+def obtener_supabase():
+    return supabase
 # ============================================================
 # CLIENTE SUPABASE
 # ============================================================
