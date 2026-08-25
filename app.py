@@ -2,6 +2,869 @@ import streamlit as st
 from supabase import create_client, Client
 from streamlit_option_menu import option_menu
 
+
+# ============================================================
+# CONFIGURACIÓN GENERAL
+# ============================================================
+
+st.set_page_config(
+    page_title="EONIA - CRM del Creador",
+    page_icon="🔷",
+    layout="wide"
+)
+
+
+# ============================================================
+# CONEXIÓN CON SUPABASE
+# ============================================================
+
+@st.cache_resource
+def conectar_supabase() -> Client:
+    return create_client(
+        st.secrets["SUPABASE_URL"],
+        st.secrets["SUPABASE_KEY"]
+    )
+
+
+supabase = conectar_supabase()
+
+
+# ============================================================
+# FUNCIONES AUXILIARES
+# ============================================================
+
+def iniciar_sesion(email, password):
+    """Inicia sesión con Supabase Auth."""
+
+    try:
+        email = email.strip().lower()
+
+        if not email or not password:
+            return None, "Debes ingresar email y contraseña."
+
+        response = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+
+        if response and response.user:
+            return response, None
+
+        return None, "No se pudo iniciar sesión."
+
+    except Exception as e:
+        return None, str(e)
+
+
+def registrar_usuario(email, password, nombre, celular):
+    """Crea un usuario en Supabase Auth y registra sus datos."""
+
+    try:
+        email = email.strip().lower()
+
+        response = supabase.auth.sign_up({
+            "email": email,
+            "password": password
+        })
+
+        if not response or not response.user:
+            return None, "No se pudo crear el usuario."
+
+        user_id = response.user.id
+
+        # Guardar información adicional del creador
+        try:
+            supabase.table("suscriptores").insert({
+                "nombre": nombre,
+                "email": email,
+                "celular": celular
+            }).execute()
+
+        except Exception as e:
+            return None, f"Usuario creado, pero hubo un problema guardando el perfil: {e}"
+
+        # Intentar iniciar sesión automáticamente
+        login = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+
+        if login and login.user:
+            return login, None
+
+        return None, (
+            "La cuenta fue creada. "
+            "Si tienes confirmación de email activada en Supabase, "
+            "confirma tu correo antes de iniciar sesión."
+        )
+
+    except Exception as e:
+        mensaje = str(e)
+
+        if "already registered" in mensaje.lower():
+            return None, "Este email ya está registrado."
+
+        return None, mensaje
+
+
+def obtener_fragmentos(user_id):
+    """Obtiene todos los fragmentos del Creador."""
+
+    try:
+        r = (
+            supabase
+            .table("fragmentos_obtenidos")
+            .select("*")
+            .eq("user_id", user_id)
+            .order("bioma")
+            .execute()
+        )
+
+        return r.data if r.data else []
+
+    except Exception:
+        return []
+
+
+def obtener_progreso(user_id):
+    """Obtiene el progreso de los 10 Biomas."""
+
+    try:
+        r = (
+            supabase
+            .table("progreso_biomas")
+            .select("*")
+            .eq("user_id", user_id)
+            .order("bioma")
+            .execute()
+        )
+
+        return r.data if r.data else []
+
+    except Exception:
+        return []
+
+
+def obtener_certificados(user_id):
+    """Obtiene los certificados del Creador."""
+
+    try:
+        r = (
+            supabase
+            .table("certificados")
+            .select("*")
+            .eq("user_id", user_id)
+            .order("id")
+            .execute()
+        )
+
+        return r.data if r.data else []
+
+    except Exception:
+        return []
+
+
+# ============================================================
+# FRAGMENTOS Y PROGRESO
+# ============================================================
+
+def asignar_fragmento(user_id, bioma, fragmento):
+    """
+    Asigna un Fragmento y actualiza automáticamente
+    el progreso del Bioma.
+    """
+
+    try:
+
+        # ----------------------------------------------------
+        # 1. Verificar si ese fragmento ya existe
+        # ----------------------------------------------------
+
+        existente = (
+            supabase
+            .table("fragmentos_obtenidos")
+            .select("id")
+            .eq("user_id", user_id)
+            .eq("bioma", bioma)
+            .eq("fragmento", fragmento)
+            .execute()
+        )
+
+        # Si ya existe, no duplicarlo
+        if existente.data:
+            return False, "Este Fragmento ya había sido obtenido."
+
+
+        # ----------------------------------------------------
+        # 2. Insertar Fragmento
+        # ----------------------------------------------------
+
+        supabase.table("fragmentos_obtenidos").insert({
+            "user_id": user_id,
+            "bioma": bioma,
+            "fragmento": fragmento
+        }).execute()
+
+
+        # ----------------------------------------------------
+        # 3. Calcular Fragmentos del Bioma
+        # ----------------------------------------------------
+
+        frags = obtener_fragmentos(user_id)
+
+        frags_bioma = [
+            f for f in frags
+            if f.get("bioma") == bioma
+        ]
+
+        cantidad_fragmentos = len(frags_bioma)
+
+        # 5 Fragmentos = 100%
+        porcentaje = min(
+            100,
+            cantidad_fragmentos * 20
+        )
+
+        completado = porcentaje >= 100
+
+
+        # ----------------------------------------------------
+        # 4. Crear o actualizar progreso
+        # ----------------------------------------------------
+
+        supabase.table("progreso_biomas").upsert(
+            {
+                "user_id": user_id,
+                "bioma": bioma,
+                "porcentaje": porcentaje,
+                "completado": completado
+            },
+            on_conflict="user_id,bioma"
+        ).execute()
+
+
+        return True, (
+            f"Fragmento '{fragmento}' obtenido. "
+            f"Bioma {bioma}: {porcentaje}%"
+        )
+
+    except Exception as e:
+        return False, str(e)
+
+
+# ============================================================
+# CERTIFICADOS
+# ============================================================
+
+def emitir_certificado(user_id, bioma, nombre_reliquia):
+    """Emite una Reliquia al completar un Bioma."""
+
+    try:
+
+        existente = (
+            supabase
+            .table("certificados")
+            .select("id")
+            .eq("user_id", user_id)
+            .eq("bioma", bioma)
+            .execute()
+        )
+
+        if existente.data:
+            return False, "El certificado de este Bioma ya existe."
+
+        supabase.table("certificados").insert({
+            "user_id": user_id,
+            "bioma": bioma,
+            "nombre_reliquia": nombre_reliquia,
+            "emision": f"Bioma {bioma} completado"
+        }).execute()
+
+        return True, "Certificado emitido correctamente."
+
+    except Exception as e:
+        return False, str(e)
+
+
+# ============================================================
+# PROGRESO GLOBAL
+# ============================================================
+
+def calcular_progreso_global(user_id):
+
+    progreso = obtener_progreso(user_id)
+
+    if not progreso:
+        return 0
+
+    total = sum(
+        p.get("porcentaje", 0)
+        for p in progreso
+    )
+
+    # 10 Biomas, máximo 100% cada uno
+    return min(
+        100,
+        int(total / 10)
+    )
+
+
+# ============================================================
+# SESSION STATE
+# ============================================================
+
+if "user" not in st.session_state:
+    st.session_state.user = None
+
+
+# ============================================================
+# LOGIN Y REGISTRO
+# ============================================================
+
+if st.session_state.user is None:
+
+    st.title("🔷 Portal del Creador EONIA")
+
+    st.write(
+        "Inicia sesión o crea una cuenta para entrar al nuevo eón."
+    )
+
+    tab1, tab2 = st.tabs([
+        "🔑 Iniciar Sesión",
+        "🔷 Crear Cuenta"
+    ])
+
+
+    # --------------------------------------------------------
+    # LOGIN
+    # --------------------------------------------------------
+
+    with tab1:
+
+        st.subheader("🔑 Iniciar Sesión")
+
+        login_email = st.text_input(
+            "Email",
+            key="login_email"
+        )
+
+        login_pass = st.text_input(
+            "Contraseña",
+            type="password",
+            key="login_password"
+        )
+
+        if st.button(
+            "Entrar",
+            use_container_width=True
+        ):
+
+            sesion, error = iniciar_sesion(
+                login_email,
+                login_pass
+            )
+
+            if sesion and sesion.user:
+
+                st.session_state.user = sesion.user
+
+                st.success(
+                    "¡Bienvenido de nuevo, Creador!"
+                )
+
+                st.rerun()
+
+            else:
+
+                st.error(
+                    error or
+                    "Email o contraseña incorrectos."
+                )
+
+
+    # --------------------------------------------------------
+    # REGISTRO
+    # --------------------------------------------------------
+
+    with tab2:
+
+        st.subheader("🔷 Crear Cuenta")
+
+        nombre = st.text_input(
+            "Nombre completo",
+            key="registro_nombre"
+        )
+
+        email = st.text_input(
+            "Email",
+            key="registro_email"
+        )
+
+        celular = st.text_input(
+            "Celular",
+            key="registro_celular"
+        )
+
+        password = st.text_input(
+            "Contraseña",
+            type="password",
+            key="registro_password"
+        )
+
+        if st.button(
+            "Registrarse",
+            use_container_width=True
+        ):
+
+            if not nombre:
+
+                st.error(
+                    "Ingresa tu nombre."
+                )
+
+            elif not email or "@" not in email:
+
+                st.error(
+                    "Ingresa un email válido."
+                )
+
+            elif not celular:
+
+                st.error(
+                    "Ingresa tu celular."
+                )
+
+            elif len(password) < 6:
+
+                st.error(
+                    "La contraseña debe tener al menos 6 caracteres."
+                )
+
+            else:
+
+                resultado, error = registrar_usuario(
+                    email,
+                    password,
+                    nombre,
+                    celular
+                )
+
+                if resultado and resultado.user:
+
+                    st.session_state.user = resultado.user
+
+                    st.success(
+                        f"¡Bienvenido a EONIA, {nombre}!"
+                    )
+
+                    st.balloons()
+
+                    st.rerun()
+
+                else:
+
+                    st.error(
+                        error or
+                        "No se pudo crear la cuenta."
+                    )
+
+
+# ============================================================
+# ÁREA PRIVADA DEL CREADOR
+# ============================================================
+
+else:
+
+    user = st.session_state.user
+
+
+    # ========================================================
+    # SIDEBAR
+    # ========================================================
+
+    with st.sidebar:
+
+        st.title("🔷 Creador")
+
+        st.write(
+            user.email
+        )
+
+        menu = option_menu(
+
+            "Portal",
+
+            [
+                "Dashboard",
+                "Mis Fragmentos",
+                "Progreso por Biomas",
+                "Certificados",
+                "Cerrar Sesión"
+            ],
+
+            icons=[
+                "speedometer2",
+                "gem",
+                "bar-chart",
+                "award",
+                "box-arrow-right"
+            ],
+
+            default_index=0
+        )
+
+
+    # ========================================================
+    # DASHBOARD
+    # ========================================================
+
+    if menu == "Dashboard":
+
+        st.title("📊 Dashboard del Creador")
+
+        st.write(
+            "Tu progreso en el nuevo eón."
+        )
+
+
+        # ID DEL CREADOR
+        st.info(
+            f"🆔 Tu ID de Creador: `{user.id}` "
+            "— Cópialo para usarlo con el Reflejo."
+        )
+
+
+        # ----------------------------------------------------
+        # DATOS
+        # ----------------------------------------------------
+
+        progreso = obtener_progreso(
+            user.id
+        )
+
+        fragmentos = obtener_fragmentos(
+            user.id
+        )
+
+        certificados = obtener_certificados(
+            user.id
+        )
+
+
+        # ----------------------------------------------------
+        # PROGRESO GLOBAL
+        # ----------------------------------------------------
+
+        progreso_global = calcular_progreso_global(
+            user.id
+        )
+
+        st.metric(
+            "Progreso Global",
+            f"{progreso_global}%"
+        )
+
+        st.progress(
+            progreso_global / 100
+        )
+
+        st.divider()
+
+
+        # ----------------------------------------------------
+        # MÉTRICAS
+        # ----------------------------------------------------
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+
+            biomas_completados = len([
+                p for p in progreso
+                if p.get("completado") is True
+            ])
+
+            st.metric(
+                "Biomas Completados",
+                biomas_completados
+            )
+
+
+        with col2:
+
+            st.metric(
+                "Fragmentos Obtenidos",
+                len(fragmentos)
+            )
+
+
+        with col3:
+
+            st.metric(
+                "Certificados Emitidos",
+                len(certificados)
+            )
+
+
+        st.divider()
+
+
+        # ----------------------------------------------------
+        # PROGRESO POR BIOMA
+        # ----------------------------------------------------
+
+        st.subheader(
+            "🌿 Progreso por Bioma"
+        )
+
+        for bioma in range(1, 11):
+
+            registro = next(
+                (
+                    x for x in progreso
+                    if x.get("bioma") == bioma
+                ),
+                None
+            )
+
+            porcentaje = (
+                registro.get("porcentaje", 0)
+                if registro
+                else 0
+            )
+
+            completado = (
+                registro.get("completado", False)
+                if registro
+                else False
+            )
+
+            col1, col2 = st.columns(
+                [1, 4]
+            )
+
+            with col1:
+
+                st.write(
+                    f"**Bioma {bioma}**"
+                )
+
+            with col2:
+
+                st.progress(
+                    porcentaje / 100
+                )
+
+            if completado:
+
+                st.success(
+                    f"✨ Bioma {bioma} completado"
+                )
+
+
+        st.divider()
+
+        st.link_button(
+            "🌐 Volver a eoniauniversity.com",
+            "https://eoniauniversity.com"
+        )
+
+
+    # ========================================================
+    # MIS FRAGMENTOS
+    # ========================================================
+
+    elif menu == "Mis Fragmentos":
+
+        st.title("💎 Mis Fragmentos")
+
+        fragmentos = obtener_fragmentos(
+            user.id
+        )
+
+        if fragmentos:
+
+            biomas = {}
+
+            for fragmento in fragmentos:
+
+                numero_bioma = fragmento.get(
+                    "bioma"
+                )
+
+                nombre_fragmento = fragmento.get(
+                    "fragmento"
+                )
+
+                if numero_bioma not in biomas:
+
+                    biomas[numero_bioma] = []
+
+                biomas[numero_bioma].append(
+                    nombre_fragmento
+                )
+
+
+            for bioma, frags in sorted(
+                biomas.items()
+            ):
+
+                with st.expander(
+                    f"🌿 Bioma {bioma} "
+                    f"— {len(frags)}/5 Fragmentos"
+                ):
+
+                    for frag in frags:
+
+                        st.write(
+                            f"✅ {frag}"
+                        )
+
+                    if len(frags) >= 5:
+
+                        st.success(
+                            "✨ ¡Bioma completado!"
+                        )
+
+        else:
+
+            st.info(
+                "Aún no tienes Fragmentos. "
+                "Completa tu primer Bioma."
+            )
+
+
+    # ========================================================
+    # PROGRESO POR BIOMAS
+    # ========================================================
+
+    elif menu == "Progreso por Biomas":
+
+        st.title(
+            "📊 Progreso por Biomas"
+        )
+
+        progreso = obtener_progreso(
+            user.id
+        )
+
+        for bioma in range(1, 11):
+
+            registro = next(
+                (
+                    x for x in progreso
+                    if x.get("bioma") == bioma
+                ),
+                None
+            )
+
+            porcentaje = (
+                registro.get("porcentaje", 0)
+                if registro
+                else 0
+            )
+
+            completado = (
+                registro.get("completado", False)
+                if registro
+                else False
+            )
+
+            st.write(
+                f"**Bioma {bioma}**"
+            )
+
+            st.progress(
+                porcentaje / 100
+            )
+
+            if completado:
+
+                st.success(
+                    f"✅ Completado — "
+                    f"{porcentaje}%"
+                )
+
+            else:
+
+                st.info(
+                    f"🔒 {porcentaje}% completado"
+                )
+
+
+    # ========================================================
+    # CERTIFICADOS
+    # ========================================================
+
+    elif menu == "Certificados":
+
+        st.title(
+            "🏆 Mis Certificados"
+        )
+
+        certificados = obtener_certificados(
+            user.id
+        )
+
+        if certificados:
+
+            for certificado in certificados:
+
+                bioma = certificado.get(
+                    "bioma",
+                    "?"
+                )
+
+                nombre = certificado.get(
+                    "nombre_reliquia",
+                    "Reliquia de EONIA"
+                )
+
+                emision = certificado.get(
+                    "emision",
+                    ""
+                )
+
+                with st.expander(
+                    f"🏆 Bioma {bioma} — {nombre}"
+                ):
+
+                    st.write(
+                        f"**Reliquia:** {nombre}"
+                    )
+
+                    st.write(
+                        f"**Emisión:** {emision}"
+                    )
+
+        else:
+
+            st.info(
+                "Aún no has obtenido certificados."
+            )
+
+
+    # ========================================================
+    # CERRAR SESIÓN
+    # ========================================================
+
+    elif menu == "Cerrar Sesión":
+
+        try:
+            supabase.auth.sign_out()
+        except Exception:
+            pass
+
+        st.session_state.user = None
+
+        st.success(
+            "Sesión cerrada correctamente."
+        )
+
+        st.rerun()import streamlit as st
+from supabase import create_client, Client
+from streamlit_option_menu import option_menu
+
 # ============================================================
 # CONFIGURACIÓN
 # ============================================================
