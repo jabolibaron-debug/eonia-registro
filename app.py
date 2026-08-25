@@ -11,7 +11,13 @@ st.set_page_config(
     page_icon="🔷",
     layout="wide"
 )
-
+# MODO DEBUG TEMPORAL (BORRAR DESPUÉS)
+st.write("🔍 Debug: Verificando conexión a Supabase...")
+try:
+    test = supabase.table("progreso_biomas").select("*").limit(5).execute()
+    st.write(f"🔍 Debug: Datos en progreso_biomas: {test.data}")
+except Exception as e:
+    st.write(f"🔍 Debug: Error: {e}")
 # Por ahora puedes mantener tus valores actuales.
 # Más adelante los moveremos a Streamlit Secrets.
 
