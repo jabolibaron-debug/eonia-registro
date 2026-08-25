@@ -158,72 +158,22 @@ def cerrar_sesion():
 # ============================================================
 
 def obtener_fragmentos(user_id):
+    """Obtiene los Fragmentos de un Creador"""
+    r = supabase.table("fragmentos_obtenidos").select("*").eq("user_id", user_id).execute()
+    return r.data if r.data else []
 
-    try:
 
-        supabase = obtener_supabase()
-
-        r = (
-            supabase
-            .table("fragmentos_obtenidos")
-            .select("*")
-            .eq("user_id", user_id)
-            .order("obtenido_en")
-            .execute()
-        )
-
-        return r.data if r.data else []
-
-    except Exception as e:
-
-        st.error(f"Error obteniendo Fragmentos: {e}")
-        return []
 
 
 def obtener_progreso(user_id):
-
-    try:
-
-        supabase = obtener_supabase()
-
-        r = (
-            supabase
-            .table("progreso_biomas")
-            .select("*")
-            .eq("user_id", user_id)
-            .order("bioma")
-            .execute()
-        )
-
-        return r.data if r.data else []
-
-    except Exception as e:
-
-        st.error(f"Error obteniendo progreso: {e}")
-        return []
-
+    """Obtiene el progreso por Bioma de un Creador"""
+    r = supabase.table("progreso_biomas").select("*").eq("user_id", user_id).execute()
+    return r.data if r.data else []
 
 def obtener_certificados(user_id):
-
-    try:
-
-        supabase = obtener_supabase()
-
-        r = (
-            supabase
-            .table("certificados")
-            .select("*")
-            .eq("user_id", user_id)
-            .execute()
-        )
-
-        return r.data if r.data else []
-
-    except Exception as e:
-
-        st.error(f"Error obteniendo certificados: {e}")
-        return []
-
+    """Obtiene los certificados de un Creador"""
+    r = supabase.table("certificados").select("*").eq("user_id", user_id).execute()
+    return r.data if r.data else []
 
 # ============================================================
 # FUNCIONES ADMINISTRATIVAS / PRUEBAS
