@@ -9,12 +9,6 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="EONIA - CRM del Creador", page_icon="🔷", layout="wide")
-st.write("🔍 DEBUG: Probando conexión directa...")
-try:
-    test = supabase.table("progreso_biomas").select("*").limit(5).execute()
-    st.write(f"🔍 DEBUG: Conexión OK. Datos: {test.data}")
-except Exception as e:
-    st.write(f"🔍 DEBUG: Error: {e}")
 def obtener_supabase():
     return supabase
 # ============================================================
