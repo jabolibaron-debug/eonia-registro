@@ -746,19 +746,22 @@ else:
                 imagen_url = cert.get("imagen_url")
 
                 with st.container(border=True):
-                    col1, col2 = st.columns([1, 3])
 
-                    with col1:
-                        if imagen_url:
-                            st.image(imagen_url, width=120)
-                        else:
-                            st.markdown("## 🏆")
+                    # Si hay imagen, mostrarla centrada
+                    if imagen_url:
+                        col_img, col_centro = st.columns([1, 2, 1])
+                        with col_img:
+                            st.image(imagen_url, width=150)
+                    else:
+                        st.markdown("## 🏆")
 
-                    with col2:
-                        st.markdown(f"### {nombre}")
-                        st.write(f"**Bioma {bioma}**")
-                        if fecha:
-                            st.write(f"*Forjada el {fecha[:10]}*")
+                    # Nombre y detalles
+                    st.markdown(f"### {nombre}")
+                    st.write(f"**Bioma {bioma}**")
+                    if fecha:
+                        st.write(f"*Forjada el {fecha[:10]}*")
+
+                    st.divider()
 
         # Biomas pendientes de reliquia
         biomas_pendientes = [
