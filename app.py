@@ -744,7 +744,7 @@ else:
                 fecha = cert.get("emitido_en", "")
                 imagen_url = cert.get("imagen_url")
 
-                                with st.container(border=True):
+                with st.container(border=True):
 
                     if imagen_url and imagen_url.startswith("http"):
                         st.image(imagen_url, width=300)
@@ -768,6 +768,7 @@ else:
             for bioma in biomas_pendientes:
 
                 with st.container(border=True):
+
                     st.markdown(f"## 🌿 Bioma {bioma}")
                     st.write(
                         f"**El Bioma {bioma} ha concluido.** "
@@ -817,8 +818,7 @@ else:
 
         if not biomas_completados and not certificados:
             st.info("Completa un Bioma para forjar tu primera Reliquia.")
-
-    
+            
     # ========================================================
     # CERRAR SESIÓN
     # ========================================================
