@@ -719,57 +719,91 @@ else:
 
 
     # ========================================================
-    # CERTIFICADOS
+    # CERTIFICADOS / RELIQUIAS
     # ========================================================
 
     elif menu == "Certificados":
 
-        st.title(
-            "🎓 Mis Certificados (Reliquias)"
-        )
+        st.title("🏛️ Reliquias del Creador")
 
-        certificados = obtener_certificados(
-            user.id
-        )
+        progreso = obtener_progreso(user.id)
+        certificados = obtener_certificados(user.id)
 
+        # Biomas completados
+        biomas_completados = [
+            p["bioma"] for p in progreso
+            if p.get("completado") is True
+        ]
+
+        # Biomas que ya tienen reliquia emitida
+        biomas_con_reliquia = [
+            c["bioma"] for c in certificados
+        ]
+
+        # Mostrar reliquias ya obtenidas
         if certificados:
+
+            st.subheader("✨ Reliquias Forjadas")
 
             for cert in certificados:
 
-                nombre = cert.get(
-                    "nombre_reliquia",
-                    "Reliquia"
-                )
+                nombre = cert.get("nombre_reliquia", "Reliquia")
+                bioma = cert.get("bioma")
+                fecha = cert.get("emitido_en", "")
 
-                bioma = cert.get(
-                    "bioma"
-                )
+                with st.container(border=True):
+                    col1, col2 = st.columns([1, 3])
 
-                with st.expander(
-                    f"📜 {nombre} — Bioma {bioma}"
-                ):
+                    with col1:
+                        st.markdown("## 🏆")
 
+                    with col2:
+                        st.markdown(f"### {nombre}")
+                        st.write(f"**Bioma {bioma}**")
+                        if fecha:
+                            st.write(f"*Forjada el {fecha[:10]}*")
+
+        # Biomas pendientes de reliquia
+        biomas_pendientes = [
+            b for b in biomas_completados
+            if b not in biomas_con_reliquia
+        ]
+
+        if biomas_pendientes:
+
+            st.subheader("🔮 Reliquias por Forjar")
+
+            for bioma in biomas_pendientes:
+
+                with st.container(border=True):
+                    st.markdown(f"## 🌿 Bioma {bioma}")
                     st.write(
-                        f"**Emisión:** {cert.get('emision', '')}"
+                        f"**El Bioma {bioma} ha concluido.** "
+                        "Tu Reliquia te espera."
                     )
 
-                    fecha = cert.get(
-                        "emitido_en",
-                        ""
-                    )
+                    nombre_reliquia = f"Reliquia del Bioma {bioma}"
 
-                    if fecha:
+                    if st.button(
+                        f"⚒️ Forjar Reliquia del Bioma {bioma}",
+                        key=f"forjar_{bioma}"
+                    ):
+                        if emitir_certificado(user.id, bioma, nombre_reliquia):
+                            st.success(
+                                f"🏆 ¡Reliquia forjada: {nombre_reliquia}!"
+                            )
+                            st.rerun()
+                        else:
+                            st.error(
+                                "No se pudo forjar la Reliquia."
+                            )
 
-                        st.write(
-                            f"**Fecha:** {fecha[:10]}"
-                        )
-
-        else:
+        # Si no hay biomas completados ni reliquias
+        if not biomas_completados and not certificados:
 
             st.info(
-                "Aún no tienes certificados."
+                "Completa un Bioma para forjar tu primera Reliquia."
             )
-
 
     # ========================================================
     # CERRAR SESIÓN
