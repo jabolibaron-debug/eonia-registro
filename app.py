@@ -717,7 +717,7 @@ else:
     # CERTIFICADOS / RELIQUIAS
     # ========================================================
 
-        elif menu == "Certificados":
+    elif menu == "Certificados":
 
         st.title("🏛️ Reliquias del Creador")
 
