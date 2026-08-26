@@ -765,7 +765,7 @@ else:
                     if fecha:
                         st.write(f"*Forjada el {fecha[:10]}*")
 
-                    st.divider()
+              
 
         # Biomas pendientes de reliquia
         biomas_pendientes = [
