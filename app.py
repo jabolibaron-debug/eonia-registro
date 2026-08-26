@@ -738,7 +738,7 @@ else:
 
             st.subheader("✨ Reliquias Forjadas")
 
-        if certificados:
+                if certificados:
 
             st.subheader("✨ Reliquias Forjadas")
 
@@ -751,21 +751,19 @@ else:
 
                 with st.container(border=True):
 
-                    # Mostrar imagen si existe
-                    if imagen_url:
-                        st.image(imagen_url, width=150)
-
-                    # Mostrar ícono si no hay imagen
+                    # Solo mostrar imagen si la URL es válida
+                    if imagen_url and imagen_url.startswith("http"):
+                        try:
+                            st.image(imagen_url, width=150)
+                        except:
+                            st.markdown("## 🏆")
                     else:
                         st.markdown("## 🏆")
 
-                    # Nombre y detalles
                     st.markdown(f"### {nombre}")
                     st.write(f"**Bioma {bioma}**")
                     if fecha:
-                        st.write(f"*Forjada el {fecha[:10]}*")
-                      
-                    
+                        st.write(f"*Forjada el {fecha[:10]}*")            
             st.divider()
               
 
