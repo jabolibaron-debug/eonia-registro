@@ -738,6 +738,10 @@ else:
 
             st.subheader("✨ Reliquias Forjadas")
 
+        if certificados:
+
+            st.subheader("✨ Reliquias Forjadas")
+
             for cert in certificados:
 
                 nombre = cert.get("nombre_reliquia", "Reliquia")
@@ -747,11 +751,11 @@ else:
 
                 with st.container(border=True):
 
-                    # Si hay imagen, mostrarla centrada
+                    # Mostrar imagen si existe
                     if imagen_url:
-                        col_img, col_centro = st.columns([1, 2, 1])
-                        with col_img:
-                            st.image(imagen_url, width=150)
+                        st.image(imagen_url, width=150)
+
+                    # Mostrar ícono si no hay imagen
                     else:
                         st.markdown("## 🏆")
 
