@@ -276,23 +276,18 @@ def asignar_fragmento(user_id, bioma, fragmento):
         return False
 
 
-def emitir_certificado(user_id, bioma, nombre_reliquia):
-
+def emitir_certificado(user_id, bioma, nombre_reliquia, imagen_url=None):
     try:
-
         supabase = obtener_supabase()
-
         supabase.table("certificados").insert({
             "user_id": user_id,
             "bioma": bioma,
             "nombre_reliquia": nombre_reliquia,
-            "emision": f"Bioma {bioma} completado"
+            "emision": f"Bioma {bioma} completado",
+            "imagen_url": imagen_url
         }).execute()
-
         return True
-
     except Exception as e:
-
         print(f"Error certificado: {e}")
         return False
 
@@ -729,18 +724,16 @@ else:
         progreso = obtener_progreso(user.id)
         certificados = obtener_certificados(user.id)
 
-        # Biomas completados
         biomas_completados = [
             p["bioma"] for p in progreso
             if p.get("completado") is True
         ]
 
-        # Biomas que ya tienen reliquia emitida
         biomas_con_reliquia = [
             c["bioma"] for c in certificados
         ]
 
-        # Mostrar reliquias ya obtenidas
+        # Mostrar reliquias ya forjadas
         if certificados:
 
             st.subheader("✨ Reliquias Forjadas")
@@ -750,12 +743,16 @@ else:
                 nombre = cert.get("nombre_reliquia", "Reliquia")
                 bioma = cert.get("bioma")
                 fecha = cert.get("emitido_en", "")
+                imagen_url = cert.get("imagen_url")
 
                 with st.container(border=True):
                     col1, col2 = st.columns([1, 3])
 
                     with col1:
-                        st.markdown("## 🏆")
+                        if imagen_url:
+                            st.image(imagen_url, width=120)
+                        else:
+                            st.markdown("## 🏆")
 
                     with col2:
                         st.markdown(f"### {nombre}")
@@ -782,28 +779,54 @@ else:
                         "Tu Reliquia te espera."
                     )
 
-                    nombre_reliquia = f"Reliquia del Bioma {bioma}"
+                    nombre_reliquia = st.text_input(
+                        f"Nombre de la Reliquia",
+                        value=f"Reliquia del Bioma {bioma}",
+                        key=f"nombre_{bioma}"
+                    )
+
+                    archivo = st.file_uploader(
+                        f"Sube la imagen de tu Reliquia (opcional)",
+                        type=["png", "jpg", "jpeg", "webp"],
+                        key=f"archivo_{bioma}"
+                    )
 
                     if st.button(
                         f"⚒️ Forjar Reliquia del Bioma {bioma}",
                         key=f"forjar_{bioma}"
                     ):
-                        if emitir_certificado(user.id, bioma, nombre_reliquia):
-                            st.success(
-                                f"🏆 ¡Reliquia forjada: {nombre_reliquia}!"
-                            )
+
+                        imagen_url = None
+
+                        # Subir imagen si existe
+                        if archivo is not None:
+                            try:
+                                # Crear nombre único
+                                file_name = f"{user.id}_bioma_{bioma}.{archivo.name.split('.')[-1]}"
+                                archivo_bytes = archivo.read()
+                                
+                                # Subir a Supabase Storage
+                                supabase.storage.from_("reliquias").upload(
+                                    file_name,
+                                    archivo_bytes,
+                                    file_options={"content-type": archivo.type}
+                                )
+                                
+                                # Obtener URL pública
+                                imagen_url = supabase.storage.from_("reliquias").get_public_url(file_name)
+                                
+                            except Exception as e:
+                                st.warning(f"La imagen no se pudo subir: {e}")
+
+                        # Insertar certificado
+                        if emitir_certificado(user.id, bioma, nombre_reliquia, imagen_url):
+                            st.success(f"🏆 ¡Reliquia forjada: {nombre_reliquia}!")
                             st.rerun()
                         else:
-                            st.error(
-                                "No se pudo forjar la Reliquia."
-                            )
+                            st.error("No se pudo forjar la Reliquia.")
 
-        # Si no hay biomas completados ni reliquias
         if not biomas_completados and not certificados:
-
-            st.info(
-                "Completa un Bioma para forjar tu primera Reliquia."
-            )
+            st.info("Completa un Bioma para forjar tu primera Reliquia.")
 
     # ========================================================
     # CERRAR SESIÓN
