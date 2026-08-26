@@ -744,13 +744,10 @@ else:
                 fecha = cert.get("emitido_en", "")
                 imagen_url = cert.get("imagen_url")
 
-                with st.container(border=True):
+                                with st.container(border=True):
 
                     if imagen_url and imagen_url.startswith("http"):
-                        try:
-                            st.image(imagen_url, width=150)
-                        except:
-                            st.markdown("## 🏆")
+                        st.image(imagen_url, width=300)
                     else:
                         st.markdown("## 🏆")
 
