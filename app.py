@@ -483,28 +483,12 @@ else:
 
         st.write(user.email)
 
-        menu = option_menu(
-
-            "Portal",
-
-            [
-                "Dashboard",
-                "Mis Fragmentos",
-                "Progreso por Biomas",
-                "Certificados",
-                "Cerrar Sesión"
-            ],
-
-            icons=[
-                "speedometer2",
-                "gem",
-                "bar-chart",
-                "award",
-                "box-arrow-right"
-            ],
-
-            default_index=0
-        )
+   menu = option_menu(
+    "Portal",
+    ["Dashboard", "Mis Fragmentos", "Progreso por Biomas", "Certificados", "Mis Creaciones", "Cerrar Sesión"],
+    icons=["speedometer2", "gem", "bar-chart", "award", "lightbulb", "box-arrow-right"],
+    default_index=0
+)
 
 
     # ========================================================
