@@ -807,9 +807,33 @@ else:
                         else:
                             st.error("No se pudo forjar la Reliquia.")
 
-        if not biomas_completados and not certificados:
+                if not biomas_completados and not certificados:
             st.info("Completa un Bioma para forjar tu primera Reliquia.")
-            
+
+    # ========================================================
+    # MIS CREACIONES
+    # ========================================================
+
+    elif menu == "Mis Creaciones":
+        st.title("💡 Mis Creaciones")
+        st.write("Las ideas que has transformado con el Reflejo Inverso.")
+
+        creaciones = obtener_creaciones(user.id)
+
+        if creaciones:
+            for creacion in creaciones:
+                with st.expander(f"💡 {creacion['idea_original'][:60]}..."):
+                    st.write(f"**Yo Futuro:** {creacion.get('yo_futuro', '')}")
+                    st.write(f"**Producto IA:** {creacion.get('producto_ia', '')}")
+                    st.write(f"**Prompt Maestro:** {creacion.get('prompt_maestro', '')}")
+                    st.write(f"**Primer Paso:** {creacion.get('primer_paso', '')}")
+                    st.write(f"**Frase del Reflejo:** {creacion.get('frase_reflejo', '')}")
+                    if creacion.get('fragmento_otorgado'):
+                        st.success(f"🏆 Fragmento otorgado: {creacion['fragmento_otorgado']}")
+                    st.write(f"**Fecha:** {creacion['creado_en'][:10]}")
+        else:
+            st.info("Aún no tienes creaciones. Usa el Reflejo Inverso para transformar tu primera idea.")
+
     # ========================================================
     # CERRAR SESIÓN
     # ========================================================
