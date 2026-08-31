@@ -807,7 +807,7 @@ else:
                         else:
                             st.error("No se pudo forjar la Reliquia.")
 
-                if not biomas_completados and not certificados:
+        if not biomas_completados and not certificados:
             st.info("Completa un Bioma para forjar tu primera Reliquia.")
 
     # ========================================================
