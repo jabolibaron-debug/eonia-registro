@@ -201,7 +201,15 @@ def obtener_progreso(user_id):
         st.error(f"Error obteniendo progreso: {e}")
         return []
 
-
+def obtener_creaciones(user_id):
+    try:
+        supabase = obtener_supabase()
+        r = supabase.table("creaciones").select("*").eq("user_id", user_id).order("creado_en", desc=True).execute()
+        return r.data if r.data else []
+    except Exception as e:
+        st.error(f"Error obteniendo creaciones: {e}")
+        return []
+        
 def obtener_certificados(user_id):
 
     try:
