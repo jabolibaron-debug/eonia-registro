@@ -330,6 +330,7 @@ else:
 
         # Buscar Reflejo existente
         r = supabase.table("reflejos").select("*").eq("user_id", "a74d8d1e-0613-42a5-8be5-4094cf84ed9b").execute()
+        st.write(f"🔍 Debug: {r.data}")
 
         if r.data:
             reflejo = r.data[0]
