@@ -324,13 +324,12 @@ else:
         if not biomas_completados and not certificados:
             st.info("Completa un Bioma para forjar tu primera Reliquia.")
 
-    elif menu == "Mi Reflejo":
+        elif menu == "Mi Reflejo":
         st.title("🪞 Mi Reflejo")
-        st.write("Tu despertar quedó grabado aquí.")
+        st.write("Tu despertar quedará grabado aquí.")
 
         # Buscar Reflejo existente
         r = supabase.table("reflejos").select("*").eq("user_id", user.id).execute()
-
 
         if r.data:
             reflejo = r.data[0]
@@ -347,8 +346,39 @@ else:
 
             if reflejo.get("fecha_despertar"):
                 st.write(f"**Fecha de despertar:** {reflejo['fecha_despertar'][:10]}")
+
         else:
-            st.info("Aún no tienes un Reflejo registrado.")
+            st.info("Aún no has subido tu Reflejo. Completa el examen con el Reflejo y sube tu imagen aquí.")
+
+            archivo = st.file_uploader(
+                "Sube tu imagen del Reflejo",
+                type=["png", "jpg", "jpeg", "webp"],
+                key="reflejo_upload"
+            )
+
+            if archivo is not None:
+                try:
+                    file_name = f"reflejo_{user.id}.{archivo.name.split('.')[-1]}"
+                    archivo_bytes = archivo.read()
+                    supabase.storage.from_("reliquias").upload(
+                        file_name,
+                        archivo_bytes,
+                        file_options={"content-type": archivo.type}
+                    )
+                    imagen_url = supabase.storage.from_("reliquias").get_public_url(file_name)
+
+                    supabase.table("reflejos").upsert({
+                        "user_id": user.id,
+                        "imagen_url": imagen_url,
+                        "indice_prosperidad": None,
+                        "mentor_asignado": None,
+                        "fecha_despertar": datetime.datetime.now().isoformat()
+                    }).execute()
+
+                    st.success("✅ Tu Reflejo ha sido grabado.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
     elif menu == "Mis Creaciones":
         st.title("💡 Mis Creaciones")
