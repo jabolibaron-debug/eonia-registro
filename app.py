@@ -342,7 +342,7 @@ else:
                 imagen_url = supabase.storage.from_("reliquias").get_public_url(file_name)
 
                 supabase.table("creaciones").insert({
-                    "user_id": user.id,
+                    "user_id": "a74d8d1e-0613-42a5-8be5-4094cf84ed9b",  # TEMPORAL
                     "idea_original": "Reflejo del Creador",
                     "yo_futuro": "Imagen del Yo Futuro",
                     "producto_ia": "Despertar del Creador",
