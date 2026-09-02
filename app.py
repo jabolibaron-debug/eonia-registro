@@ -324,7 +324,7 @@ else:
         if not biomas_completados and not certificados:
             st.info("Completa un Bioma para forjar tu primera Reliquia.")
 
-    elif menu == "Mi Reflejo":
+        elif menu == "Mi Reflejo":
         st.title("🪞 Mi Reflejo")
         st.write("Sube la imagen de tu Yo Futuro.")
 
@@ -336,13 +336,17 @@ else:
 
         if archivo is not None:
             try:
-                file_name = f"reflejo_{user.id}.{archivo.name.split('.')[-1]}"
+                file_name = f"reflejo_a74d8d1e-0613-42a5-8be5-4094cf84ed9b.{archivo.name.split('.')[-1]}"
                 archivo_bytes = archivo.read()
-                supabase.storage.from_("reliquias").upload(file_name, archivo_bytes, file_options={"content-type": archivo.type})
+                supabase.storage.from_("reliquias").upload(
+                    file_name,
+                    archivo_bytes,
+                    file_options={"content-type": archivo.type}
+                )
                 imagen_url = supabase.storage.from_("reliquias").get_public_url(file_name)
 
                 supabase.table("creaciones").insert({
-                    "user_id": "a74d8d1e-0613-42a5-8be5-4094cf84ed9b",  # TEMPORAL
+                    "user_id": "a74d8d1e-0613-42a5-8be5-4094cf84ed9b",
                     "idea_original": "Reflejo del Creador",
                     "yo_futuro": "Imagen del Yo Futuro",
                     "producto_ia": "Despertar del Creador",
