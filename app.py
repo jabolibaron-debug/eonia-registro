@@ -472,14 +472,48 @@ if st.session_state.user is None:
                     )
 
 
-# ============================================================
-# CRM DEL CREADOR
-# ============================================================
+    # ========================================================
+    # MI REFLEJO
+    # ========================================================
 
-else:
+    elif menu == "Mi Reflejo":
+        st.title("🪞 Mi Reflejo")
+        st.write("Sube la imagen de tu Yo Futuro.")
 
-    user = st.session_state.user
+        archivo = st.file_uploader(
+            "Sube tu imagen del Reflejo",
+            type=["png", "jpg", "jpeg", "webp"],
+            key="reflejo_upload"
+        )
 
+        if archivo is not None:
+            try:
+                file_name = f"reflejo_{user.id}.{archivo.name.split('.')[-1]}"
+                archivo_bytes = archivo.read()
+                supabase.storage.from_("reliquias").upload(file_name, archivo_bytes, file_options={"content-type": archivo.type})
+                imagen_url = supabase.storage.from_("reliquias").get_public_url(file_name)
+
+                supabase.table("creaciones").insert({
+                    "user_id": user.id,
+                    "idea_original": "Reflejo del Creador",
+                    "yo_futuro": "Imagen del Yo Futuro",
+                    "producto_ia": "Despertar del Creador",
+                    "prompt_maestro": "Reflejo registrado",
+                    "primer_paso": "Subir imagen al Portal",
+                    "frase_reflejo": "Tu Reflejo ha sido grabado.",
+                    "fragmento_otorgado": None
+                }).execute()
+
+                st.success("✅ Tu Reflejo ha sido grabado.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+    # ========================================================
+    # MIS CREACIONES
+    # ========================================================
+
+    elif menu == "Mis Creaciones":
 
     # ========================================================
     # SIDEBAR
