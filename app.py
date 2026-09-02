@@ -60,13 +60,8 @@ def cerrar_sesion():
     st.session_state.refresh_token = None
 
 def obtener_fragmentos(user_id):
-    try:
-        supabase = obtener_supabase()
-        r = supabase.table("fragmentos_obtenidos").select("*").eq("user_id", user_id).order("obtenido_en").execute()
-        return r.data if r.data else []
-    except Exception as e:
-        st.error(f"Error obteniendo Fragmentos: {e}")
-        return []
+    r = supabase.table("fragmentos_obtenidos").select("*").eq("user_id", user_id).order("obtenido_en").execute()
+    return r.data if r.data else []
 
 def obtener_progreso(user_id):
     try:
