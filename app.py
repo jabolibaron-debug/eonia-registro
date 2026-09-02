@@ -325,14 +325,37 @@ else:
             st.info("Completa un Bioma para forjar tu primera Reliquia.")
     elif menu == "Mi Reflejo":
         st.title("🪞 Mi Reflejo")
-        st.write("Tu despertar quedará grabado aquí.")
+        st.write("Tu despertar y tu evolución quedan grabados aquí.")
 
-        # Buscar Reflejo existente
+        # Obtener Reflejo
         r = supabase.table("reflejos").select("*").eq("user_id", user.id).execute()
+
+        # Obtener certificados (Reliquias)
+        certificados = obtener_certificados(user.id)
+
+        # Determinar nivel según Reliquias
+        biomas_con_reliquia = sorted([c["bioma"] for c in certificados])
+
+        nivel = 1
+        if all(b in biomas_con_reliquia for b in [1, 2, 3, 4]):
+            nivel = 2
+        if all(b in biomas_con_reliquia for b in [5, 6, 7]):
+            nivel = 3
+        if all(b in biomas_con_reliquia for b in [8, 9, 10]):
+            nivel = 4
+
+        # Nombres de los Reflejos
+        nombres_reflejos = {
+            1: "El Despertar",
+            2: "El Forjador",
+            3: "El Arquitecto",
+            4: "El Legado"
+        }
+
+        st.markdown(f"### 🪞 Reflejo {['I', 'II', 'III', 'IV'][nivel-1]} — {nombres_reflejos[nivel]}")
 
         if r.data:
             reflejo = r.data[0]
-            st.success("✨ Tu Reflejo está registrado.")
 
             if reflejo.get("imagen_url"):
                 st.image(reflejo["imagen_url"], width=400)
@@ -371,13 +394,23 @@ else:
                         "imagen_url": imagen_url,
                         "indice_prosperidad": None,
                         "mentor_asignado": None,
-                        "fecha_despertar": datetime.datetime.now().isoformat()
+                        "fecha_despertar": datetime.datetime.now().isoformat(),
+                        "nivel": nivel
                     }).execute()
 
                     st.success("✅ Tu Reflejo ha sido grabado.")
                     st.rerun()
                 except Exception as e:
                     st.error(f"Error: {e}")
+
+        # Mostrar progreso de Reliquias
+        st.divider()
+        st.subheader("🏛️ Reliquias para evolucionar tu Reflejo")
+
+        st.write(f"**Reflejo I — El Despertar:** Siempre activo.")
+        st.write(f"**Reflejo II — El Forjador:** Reliquias de Biomas 1–4 ({len([b for b in biomas_con_reliquia if b <= 4])}/4)")
+        st.write(f"**Reflejo III — El Arquitecto:** Reliquias de Biomas 5–7 ({len([b for b in biomas_con_reliquia if 5 <= b <= 7])}/3)")
+        st.write(f"**Reflejo IV — El Legado:** Reliquias de Biomas 8–10 ({len([b for b in biomas_con_reliquia if b >= 8])}/3)")
 
     elif menu == "Mis Creaciones":
         st.title("💡 Mis Creaciones")
