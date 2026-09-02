@@ -324,7 +324,7 @@ else:
         if not biomas_completados and not certificados:
             st.info("Completa un Bioma para forjar tu primera Reliquia.")
 
-        elif menu == "Mi Reflejo":
+            elif menu == "Mi Reflejo":
         st.title("🪞 Mi Reflejo")
         st.write("Sube la imagen de tu Yo Futuro.")
 
