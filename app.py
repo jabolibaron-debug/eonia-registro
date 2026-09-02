@@ -60,35 +60,24 @@ def cerrar_sesion():
     st.session_state.refresh_token = None
 
 def obtener_fragmentos(user_id):
-    r = supabase.table("fragmentos_obtenidos").select("*").eq("user_id", user_id).order("obtenido_en").execute()
+    user_id = "a74d8d1e-0613-42a5-8be5-4094cf84ed9b"  # TEMPORAL
+    r = supabase.table("fragmentos_obtenidos").select("*").eq("user_id", user_id).execute()
     return r.data if r.data else []
 
 def obtener_progreso(user_id):
-    try:
-        supabase = obtener_supabase()
-        r = supabase.table("progreso_biomas").select("*").eq("user_id", user_id).order("bioma").execute()
-        return r.data if r.data else []
-    except Exception as e:
-        st.error(f"Error obteniendo progreso: {e}")
-        return []
+    user_id = "a74d8d1e-0613-42a5-8be5-4094cf84ed9b"  # TEMPORAL
+    r = supabase.table("progreso_biomas").select("*").eq("user_id", user_id).execute()
+    return r.data if r.data else []
 
 def obtener_creaciones(user_id):
-    try:
-        supabase = obtener_supabase()
-        r = supabase.table("creaciones").select("*").eq("user_id", user_id).order("creado_en", desc=True).execute()
-        return r.data if r.data else []
-    except Exception as e:
-        st.error(f"Error obteniendo creaciones: {e}")
-        return []
+    user_id = "a74d8d1e-0613-42a5-8be5-4094cf84ed9b"  # TEMPORAL
+    r = supabase.table("creaciones").select("*").eq("user_id", user_id).order("creado_en", desc=True).execute()
+    return r.data if r.data else []
 
 def obtener_certificados(user_id):
-    try:
-        supabase = obtener_supabase()
-        r = supabase.table("certificados").select("*").eq("user_id", user_id).execute()
-        return r.data if r.data else []
-    except Exception as e:
-        st.error(f"Error obteniendo certificados: {e}")
-        return []
+    user_id = "a74d8d1e-0613-42a5-8be5-4094cf84ed9b"  # TEMPORAL
+    r = supabase.table("certificados").select("*").eq("user_id", user_id).execute()
+    return r.data if r.data else []
 
 def emitir_certificado(user_id, bioma, nombre_reliquia, imagen_url=None):
     try:
