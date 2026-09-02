@@ -327,12 +327,8 @@ else:
         st.title("🪞 Mi Reflejo")
         st.write("Tu despertar y tu evolución quedan grabados aquí.")
 
-        # Obtener Reflejo
-        r = supabase.table("reflejos").select("*").eq("user_id", user.id).execute()
-
         # Obtener certificados (Reliquias)
         certificados = obtener_certificados(user.id)
-
         biomas_con_reliquia = sorted([c["bioma"] for c in certificados])
 
         # Determinar nivel
@@ -352,6 +348,10 @@ else:
             4: ("El Legado", "Convertir tu creación en legado")
         }
 
+        # Obtener Reflejos desbloqueados
+        r = supabase.table("reflejos_evolucion").select("*").eq("user_id", user.id).order("nivel").execute()
+        reflejos_guardados = r.data if r.data else []
+
         # Mostrar todos los Reflejos desbloqueados
         st.markdown("## 🌟 Reflejos Desbloqueados")
 
@@ -360,55 +360,16 @@ else:
             st.markdown(f"### 🪞 Reflejo {['I', 'II', 'III', 'IV'][i-1]} — {nombre}")
             st.write(f"*{descripcion}*")
 
-            if i == 1 and r.data:
-                reflejo = r.data[0]
-                if reflejo.get("imagen_url"):
-                    st.image(reflejo["imagen_url"], width=300)
+            # Buscar imagen
+            imagen_reflejo = next(
+                (ref["imagen_url"] for ref in reflejos_guardados if ref.get("nivel") == i),
+                None
+            )
 
-        st.divider()
-
-        # Mostrar detalles del Reflejo base
-        if r.data:
-            reflejo = r.data[0]
-            if reflejo.get("mentor_asignado"):
-                st.write(f"**Mentor asignado:** {reflejo['mentor_asignado']}")
-            if reflejo.get("indice_prosperidad"):
-                st.write(f"**Índice de prosperidad:** {reflejo['indice_prosperidad']}")
-
-        # Botón de subida
-        st.divider()
-        st.subheader("📤 Actualizar Reflejo")
-
-        archivo = st.file_uploader(
-            "Sube o actualiza tu imagen del Reflejo",
-            type=["png", "jpg", "jpeg", "webp"],
-            key="reflejo_upload"
-        )
-
-        if archivo is not None:
-            try:
-                file_name = f"reflejo_{user.id}.{archivo.name.split('.')[-1]}"
-                archivo_bytes = archivo.read()
-                supabase.storage.from_("reliquias").upload(
-                    file_name,
-                    archivo_bytes,
-                    file_options={"content-type": archivo.type}
-                )
-                imagen_url = supabase.storage.from_("reliquias").get_public_url(file_name)
-
-                supabase.table("reflejos").upsert({
-                    "user_id": user.id,
-                    "imagen_url": imagen_url,
-                    "indice_prosperidad": None,
-                    "mentor_asignado": None,
-                    "fecha_despertar": datetime.datetime.now().isoformat(),
-                    "nivel": nivel
-                }).execute()
-
-                st.success("✅ Tu Reflejo ha sido actualizado.")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Error: {e}")
+            if imagen_reflejo:
+                st.image(imagen_reflejo, width=300)
+            else:
+                st.info("Imagen no registrada.")
 
         # Progreso de Reliquias
         st.divider()
@@ -416,18 +377,7 @@ else:
         st.write(f"**Reflejo I — El Despertar:** Siempre activo.")
         st.write(f"**Reflejo II — El Forjador:** Reliquias de Biomas 1–4 ({len([b for b in biomas_con_reliquia if b <= 4])}/4)")
         st.write(f"**Reflejo III — El Arquitecto:** Reliquias de Biomas 5–7 ({len([b for b in biomas_con_reliquia if 5 <= b <= 7])}/3)")
-        st.write(f"**Reflejo IV — El Legado:** Reliquias de Biomas 8–10 ({len([b for b in biomas_con_reliquia if b >= 8])}/3)")
-
-        # Mostrar progreso de Reliquias
-        st.divider()
-        st.subheader("🏛️ Reliquias para evolucionar tu Reflejo")
-
-        st.write(f"**Reflejo I — El Despertar:** Siempre activo.")
-        st.write(f"**Reflejo II — El Forjador:** Reliquias de Biomas 1–4 ({len([b for b in biomas_con_reliquia if b <= 4])}/4)")
-        st.write(f"**Reflejo III — El Arquitecto:** Reliquias de Biomas 5–7 ({len([b for b in biomas_con_reliquia if 5 <= b <= 7])}/3)")
-        st.write(f"**Reflejo IV — El Legado:** Reliquias de Biomas 8–10 ({len([b for b in biomas_con_reliquia if b >= 8])}/3)")
-
-    elif menu == "Mis Creaciones":
+        st.write(f"**Reflejo IV — El Legado:** Reliquias de Biomas 8–10 ({len([b for b in biomas_con_reliquia if b >= 8])}/3)")    elif menu == "Mis Creaciones":
         st.title("💡 Mis Creaciones")
         st.write("Las ideas que has transformado con el Reflejo Inverso.")
 
