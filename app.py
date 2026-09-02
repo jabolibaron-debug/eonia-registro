@@ -186,6 +186,20 @@ else:
                 st.rerun()
 
         st.info(f"🆔 Tu ID de Creador: `{user.id}`")
+        st.write(f"🔍 Debug - user.id: {repr(user.id)}")
+        st.write(f"🔍 Debug - user.id type: {type(user.id)}")
+
+        try:
+            test = supabase.table("fragmentos_obtenidos").select("*").eq("user_id", str(user.id)).limit(5).execute()
+            st.write(f"🔍 Debug - datos con str(user.id): {len(test.data)} filas")
+        except Exception as e:
+            st.write(f"🔍 Debug - Error: {e}")
+
+        try:
+            test = supabase.table("fragmentos_obtenidos").select("*").eq("user_id", str(user.id)).limit(5).execute()
+            st.write(f"🔍 Debug - datos con str(user.id): {len(test.data)} filas")
+        except Exception as e:
+            st.write(f"🔍 Debug - Error: {e}")
 
         progreso = obtener_progreso(user.id)
         certificados = obtener_certificados(user.id)
