@@ -326,40 +326,28 @@ else:
 
     elif menu == "Mi Reflejo":
         st.title("🪞 Mi Reflejo")
-        st.write("Sube la imagen de tu Yo Futuro.")
+        st.write("Tu despertar quedó grabado aquí.")
 
-        archivo = st.file_uploader(
-            "Sube tu imagen del Reflejo",
-            type=["png", "jpg", "jpeg", "webp"],
-            key="reflejo_upload"
-        )
+        # Buscar Reflejo existente
+        r = supabase.table("reflejos").select("*").eq("user_id", "a74d8d1e-0613-42a5-8be5-4094cf84ed9b").execute()
 
-        if archivo is not None:
-            try:
-                file_name = f"reflejo_a74d8d1e-0613-42a5-8be5-4094cf84ed9b.{archivo.name.split('.')[-1]}"
-                archivo_bytes = archivo.read()
-                supabase.storage.from_("reliquias").upload(
-                    file_name,
-                    archivo_bytes,
-                    file_options={"content-type": archivo.type}
-                )
-                imagen_url = supabase.storage.from_("reliquias").get_public_url(file_name)
+        if r.data:
+            reflejo = r.data[0]
+            st.success("✨ Tu Reflejo está registrado.")
 
-                supabase.table("creaciones").insert({
-                    "user_id": "a74d8d1e-0613-42a5-8be5-4094cf84ed9b",
-                    "idea_original": "Reflejo del Creador",
-                    "yo_futuro": "Imagen del Yo Futuro",
-                    "producto_ia": "Despertar del Creador",
-                    "prompt_maestro": "Reflejo registrado",
-                    "primer_paso": "Subir imagen al Portal",
-                    "frase_reflejo": "Tu Reflejo ha sido grabado.",
-                    "fragmento_otorgado": None
-                }).execute()
+            if reflejo.get("imagen_url"):
+                st.image(reflejo["imagen_url"], width=400)
 
-                st.success("✅ Tu Reflejo ha sido grabado.")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Error: {e}")
+            if reflejo.get("mentor_asignado"):
+                st.write(f"**Mentor asignado:** {reflejo['mentor_asignado']}")
+
+            if reflejo.get("indice_prosperidad"):
+                st.write(f"**Índice de prosperidad:** {reflejo['indice_prosperidad']}")
+
+            if reflejo.get("fecha_despertar"):
+                st.write(f"**Fecha de despertar:** {reflejo['fecha_despertar'][:10]}")
+        else:
+            st.info("Aún no tienes un Reflejo registrado.")
 
     elif menu == "Mis Creaciones":
         st.title("💡 Mis Creaciones")
