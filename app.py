@@ -333,9 +333,9 @@ else:
         # Obtener certificados (Reliquias)
         certificados = obtener_certificados(user.id)
 
-        # Determinar nivel según Reliquias
         biomas_con_reliquia = sorted([c["bioma"] for c in certificados])
 
+        # Determinar nivel
         nivel = 1
         if all(b in biomas_con_reliquia for b in [1, 2, 3, 4]):
             nivel = 2
@@ -344,64 +344,79 @@ else:
         if all(b in biomas_con_reliquia for b in [8, 9, 10]):
             nivel = 4
 
-        # Nombres de los Reflejos
-        nombres_reflejos = {
-            1: "El Despertar",
-            2: "El Forjador",
-            3: "El Arquitecto",
-            4: "El Legado"
+        # Nombres y descripciones
+        reflejos_info = {
+            1: ("El Despertar", "Descubrir quién puedes llegar a ser"),
+            2: ("El Forjador", "Aprender a crear"),
+            3: ("El Arquitecto", "Aprender a construir algo que trascienda"),
+            4: ("El Legado", "Convertir tu creación en legado")
         }
 
-        st.markdown(f"### 🪞 Reflejo {['I', 'II', 'III', 'IV'][nivel-1]} — {nombres_reflejos[nivel]}")
+        # Mostrar todos los Reflejos desbloqueados
+        st.markdown("## 🌟 Reflejos Desbloqueados")
 
+        for i in range(1, nivel + 1):
+            nombre, descripcion = reflejos_info[i]
+            st.markdown(f"### 🪞 Reflejo {['I', 'II', 'III', 'IV'][i-1]} — {nombre}")
+            st.write(f"*{descripcion}*")
+
+            if i == 1 and r.data:
+                reflejo = r.data[0]
+                if reflejo.get("imagen_url"):
+                    st.image(reflejo["imagen_url"], width=300)
+
+        st.divider()
+
+        # Mostrar detalles del Reflejo base
         if r.data:
             reflejo = r.data[0]
-
-            if reflejo.get("imagen_url"):
-                st.image(reflejo["imagen_url"], width=400)
-
             if reflejo.get("mentor_asignado"):
                 st.write(f"**Mentor asignado:** {reflejo['mentor_asignado']}")
-
             if reflejo.get("indice_prosperidad"):
                 st.write(f"**Índice de prosperidad:** {reflejo['indice_prosperidad']}")
 
-            if reflejo.get("fecha_despertar"):
-                st.write(f"**Fecha de despertar:** {reflejo['fecha_despertar'][:10]}")
+        # Botón de subida
+        st.divider()
+        st.subheader("📤 Actualizar Reflejo")
 
-        else:
-            st.info("Aún no has subido tu Reflejo. Completa el examen con el Reflejo y sube tu imagen aquí.")
+        archivo = st.file_uploader(
+            "Sube o actualiza tu imagen del Reflejo",
+            type=["png", "jpg", "jpeg", "webp"],
+            key="reflejo_upload"
+        )
 
-            archivo = st.file_uploader(
-                "Sube tu imagen del Reflejo",
-                type=["png", "jpg", "jpeg", "webp"],
-                key="reflejo_upload"
-            )
+        if archivo is not None:
+            try:
+                file_name = f"reflejo_{user.id}.{archivo.name.split('.')[-1]}"
+                archivo_bytes = archivo.read()
+                supabase.storage.from_("reliquias").upload(
+                    file_name,
+                    archivo_bytes,
+                    file_options={"content-type": archivo.type}
+                )
+                imagen_url = supabase.storage.from_("reliquias").get_public_url(file_name)
 
-            if archivo is not None:
-                try:
-                    file_name = f"reflejo_{user.id}.{archivo.name.split('.')[-1]}"
-                    archivo_bytes = archivo.read()
-                    supabase.storage.from_("reliquias").upload(
-                        file_name,
-                        archivo_bytes,
-                        file_options={"content-type": archivo.type}
-                    )
-                    imagen_url = supabase.storage.from_("reliquias").get_public_url(file_name)
+                supabase.table("reflejos").upsert({
+                    "user_id": user.id,
+                    "imagen_url": imagen_url,
+                    "indice_prosperidad": None,
+                    "mentor_asignado": None,
+                    "fecha_despertar": datetime.datetime.now().isoformat(),
+                    "nivel": nivel
+                }).execute()
 
-                    supabase.table("reflejos").upsert({
-                        "user_id": user.id,
-                        "imagen_url": imagen_url,
-                        "indice_prosperidad": None,
-                        "mentor_asignado": None,
-                        "fecha_despertar": datetime.datetime.now().isoformat(),
-                        "nivel": nivel
-                    }).execute()
+                st.success("✅ Tu Reflejo ha sido actualizado.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error: {e}")
 
-                    st.success("✅ Tu Reflejo ha sido grabado.")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error: {e}")
+        # Progreso de Reliquias
+        st.divider()
+        st.subheader("🏛️ Reliquias para evolucionar tu Reflejo")
+        st.write(f"**Reflejo I — El Despertar:** Siempre activo.")
+        st.write(f"**Reflejo II — El Forjador:** Reliquias de Biomas 1–4 ({len([b for b in biomas_con_reliquia if b <= 4])}/4)")
+        st.write(f"**Reflejo III — El Arquitecto:** Reliquias de Biomas 5–7 ({len([b for b in biomas_con_reliquia if 5 <= b <= 7])}/3)")
+        st.write(f"**Reflejo IV — El Legado:** Reliquias de Biomas 8–10 ({len([b for b in biomas_con_reliquia if b >= 8])}/3)")
 
         # Mostrar progreso de Reliquias
         st.divider()
