@@ -525,12 +525,12 @@ if st.session_state.user is None:
 
         st.write(user.email)
 
-        menu = option_menu(
-            "Portal",
-            ["Dashboard", "Mis Fragmentos", "Progreso por Biomas", "Certificados", "Mis Creaciones", "Cerrar Sesión"],
-            icons=["speedometer2", "gem", "bar-chart", "award", "lightbulb", "box-arrow-right"],
-            default_index=0
-        )
+menu = option_menu(
+    "Portal",
+    ["Dashboard", "Mis Fragmentos", "Progreso por Biomas", "Certificados", "Mi Reflejo", "Mis Creaciones", "Cerrar Sesión"],
+    icons=["speedometer2", "gem", "bar-chart", "award", "eye", "lightbulb", "box-arrow-right"],
+    default_index=0
+)
 
     # ========================================================
     # DASHBOARD
@@ -848,25 +848,40 @@ if st.session_state.user is None:
     # MIS CREACIONES
     # ========================================================
 
+       elif menu == "Mi Reflejo":
+        st.title("🪞 Mi Reflejo")
+        st.write("Sube la imagen de tu Yo Futuro.")
+
+        archivo = st.file_uploader(
+            "Sube tu imagen del Reflejo",
+            type=["png", "jpg", "jpeg", "webp"],
+            key="reflejo_upload"
+        )
+
+        if archivo is not None:
+            try:
+                file_name = f"reflejo_{user.id}.{archivo.name.split('.')[-1]}"
+                archivo_bytes = archivo.read()
+                supabase.storage.from_("reliquias").upload(file_name, archivo_bytes, file_options={"content-type": archivo.type})
+                imagen_url = supabase.storage.from_("reliquias").get_public_url(file_name)
+
+                supabase.table("creaciones").insert({
+                    "user_id": user.id,
+                    "idea_original": "Reflejo del Creador",
+                    "yo_futuro": "Imagen del Yo Futuro",
+                    "producto_ia": "Despertar del Creador",
+                    "prompt_maestro": "Reflejo registrado",
+                    "primer_paso": "Subir imagen al Portal",
+                    "frase_reflejo": "Tu Reflejo ha sido grabado.",
+                    "fragmento_otorgado": None
+                }).execute()
+
+                st.success("✅ Tu Reflejo ha sido grabado.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error: {e}")
+
     elif menu == "Mis Creaciones":
-        st.title("💡 Mis Creaciones")
-        st.write("Las ideas que has transformado con el Reflejo Inverso.")
-
-        creaciones = obtener_creaciones(user.id)
-
-        if creaciones:
-            for creacion in creaciones:
-                with st.expander(f"💡 {creacion['idea_original'][:60]}..."):
-                    st.write(f"**Yo Futuro:** {creacion.get('yo_futuro', '')}")
-                    st.write(f"**Producto IA:** {creacion.get('producto_ia', '')}")
-                    st.write(f"**Prompt Maestro:** {creacion.get('prompt_maestro', '')}")
-                    st.write(f"**Primer Paso:** {creacion.get('primer_paso', '')}")
-                    st.write(f"**Frase del Reflejo:** {creacion.get('frase_reflejo', '')}")
-                    if creacion.get('fragmento_otorgado'):
-                        st.success(f"🏆 Fragmento otorgado: {creacion['fragmento_otorgado']}")
-                    st.write(f"**Fecha:** {creacion['creado_en'][:10]}")
-        else:
-            st.info("Aún no tienes creaciones. Usa el Reflejo Inverso para transformar tu primera idea.")
 
     # ========================================================
     # CERRAR SESIÓN
