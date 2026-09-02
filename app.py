@@ -377,7 +377,9 @@ else:
         st.write(f"**Reflejo I — El Despertar:** Siempre activo.")
         st.write(f"**Reflejo II — El Forjador:** Reliquias de Biomas 1–4 ({len([b for b in biomas_con_reliquia if b <= 4])}/4)")
         st.write(f"**Reflejo III — El Arquitecto:** Reliquias de Biomas 5–7 ({len([b for b in biomas_con_reliquia if 5 <= b <= 7])}/3)")
-        st.write(f"**Reflejo IV — El Legado:** Reliquias de Biomas 8–10 ({len([b for b in biomas_con_reliquia if b >= 8])}/3)")    elif menu == "Mis Creaciones":
+        st.write(f"**Reflejo IV — El Legado:** Reliquias de Biomas 8–10 ({len([b for b in biomas_con_reliquia if b >= 8])}/3)")
+
+    elif menu == "Mis Creaciones":
         st.title("💡 Mis Creaciones")
         st.write("Las ideas que has transformado con el Reflejo Inverso.")
 
