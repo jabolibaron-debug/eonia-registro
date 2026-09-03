@@ -381,7 +381,7 @@ else:
 
     elif menu == "Mis Creaciones":
         st.title("💡 Mis Creaciones")
-        st.write("Las ideas que has transformado con el Reflejo Inverso.")
+        st.write("Tus ideas transformadas en artefactos técnicos.")
 
         creaciones = obtener_creaciones(user.id)
 
@@ -390,9 +390,53 @@ else:
                 with st.expander(f"💡 {creacion['idea_original'][:60]}..."):
                     st.write(f"**Yo Futuro:** {creacion.get('yo_futuro', '')}")
                     st.write(f"**Producto IA:** {creacion.get('producto_ia', '')}")
-                    st.write(f"**Prompt Maestro:** {creacion.get('prompt_maestro', '')}")
-                    st.write(f"**Primer Paso:** {creacion.get('primer_paso', '')}")
-                    st.write(f"**Frase del Reflejo:** {creacion.get('frase_reflejo', '')}")
+
+                    st.divider()
+
+                    # Estado 1: app.py
+                    if creacion.get('app_py'):
+                        with st.expander("📱 Estado 1: app.py"):
+                            st.code(creacion['app_py'], language='python')
+                            st.download_button(
+                                "⬇️ Descargar app.py",
+                                creacion['app_py'],
+                                file_name="app.py",
+                                mime="text/plain"
+                            )
+
+                    # Estado 2: Edge Function
+                    if creacion.get('edge_function'):
+                        with st.expander("⚡ Estado 2: Edge Function"):
+                            st.code(creacion['edge_function'], language='javascript')
+                            st.download_button(
+                                "⬇️ Descargar edge_function.js",
+                                creacion['edge_function'],
+                                file_name="edge_function.js",
+                                mime="text/plain"
+                            )
+
+                    # Estado 3: SQL
+                    if creacion.get('sql_tables'):
+                        with st.expander("🗃️ Estado 3: SQL"):
+                            st.code(creacion['sql_tables'], language='sql')
+                            st.download_button(
+                                "⬇️ Descargar tables.sql",
+                                creacion['sql_tables'],
+                                file_name="tables.sql",
+                                mime="text/plain"
+                            )
+
+                    # Estado 4: requirements.txt
+                    if creacion.get('requirements_txt'):
+                        with st.expander("📦 Estado 4: requirements.txt"):
+                            st.code(creacion['requirements_txt'], language='text')
+                            st.download_button(
+                                "⬇️ Descargar requirements.txt",
+                                creacion['requirements_txt'],
+                                file_name="requirements.txt",
+                                mime="text/plain"
+                            )
+
                     if creacion.get('fragmento_otorgado'):
                         st.success(f"🏆 Fragmento otorgado: {creacion['fragmento_otorgado']}")
                     st.write(f"**Fecha:** {creacion['creado_en'][:10]}")
