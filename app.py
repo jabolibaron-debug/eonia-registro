@@ -1,6 +1,13 @@
 import os
 import requests
 import streamlit as st
+from textwrap import dedent
+
+def html(content):
+    st.markdown(
+        dedent(content),
+        unsafe_allow_html=True
+    )
 
 # ============================================================
 # EONIA UNIVERSITY — CRM
@@ -427,28 +434,25 @@ if st.session_state.pagina == "Inicio":
     # HERO
     # --------------------------------------------------------
 
-    st.markdown(
-        """
-        <div class="hero">
+    html("""
+<div class="hero">
 
-            <div class="small-gold">
-                ERA DE LOS METALES
-            </div>
+    <div class="small-gold">
+        ERA DE LOS METALES
+    </div>
 
-            <h1>
-                CREADORES<br>
-                DE UN MAÑANA REAL
-            </h1>
+    <h1>
+        CREADORES<br>
+        DE UN MAÑANA REAL
+    </h1>
 
-            <p>
-                La Inteligencia, la Comunidad y la Tecnología
-                al servicio de la humanidad.
-            </p>
+    <p>
+        La Inteligencia, la Comunidad y la Tecnología
+        al servicio de la humanidad.
+    </p>
 
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+</div>
+"""))
 
     st.write("")
 
