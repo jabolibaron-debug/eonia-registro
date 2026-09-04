@@ -434,7 +434,7 @@ if st.session_state.pagina == "Inicio":
     # HERO
     # --------------------------------------------------------
 
-    html("""
+html("""
 <div class="hero">
 
     <div class="small-gold">
@@ -452,7 +452,7 @@ if st.session_state.pagina == "Inicio":
     </p>
 
 </div>
-"""))
+""")
 
     st.write("")
 
