@@ -430,36 +430,35 @@ if user_id:
 
 if st.session_state.pagina == "Inicio":
 
-    # --------------------------------------------------------
+    # ---------------------------------------------------------
     # HERO
-    # --------------------------------------------------------
+    # ---------------------------------------------------------
 
-html("""
-<div class="hero">
+    html("""
+    <div class="hero">
 
-    <div class="small-gold">
-        ERA DE LOS METALES
+        <div class="small-gold">
+            ERA DE LOS METALES
+        </div>
+
+        <h1>
+            CREADORES<br>
+            DE UN MAÑANA REAL
+        </h1>
+
+        <p>
+            La Inteligencia, la Comunidad y la Tecnología
+            al servicio de la humanidad.
+        </p>
+
     </div>
-
-    <h1>
-        CREADORES<br>
-        DE UN MAÑANA REAL
-    </h1>
-
-    <p>
-        La Inteligencia, la Comunidad y la Tecnología
-        al servicio de la humanidad.
-    </p>
-
-</div>
-""")
+    """)
 
     st.write("")
 
-    # --------------------------------------------------------
+    # ---------------------------------------------------------
     # PROGRESO + FRASE
-    # --------------------------------------------------------
-
+    # ---------------------------------------------------------
     col1, col2 = st.columns([2, 1])
 
     with col1:
