@@ -1403,7 +1403,7 @@ elif st.session_state.pagina == "Chat Eónico":
     st.caption("Un solo portal. Múltiples inteligencias.")
 
     # ========================================================
-    # FUNCION PARA CARGAR PRUEBAS
+    # FUNCIONES AUXILIARES
     # ========================================================
 
     def cargar_prueba(url):
@@ -1533,7 +1533,6 @@ elif st.session_state.pagina == "Chat Eónico":
         }
     }
 
-
     # ========================================================
     # SELECCIONAR BIOMA
     # ========================================================
@@ -1548,7 +1547,6 @@ elif st.session_state.pagina == "Chat Eónico":
 
     mentor = MENTORES[bioma_seleccionado]
 
-
     # ========================================================
     # HISTORIAL DEL BIOMA
     # ========================================================
@@ -1559,13 +1557,11 @@ elif st.session_state.pagina == "Chat Eónico":
             bioma_seleccionado
         ] = []
 
-
     chat_mensajes = (
         st.session_state.chat_mensajes_por_bioma[
             bioma_seleccionado
         ]
     )
-
 
     # ========================================================
     # SALUDO INICIAL
@@ -1583,7 +1579,6 @@ elif st.session_state.pagina == "Chat Eónico":
             }
         )
 
-
     # ========================================================
     # MOSTRAR HISTORIAL
     # ========================================================
@@ -1598,28 +1593,8 @@ elif st.session_state.pagina == "Chat Eónico":
                 mensaje_historial["content"]
             )
 
-
-    # ========================================================
-    # PREGUNTA RECIBIDA DESDE INICIO
-    # ========================================================
-
-    pregunta_inicial = (
-        st.session_state.get(
-            "chat_pregunta",
-            ""
-        )
-    )
-
-
     # ========================================================
     # INPUT DEL CHAT
-    #
-    # IMPORTANTE:
-    # st.chat_input con archivos NO devuelve un string.
-    # Devuelve un objeto con:
-    #
-    # mensaje.text
-    # mensaje.files
     # ========================================================
 
     mensaje = st.chat_input(
@@ -1634,9 +1609,8 @@ elif st.session_state.pagina == "Chat Eónico":
         max_upload_size=10
     )
 
-
     # ========================================================
-    # PROCESAR MENSAJE
+    # PROCESAR MENSAJE DEL USUARIO
     # ========================================================
 
     if mensaje:
@@ -1648,15 +1622,10 @@ elif st.session_state.pagina == "Chat Eónico":
         texto = mensaje.text or ""
         archivos = mensaje.files
 
-        # ----------------------------------------------------
-        # 2. DATOS AUXILIARES
-        # ----------------------------------------------------
-
-        hay_imagen = bool(archivos)
-        texto_lower = texto.lower()
+        texto_lower = texto.lower().strip()
 
         # ----------------------------------------------------
-        # 3. MOSTRAR MENSAJE DEL USUARIO
+        # 2. MOSTRAR MENSAJE DEL USUARIO EN EL CHAT
         # ----------------------------------------------------
 
         with st.chat_message("user"):
@@ -1673,18 +1642,282 @@ elif st.session_state.pagina == "Chat Eónico":
                     use_container_width=True
                 )
 
+        # ----------------------------------------------------
+        # 3. VERIFICAR SI ES SOLICITUD DE REFLEJO
+        # ----------------------------------------------------
+
+        es_reflejo = (
+            texto_lower == "muéstrame mi reflejo"
+            or texto_lower == "muestrame mi reflejo"
+            or texto_lower == "reflejo"
+            or texto_lower == "quiero ver mi reflejo"
+        )
 
         # ----------------------------------------------------
-        # 4. CARGAR PRUEBA DEL MENTOR
+        # 4. GUARDAR MENSAJE DEL USUARIO EN HISTORIAL
+        # ----------------------------------------------------
+
+        if texto:
+
+            chat_mensajes.append(
+                {
+                    "role": "user",
+                    "content": texto
+                }
+            )
+
+        elif archivos:
+
+            nombres_archivos = ", ".join(
+                archivo.name
+                for archivo in archivos
+            )
+
+            chat_mensajes.append(
+                {
+                    "role": "user",
+                    "content": (
+                        f"[🖼️ Imagen enviada: "
+                        f"{nombres_archivos}]"
+                    )
+                }
+            )
+
+        # ====================================================
+        # CASO ESPECIAL: REFLEJO EÓNICO
+        # ====================================================
+
+        if es_reflejo:
+
+            with st.chat_message("assistant"):
+
+                st.write(
+                    "Para crear tu **Reflejo Eónico**, "
+                    "necesito una fotografía tuya. "
+                    "Sube una selfie y la IA transformará "
+                    "tu esencia en una visión del futuro."
+                )
+
+            # ----------------------------------------------------
+            # SUBIR SELFIE
+            # ----------------------------------------------------
+
+            selfie = st.file_uploader(
+                "📸 Sube tu selfie para crear tu Reflejo",
+                type=["jpg", "jpeg", "png", "webp"],
+                key=f"selfie_reflejo_{bioma_seleccionado}"
+            )
+
+            if selfie is not None:
+
+                try:
+
+                    # ------------------------------------------------
+                    # CONVERTIR SELFIE A BASE64
+                    # ------------------------------------------------
+
+                    selfie_bytes = selfie.getvalue()
+                    selfie_b64 = base64.b64encode(
+                        selfie_bytes
+                    ).decode("utf-8")
+
+                    mime = (
+                        selfie.type
+                        or "image/jpeg"
+                    )
+
+                    selfie_url = (
+                        f"data:{mime};base64,"
+                        f"{selfie_b64}"
+                    )
+
+                    # ------------------------------------------------
+                    # ANALIZAR RASGOS CON GPT-4o-mini
+                    # ------------------------------------------------
+
+                    with st.spinner(
+                        "🔍 Analizando tu esencia..."
+                    ):
+
+                        analisis_resp = requests.post(
+                            OPENAI_CHAT_API_URL,
+                            headers={
+                                "Authorization":
+                                    f"Bearer {OPENAI_API_KEY}",
+                                "Content-Type":
+                                    "application/json"
+                            },
+                            json={
+                                "model": "gpt-4o-mini",
+                                "messages": [
+                                    {
+                                        "role": "user",
+                                        "content": [
+                                            {
+                                                "type": "text",
+                                                "text": (
+                                                    "Describe brevemente "
+                                                    "los rasgos faciales "
+                                                    "de esta persona. "
+                                                    "Incluye: edad aproximada, "
+                                                    "género, color de piel, "
+                                                    "estilo de cabello, "
+                                                    "expresión y estilo de vestir. "
+                                                    "Responde en español, "
+                                                    "máximo 60 palabras."
+                                                )
+                                            },
+                                            {
+                                                "type": "image_url",
+                                                "image_url": {
+                                                    "url": selfie_url
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "max_tokens": 250
+                            },
+                            timeout=60
+                        )
+
+                        if analisis_resp.status_code != 200:
+                            st.warning(
+                                "No se pudo analizar la selfie. "
+                                "Intenta con otra imagen."
+                            )
+                            st.stop()
+
+                        rasgos = (
+                            analisis_resp.json()
+                            ["choices"][0]
+                            ["message"]
+                            ["content"]
+                        )
+
+                    # ------------------------------------------------
+                    # CREAR PROMPT PARA GENERACIÓN DE IMAGEN
+                    # ------------------------------------------------
+
+                    prompt_imagen = (
+                        f"Retrato futurista de un Creador Eónico "
+                        f"basado en estos rasgos: {rasgos}. "
+                        "Ropa tecnológica oscura con circuitos dorados. "
+                        "Partículas de luz alrededor. "
+                        "Fondo negro. Estilo cyberpunk elegante. "
+                        "Sin texto. Sin elementos religiosos."
+                    )
+
+                    # ------------------------------------------------
+                    # GENERAR IMAGEN CON gpt-image-1
+                    # ------------------------------------------------
+
+                    with st.spinner(
+                        "🌟 Forjando tu Reflejo..."
+                    ):
+
+                        img_resp = requests.post(
+                            OPENAI_IMAGE_API_URL,
+                            headers={
+                                "Authorization":
+                                    f"Bearer {OPENAI_API_KEY}",
+                                "Content-Type":
+                                    "application/json"
+                            },
+                            json={
+                                "model": "gpt-image-1",
+                                "prompt": prompt_imagen,
+                                "size": "1024x1024"
+                            },
+                            timeout=90
+                        )
+
+                        if img_resp.status_code != 200:
+                            st.warning(
+                                "No se pudo generar la imagen. "
+                                "Intenta de nuevo."
+                            )
+                            st.stop()
+
+                        data_imagen = img_resp.json()
+                        img_b64 = data_imagen.get(
+                            "data", [{}]
+                        )[0].get("b64_json")
+
+                        if not img_b64:
+                            st.warning(
+                                "No se pudo decodificar la imagen."
+                            )
+                            st.stop()
+
+                        # --------------------------------------------
+                        # DECODIFICAR Y MOSTRAR
+                        # --------------------------------------------
+
+                        import io
+                        from PIL import Image
+
+                        img_bytes = base64.b64decode(
+                            img_b64
+                        )
+
+                        img = Image.open(
+                            io.BytesIO(img_bytes)
+                        )
+
+                        st.image(
+                            img,
+                            caption="🌟 Tu Reflejo Eónico",
+                            use_container_width=True
+                        )
+
+                        st.success(
+                            "Tu Reflejo ha sido forjado. "
+                            "Eres la visión del futuro."
+                        )
+
+                        # ----------------------------------------
+                        # GUARDAR EN HISTORIAL
+                        # ----------------------------------------
+
+                        chat_mensajes.append(
+                            {
+                                "role": "assistant",
+                                "content": (
+                                    "🌌 Tu Reflejo Eónico ha sido "
+                                    "creado. Guarda esta imagen "
+                                    "como un recordatorio de tu "
+                                    "potencial."
+                                )
+                            }
+                        )
+
+                except Exception as e:
+
+                    st.warning(
+                        f"Error generando tu Reflejo: {e}"
+                    )
+
+            # ------------------------------------------------
+            # DETENER FLUJO PARA NO LLAMAR AL MENTOR
+            # ------------------------------------------------
+
+            st.stop()
+
+        # ====================================================
+        # CASO NORMAL: LLAMAR AL MENTOR
+        # ====================================================
+
+        # ----------------------------------------------------
+        # CARGAR PRUEBA DEL MENTOR
         # ----------------------------------------------------
 
         contenido_prueba = cargar_prueba(
             mentor["prueba"]
         )
 
-
         # ----------------------------------------------------
-        # 5. PREPARAR SYSTEM PROMPT
+        # PREPARAR SYSTEM PROMPT
         # ----------------------------------------------------
 
         system_prompt = (
@@ -1708,11 +1941,8 @@ elif st.session_state.pagina == "Chat Eónico":
             + mentor["fragmento"]
         )
 
-
         # ----------------------------------------------------
-        # 6. HISTORIAL ANTERIOR
-        #
-        # El mensaje actual todavía NO está aquí.
+        # HISTORIAL ANTERIOR
         # ----------------------------------------------------
 
         contenido_mensajes = [
@@ -1732,20 +1962,11 @@ elif st.session_state.pagina == "Chat Eónico":
             ]
         )
 
-
         # ----------------------------------------------------
-        # 7. CONSTRUIR MENSAJE ACTUAL
-        #
-        # SI HAY IMAGEN:
-        #
-        # USER
-        # ├── texto
-        # └── imagen
-        #
-        # UN SOLO MENSAJE MULTIMODAL
+        # CONSTRUIR MENSAJE ACTUAL
         # ----------------------------------------------------
 
-        if hay_imagen:
+        if archivos:
 
             contenido_actual = []
 
@@ -1760,22 +1981,12 @@ elif st.session_state.pagina == "Chat Eónico":
                 }
             )
 
-
             for archivo in archivos:
-
-                # --------------------------------------------
-                # MIME REAL DEL ARCHIVO
-                # --------------------------------------------
 
                 mime = (
                     archivo.type
                     or "image/jpeg"
                 )
-
-
-                # --------------------------------------------
-                # CONVERTIR IMAGEN A BASE64
-                # --------------------------------------------
 
                 imagen_base64 = (
                     base64.b64encode(
@@ -1783,16 +1994,10 @@ elif st.session_state.pagina == "Chat Eónico":
                     ).decode("utf-8")
                 )
 
-
-                # --------------------------------------------
-                # DATA URL
-                # --------------------------------------------
-
                 imagen_url = (
                     f"data:{mime};base64,"
                     f"{imagen_base64}"
                 )
-
 
                 contenido_actual.append(
                     {
@@ -1803,11 +2008,6 @@ elif st.session_state.pagina == "Chat Eónico":
                     }
                 )
 
-
-            # ----------------------------------------------
-            # UN SOLO MENSAJE MULTIMODAL
-            # ----------------------------------------------
-
             contenido_mensajes.append(
                 {
                     "role": "user",
@@ -1815,12 +2015,7 @@ elif st.session_state.pagina == "Chat Eónico":
                 }
             )
 
-
         else:
-
-            # ------------------------------------------------
-            # MENSAJE NORMAL DE TEXTO
-            # ------------------------------------------------
 
             contenido_mensajes.append(
                 {
@@ -1829,48 +2024,11 @@ elif st.session_state.pagina == "Chat Eónico":
                 }
             )
 
-
         # ----------------------------------------------------
-        # 8. GUARDAR MENSAJE EN HISTORIAL
-        #
-        # NO guardamos Base64.
+        # ELEGIR MOTOR
         # ----------------------------------------------------
 
-        if texto:
-
-            chat_mensajes.append(
-                {
-                    "role": "user",
-                    "content": texto
-                }
-            )
-
-        elif hay_imagen:
-
-            nombres_archivos = ", ".join(
-                archivo.name
-                for archivo in archivos
-            )
-
-            chat_mensajes.append(
-                {
-                    "role": "user",
-                    "content": (
-                        f"[🖼️ Imagen enviada: "
-                        f"{nombres_archivos}]"
-                    )
-                }
-            )
-
-
-        # ----------------------------------------------------
-        # 9. ELEGIR MOTOR
-        #
-        # IMAGEN → OPENAI
-        # TEXTO  → DEEPSEEK
-        # ----------------------------------------------------
-
-        if hay_imagen:
+        if archivos:
 
             # =================================================
             # OPENAI — VISIÓN
@@ -1903,7 +2061,6 @@ elif st.session_state.pagina == "Chat Eónico":
                         timeout=90
                     )
 
-
                     if respuesta.status_code == 200:
 
                         data = respuesta.json()
@@ -1926,14 +2083,12 @@ elif st.session_state.pagina == "Chat Eónico":
                             f"{respuesta.text}"
                         )
 
-
                 except Exception as e:
 
                     respuesta_texto = (
                         "Error de conexión con OpenAI: "
                         f"{e}"
                     )
-
 
         else:
 
@@ -1968,7 +2123,6 @@ elif st.session_state.pagina == "Chat Eónico":
                         timeout=60
                     )
 
-
                     if respuesta.status_code == 200:
 
                         data = respuesta.json()
@@ -1991,7 +2145,6 @@ elif st.session_state.pagina == "Chat Eónico":
                             f"{respuesta.text}"
                         )
 
-
                 except Exception as e:
 
                     respuesta_texto = (
@@ -1999,9 +2152,18 @@ elif st.session_state.pagina == "Chat Eónico":
                         f"{e}"
                     )
 
+        # ----------------------------------------------------
+        # MOSTRAR RESPUESTA DEL MENTOR
+        # ----------------------------------------------------
+
+        with st.chat_message("assistant"):
+
+            st.write(
+                respuesta_texto
+            )
 
         # ----------------------------------------------------
-        # 10. GUARDAR RESPUESTA
+        # GUARDAR RESPUESTA EN HISTORIAL
         # ----------------------------------------------------
 
         chat_mensajes.append(
@@ -2011,218 +2173,11 @@ elif st.session_state.pagina == "Chat Eónico":
             }
         )
 
-
         # ----------------------------------------------------
-        # 11. MOSTRAR RESPUESTA
-        # ----------------------------------------------------
-
-        with st.chat_message("assistant"):
-
-            st.write(
-                respuesta_texto
-            )
-        # ----------------------------------------------------
-        # 12. GENERAR REFLEJO PERSONALIZADO
-        # ----------------------------------------------------
-
-        # 🔥 CAMBIO 1: Frase exacta para activar
-        if texto_lower.strip() == "muéstrame mi reflejo" and OPENAI_API_KEY:
-
-            with st.spinner("Preparando tu Reflejo..."):
-
-                st.info("📸 Sube una selfie para crear tu Yo Futuro.")
-
-                selfie = st.file_uploader(
-                    "Sube tu selfie",
-                    type=["jpg", "jpeg", "png", "webp"],
-                    key="selfie_reflejo"
-                )
-
-                if selfie is not None:
-
-                    try:
-
-                        # Convertir selfie a base64
-                        selfie_bytes = selfie.getvalue()
-                        selfie_b64 = base64.b64encode(
-                            selfie_bytes
-                        ).decode("utf-8")
-
-                        mime = (
-                            selfie.type
-                            or "image/jpeg"
-                        )
-
-                        selfie_url = (
-                            f"data:{mime};base64,"
-                            f"{selfie_b64}"
-                        )
-
-                        # Paso 1: Analizar rasgos con GPT-4o-mini
-                        with st.spinner("Analizando tu esencia..."):
-
-                            analisis_resp = requests.post(
-                                OPENAI_CHAT_API_URL,
-                                headers={
-                                    "Authorization":
-                                        f"Bearer {OPENAI_API_KEY}",
-                                    "Content-Type":
-                                        "application/json"
-                                },
-                                json={
-                                    "model": "gpt-4o-mini",
-                                    "messages": [
-                                        {
-                                            "role": "user",
-                                            "content": [
-                                                {
-                                                    "type": "text",
-                                                    "text": (
-                                                        "Describe brevemente "
-                                                        "los rasgos faciales "
-                                                        "de esta persona. "
-                                                        "Incluye: edad aproximada, "
-                                                        "género, color de piel, "
-                                                        "estilo de cabello, "
-                                                        "expresión y estilo de vestir. "
-                                                        "Responde en español, "
-                                                        "máximo 50 palabras."
-                                                    )
-                                                },
-                                                {
-                                                    "type": "image_url",
-                                                    "image_url": {
-                                                        "url": selfie_url
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "max_tokens": 200
-                                },
-                                timeout=60
-                            )
-
-                            if analisis_resp.status_code != 200:
-                                st.warning("No se pudo analizar la selfie.")
-                                st.stop()
-
-                            rasgos = (
-                                analisis_resp.json()
-                                ["choices"][0]
-                                ["message"]["content"]
-                            )
-
-                        # Paso 2: Crear prompt detallado
-                        prompt_imagen = (
-                            f"Retrato futurista de un Creador Eónico "
-                            f"basado en estos rasgos: {rasgos}. "
-                            "Ropa tecnológica oscura con circuitos dorados. "
-                            "Partículas de luz alrededor. "
-                            "Fondo negro. Estilo cyberpunk elegante. "
-                            "Sin texto. Sin elementos religiosos."
-                        )
-
-                        # Paso 3: Generar imagen con gpt-image-1
-                        with st.spinner("Forjando tu Reflejo..."):
-
-                            img_resp = requests.post(
-                                OPENAI_IMAGE_API_URL,
-                                headers={
-                                    "Authorization":
-                                        f"Bearer {OPENAI_API_KEY}",
-                                    "Content-Type":
-                                        "application/json"
-                                },
-                                json={
-                                    "model": "gpt-image-1",
-                                    "prompt": prompt_imagen,
-                                    "size": "1024x1024"
-                                },
-                                timeout=90
-                            )
-
-                            if img_resp.status_code != 200:
-                                st.warning("No se pudo generar la imagen.")
-                                st.stop()
-
-                            data_imagen = img_resp.json()
-                            img_b64 = data_imagen.get(
-                                "data", [{}]
-                            )[0].get("b64_json")
-
-                            if not img_b64:
-                                st.warning("No se pudo decodificar la imagen.")
-                                st.stop()
-
-                            import io
-                            from PIL import Image
-
-                            img_bytes = base64.b64decode(
-                                img_b64
-                            )
-
-                            img = Image.open(
-                                io.BytesIO(img_bytes)
-                            )
-
-                            st.image(
-                                img,
-                                caption="Tu Reflejo Eónico"
-                            )
-
-                    except Exception as e:
-
-                        st.warning(f"Error: {e}")
-                    
-                    # 🔥 CAMBIO 2: Detener ejecución para que NO llame al mentor
-                    st.stop()
-
-        # ----------------------------------------------------
-        # 13. MENTOR (DeepSeek) - SOLO si NO es Reflejo
-        # ----------------------------------------------------
-        else:
-            
-            # Aquí va todo el código de tu mentor DeepSeek
-            # (tu código existente para llamar a DeepSeek)
-            
-            pass  # <--- Reemplaza esto con tu código del mentor 
-            
-        # ----------------------------------------------------
-        # 134 LIMPIAR PREGUNTA INICIAL
+        # LIMPIAR PREGUNTA INICIAL
         # ----------------------------------------------------
 
         st.session_state.chat_pregunta = ""
-
-
-    # ========================================================
-    # MOSTRAR PREGUNTA INICIAL SI VIENE DEL HOME
-    #
-    # La dejamos como sugerencia visual.
-    # ========================================================
-
-    if pregunta_inicial:
-
-        st.info(
-            f"Pregunta enviada desde Inicio: "
-            f"{pregunta_inicial}"
-        )
-
-        if st.button(
-            "Usar esta pregunta",
-            key="usar_pregunta_inicial"
-        ):
-
-            st.session_state.chat_pregunta = ""
-            chat_mensajes.append(
-                {
-                    "role": "user",
-                    "content": pregunta_inicial
-                }
-            )
-
-            st.rerun()
-
 
 # ============================================================
 # PAGINA: CONCILIO EÓNICO
