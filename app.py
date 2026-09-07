@@ -2022,7 +2022,6 @@ elif st.session_state.pagina == "Chat Eónico":
                 respuesta_texto
             )
 
-
         # ----------------------------------------------------
         # 12. GENERAR REFLEJO PERSONALIZADO
         # ----------------------------------------------------
@@ -2066,74 +2065,135 @@ elif st.session_state.pagina == "Chat Eónico":
                             f"{selfie_b64}"
                         )
 
-                        # Prompt para el Reflejo
-                        prompt_reflejo = (
-                            "Usa la foto como referencia. "
-                            "Genera un retrato futurista de "
-                            "la misma persona como un "
-                            "Creador Eónico. "
-                            "Ropa tecnológica oscura, "
-                            "circuitos dorados, partículas de luz. "
-                            "Fondo negro. Sin texto. "
-                            "Estilo cyberpunk elegante."
-                        )
+                        # Paso 1: Analizar rasgos con GPT-4o-mini
+                        with st.spinner(
+                            "Analizando tu esencia..."
+                        ):
 
-                        # Llamar a OpenAI
-                        img_resp = requests.post(
-                            OPENAI_CHAT_API_URL,
-                            headers={
-                                "Authorization":
-                                    f"Bearer {OPENAI_API_KEY}",
-                                "Content-Type":
-                                    "application/json"
-                            },
-                            json={
-                                "model": "gpt-4o-mini",
-                                "messages": [
-                                    {
-                                        "role": "user",
-                                        "content": [
-                                            {
-                                                "type": "text",
-                                                "text": prompt_reflejo
-                                            },
-                                            {
-                                                "type": "image_url",
-                                                "image_url": {
-                                                    "url": selfie_url
+                            analisis_resp = requests.post(
+                                OPENAI_CHAT_API_URL,
+                                headers={
+                                    "Authorization":
+                                        f"Bearer {OPENAI_API_KEY}",
+                                    "Content-Type":
+                                        "application/json"
+                                },
+                                json={
+                                    "model": "gpt-4o-mini",
+                                    "messages": [
+                                        {
+                                            "role": "user",
+                                            "content": [
+                                                {
+                                                    "type": "text",
+                                                    "text": (
+                                                        "Describe brevemente "
+                                                        "los rasgos faciales "
+                                                        "de esta persona. "
+                                                        "Incluye: edad aproximada, "
+                                                        "género, color de piel, "
+                                                        "estilo de cabello, "
+                                                        "expresión y estilo de vestir. "
+                                                        "Responde en español, "
+                                                        "máximo 50 palabras."
+                                                    )
+                                                },
+                                                {
+                                                    "type": "image_url",
+                                                    "image_url": {
+                                                        "url": selfie_url
+                                                    }
                                                 }
-                                            }
-                                        ]
-                                    }
-                                ],
-                                "max_tokens": 1000
-                            },
-                            timeout=90
-                        )
-
-                        if img_resp.status_code == 200:
-
-                            st.success(
-                                "✨ Tu Reflejo está listo."
+                                            ]
+                                        }
+                                    ],
+                                    "max_tokens": 200
+                                },
+                                timeout=60
                             )
 
-                            st.write(
-                                img_resp.json()
+                            if analisis_resp.status_code != 200:
+                                st.warning(
+                                    "No se pudo analizar la selfie."
+                                )
+                                st.stop()
+
+                            rasgos = (
+                                analisis_resp.json()
                                 ["choices"][0]
                                 ["message"]["content"]
                             )
 
-                        else:
+                        # Paso 2: Crear prompt detallado
+                        prompt_imagen = (
+                            f"Retrato futurista de un Creador Eónico "
+                            f"basado en estos rasgos: {rasgos}. "
+                            "Ropa tecnológica oscura con circuitos dorados. "
+                            "Partículas de luz alrededor. "
+                            "Fondo negro. Estilo cyberpunk elegante. "
+                            "Sin texto. Sin elementos religiosos."
+                        )
 
-                            st.warning(
-                                "No se pudo crear el Reflejo."
+                        # Paso 3: Generar imagen con gpt-image-1
+                        with st.spinner(
+                            "Forjando tu Reflejo..."
+                        ):
+
+                            img_resp = requests.post(
+                                OPENAI_IMAGE_API_URL,
+                                headers={
+                                    "Authorization":
+                                        f"Bearer {OPENAI_API_KEY}",
+                                    "Content-Type":
+                                        "application/json"
+                                },
+                                json={
+                                    "model": "gpt-image-1",
+                                    "prompt": prompt_imagen,
+                                    "size": "1024x1024"
+                                },
+                                timeout=90
+                            )
+
+                            if img_resp.status_code != 200:
+                                st.warning(
+                                    "No se pudo generar la imagen."
+                                )
+                                st.stop()
+
+                            data_imagen = img_resp.json()
+                            img_b64 = data_imagen.get(
+                                "data", [{}]
+                            )[0].get("b64_json")
+
+                            if not img_b64:
+                                st.warning(
+                                    "No se pudo decodificar la imagen."
+                                )
+                                st.stop()
+
+                            import io
+                            from PIL import Image
+
+                            img_bytes = base64.b64decode(
+                                img_b64
+                            )
+
+                            img = Image.open(
+                                io.BytesIO(img_bytes)
+                            )
+
+                            st.image(
+                                img,
+                                caption="Tu Reflejo Eónico"
                             )
 
                     except Exception as e:
 
                         st.warning(
                             f"Error: {e}"
-                        )        # ----------------------------------------------------
+                        )      
+        # ----------------------------------------------------
         # 13. LIMPIAR PREGUNTA INICIAL
         # ----------------------------------------------------
 
