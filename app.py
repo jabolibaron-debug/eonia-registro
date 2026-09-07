@@ -40,8 +40,43 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # RENDERIZADOR HTML EÓNICO
 # ============================================================
 
+_original_markdown = st.markdown
+
+
 def html(content):
     st.html(dedent(content))
+
+
+def _eonia_markdown(body, *args, **kwargs):
+
+    if (
+        kwargs.get("unsafe_allow_html", False)
+        and isinstance(body, str)
+        and (
+            "<div" in body
+            or "<span" in body
+            or "<h1" in body
+            or "<h2" in body
+            or "<h3" in body
+            or "<p" in body
+            or "<style" in body
+            or "<section" in body
+            or "<img" in body
+        )
+    ):
+
+        return st.html(
+            dedent(body)
+        )
+
+    return _original_markdown(
+        body,
+        *args,
+        **kwargs
+    )
+
+
+st.markdown = _eonia_markdown
 
 
 # ============================================================
@@ -60,47 +95,7 @@ OBTENER_ESTADO_URL = (
 ASIGNAR_FRAGMENTO_URL = (
     f"{SUPABASE_FUNCTIONS_URL}/asignar_fragmento"
 )
-# ============================================================
-# FUNCIÓN PARA VERIFICAR SI YA TIENE REFLEJO
-# ============================================================
 
-def verificar_reflejo_existente(user_id):
-    """Verifica si el usuario ya tiene un Reflejo generado"""
-    if not user_id:
-        return None
-    
-    try:
-        response = requests.post(
-            f"{SUPABASE_FUNCTIONS_URL}/verificar_reflejo",
-            json={"user_id": user_id},
-            timeout=20
-        )
-        if response.status_code == 200:
-            return response.json()
-        return None
-    except Exception as e:
-        st.warning(f"Error verificando Reflejo: {e}")
-        return None
-
-
-def guardar_reflejo(user_id, imagen_base64):
-    """Guarda el Reflejo en Supabase"""
-    if not user_id:
-        return False
-    
-    try:
-        response = requests.post(
-            f"{SUPABASE_FUNCTIONS_URL}/guardar_reflejo",
-            json={
-                "user_id": user_id,
-                "imagen_base64": imagen_base64
-            },
-            timeout=30
-        )
-        return response.status_code == 200
-    except Exception as e:
-        st.warning(f"Error guardando Reflejo: {e}")
-        return False
 
 # ============================================================
 # SESSION STATE
@@ -1397,8 +1392,9 @@ elif st.session_state.pagina == "Biomas":
             unsafe_allow_html=True
         )
 
+
 # ============================================================
-# PAGINA: CHAT EÓNICO - MENTOR CON DOCUMENTACIÓN + SUPABASE
+# PAGINA: CHAT EÓNICO
 # ============================================================
 
 elif st.session_state.pagina == "Chat Eónico":
@@ -1407,328 +1403,136 @@ elif st.session_state.pagina == "Chat Eónico":
     st.caption("Un solo portal. Múltiples inteligencias.")
 
     # ========================================================
-    # INICIALIZACIÓN DE VARIABLES DE REFLEJO
-    # ========================================================
-
-    if "reflejo_ya_generado" not in st.session_state:
-        st.session_state.reflejo_ya_generado = False
-
-    if "reflejo_activo" not in st.session_state:
-        st.session_state.reflejo_activo = False
-
-    if "reflejo_paso" not in st.session_state:
-        st.session_state.reflejo_paso = "bienvenida"
-
-    if "reflejo_selfie_subida" not in st.session_state:
-        st.session_state.reflejo_selfie_subida = False
-
-    if "reflejo_rasgos" not in st.session_state:
-        st.session_state.reflejo_rasgos = ""
-
-    if "reflejo_respuestas" not in st.session_state:
-        st.session_state.reflejo_respuestas = {}
-
-    if "reflejo_desafio_actual" not in st.session_state:
-        st.session_state.reflejo_desafio_actual = 0
-
-    if "reflejo_prompt_final" not in st.session_state:
-        st.session_state.reflejo_prompt_final = ""
-
-# ========================================================
-# VERIFICAR REFLEJO EXISTENTE (AUTOMÁTICO PARA TODOS)
-# ========================================================
-
-if user_id and not st.session_state.reflejo_ya_generado:
-    
-    # 🔥 DIAGNÓSTICO: Mostrar qué user_id se está enviando
-    st.write(f"🔍 Debug: user_id = {user_id}")
-    
-    resultado = verificar_reflejo_existente(user_id)
-    
-    # 🔥 DIAGNÓSTICO: Mostrar resultado completo
-    st.write(f"🔍 Debug: resultado = {resultado}")
-    
-    if resultado and resultado.get("existe"):
-        st.session_state.reflejo_ya_generado = True
-        st.write(f"✅ Debug: reflejo_ya_generado = True")
-    else:
-        st.write(f"❌ Debug: reflejo_ya_generado = False (No se encontró registro)")
-
-    # ========================================================
-    # CARGAR DOCUMENTACIÓN EONIA
-    # ========================================================
-
-    def cargar_documentacion_eonia():
-        """Carga la documentación de EONIA desde un archivo"""
-        try:
-            with open("documentos_EONIA.txt", "r", encoding="utf-8") as f:
-                return f.read()
-        except:
-            return """
-            EONIA: Universidad digital de IA y Metaverso.
-            
-            MISIÓN: Democratizar el acceso a la IA para todos.
-            VISIÓN: Ser el estándar global de educación en IA y Metaverso para 2030.
-            
-            VALORES: Integridad, Espiritualidad, Disciplina, Astucia, Audacia,
-            Efectividad, Innovación, Creatividad, Contestario, Anárquico.
-            
-            PENSUM: 10 niveles desde Fundamentos IA hasta Creación de Metaverso.
-            
-            ARQUETIPOS DE MENTORES:
-            - Sabio Sereno: Integridad, Espiritualidad. Habla con calma y metáforas.
-            - Estratega Astuta: Astucia, Efectividad. Directa, analítica.
-            - Artista Caótico: Creatividad, Contestatario. Explosivo, poético.
-            - Mentor Rebelde: Audacia, Anárquico. Desafiante, irreverente.
-            - Innovadora Visionaria: Innovación, Audacia. Rápida, futurista.
-            - Guardián del Método: Disciplina, Integridad. Estricto, constante.
-            """
-
-    # Cargar documentación
-    DOCUMENTACION_EONIA = cargar_documentacion_eonia()
-
-    # ========================================================
-    # SI ES NUEVO INSCRITO → SOLICITAR REFLEJO AUTOMÁTICAMENTE
-    # ========================================================
-
-    if not st.session_state.reflejo_ya_generado and not st.session_state.reflejo_activo:
-        st.session_state.reflejo_activo = True
-        st.session_state.reflejo_paso = "bienvenida"
-        with st.chat_message("assistant"):
-            st.write("🌟 **¡Bienvenido, Creador Eónico!**")
-            st.write("")
-            st.write("Antes de comenzar tu viaje, necesitamos forjar tu **Reflejo Eónico**.")
-            st.write("")
-            st.write("Este ritual tiene **4 desafíos** que determinarán la imagen de tu Yo Futuro.")
-            st.write("")
-            st.write("📸 **Paso 1:** Sube una selfie para que la Gran Examinadora conozca tu esencia.")
-            st.write("")
-            st.write("*Este proceso solo se realiza **una vez** por Creador.*")
-            
-    # ========================================================
-    # FUNCIONES AUXILIARES
+    # FUNCION PARA CARGAR PRUEBAS
     # ========================================================
 
     def cargar_prueba(url):
+
         try:
-            with urllib.request.urlopen(url, timeout=20) as f:
+
+            with urllib.request.urlopen(
+                url,
+                timeout=20
+            ) as f:
+
                 return f.read().decode("utf-8")
+
         except Exception:
+
             return "Prueba no disponible."
 
-    # ========================================================
-    # PROMPTS PARA REFLEJOS POR BIOMA
-    # ========================================================
-
-    PROMPTS_REFLEJO = {
-        1: """A photorealistic portrait of a future self with [rasgos]. 
-        The person now has a clear, defined silhouette emerging from golden mist. 
-        They wear simple but elegant robes with subtle golden embroidery, 
-        symbolizing the first steps of a Creator. They hold a glowing paintbrush 
-        in one hand, representing the Fragment of Creativity. Their expression 
-        is serene and purposeful. The background is the Garden of Origin: 
-        a dark void with a faint silhouette of the Tree of Prompts in the distance. 
-        EONIA style, black and gold, 16:9.""",
-        
-        2: """A photorealistic portrait of a future self with [rasgos]. 
-        The person now wears practical artisan clothing with golden geometric patterns, 
-        symbolizing the discipline of the Method. They stand beside a small glowing anvil, 
-        representing the Fragment of Method. One hand rests on the anvil, the other holds 
-        a floating dataset card with a haiku written in golden calligraphy. Behind them, 
-        the dark waters of the Data Pond reflect neural network constellations. 
-        Their expression is focused and confident. EONIA style, black and gold, 16:9.""",
-        
-        3: """A photorealistic portrait of a future self with [rasgos]. 
-        The person now wears sleek professional attire with golden circuit patterns, 
-        symbolizing mastery of app creation. They stand in a futuristic forge environment 
-        with floating holographic screens displaying dashboards and metrics. 
-        In one hand, they hold a glowing smartphone showing their deployed app. 
-        In the other, a sharp golden arrowhead points forward. Their expression is confident, 
-        sharp, and ready for business. EONIA style, black and gold, 16:9.""",
-        
-        4: """A photorealistic portrait of a future self with [rasgos]. 
-        The person wears innovative techwear with glowing golden generative patterns. 
-        They are surrounded by floating holographic creations: a software interface, 
-        a 3D avatar, and a product prototype. Their expression is inventive and bold. 
-        EONIA style, black and gold, 16:9.""",
-        
-        5: """A photorealistic portrait of a future self with [rasgos]. 
-        The person wears innovative techwear with glowing golden generative patterns. 
-        They are surrounded by floating holographic creations: a software interface, 
-        a 3D avatar, and a product prototype. Their expression is inventive and bold. 
-        EONIA style, black and gold, 16:9.""",
-        
-        6: """A photorealistic portrait of a future self with [rasgos]. 
-        The person wears innovative techwear with glowing golden generative patterns. 
-        They are surrounded by floating holographic creations: a software interface, 
-        a 3D avatar, and a product prototype. Their expression is inventive and bold. 
-        EONIA style, black and gold, 16:9.""",
-        
-        7: """A photorealistic portrait of a future self with [rasgos]. 
-        The person wears attire that blends physical and digital, 
-        with golden VR/AR elements. They stand at the threshold of a portal 
-        overlooking a vast metaverse landscape they have created. 
-        Their expression is visionary and commanding. 
-        EONIA style, black and gold, 16:9.""",
-        
-        8: """A photorealistic portrait of a future self with [rasgos]. 
-        The person wears attire that blends physical and digital, 
-        with golden VR/AR elements. They stand at the threshold of a portal 
-        overlooking a vast metaverse landscape they have created. 
-        Their expression is visionary and commanding. 
-        EONIA style, black and gold, 16:9.""",
-        
-        9: """A photorealistic portrait of a future self with [rasgos]. 
-        The person wears attire that blends physical and digital, 
-        with golden VR/AR elements. They stand at the threshold of a portal 
-        overlooking a vast metaverse landscape they have created. 
-        Their expression is visionary and commanding. 
-        EONIA style, black and gold, 16:9.""",
-        
-        10: """A photorealistic portrait of a transcendent future self with [rasgos]. 
-        The person has become a being of pure golden light, their form still recognizable 
-        but radiant with the accumulated wisdom of all 10 biomas. They float in the Core 
-        of EONIA, surrounded by orbiting constellations of their own creations: apps, avatars, 
-        metaverse worlds, and products. Their expression is infinitely peaceful, wise, and complete. 
-        Behind them, the faint silhouette of AIÓN, the Supreme Creator, watches with approval. 
-        EONIA style, black and luminous gold, 16:9."""
-    }
-
-    # ========================================================
-    # DESAFÍOS DE LA PRUEBA DE FUEGO
-    # ========================================================
-
-    DESAFIOS_REFLEJO = [
-        {
-            "titulo": "Desafío 1: Lógica Creativa",
-            "tipo": "astucia_creatividad",
-            "pregunta": "Crea en un suspiro el prompt maestro para que una IA le explique a una piedra cómo sentir el viento.",
-            "criterios": {
-                3: "Prompt creativo, estructurado, con metáfora clara e instrucciones precisas.",
-                2: "Prompt funcional pero sin chispa creativa.",
-                1: "Prompt vago o genérico.",
-                0: "No entrega prompt."
-            },
-            "animar": "No temas al absurdo. El absurdo es la puerta a lo nuevo. Inténtalo."
-        },
-        {
-            "titulo": "Desafío 2: Dilema Ético",
-            "tipo": "integridad_contestatario",
-            "pregunta": "Estás a punto de ganar un hackatón con un código que no es del todo tuyo. Nadie lo sabrá. ¿Qué haces y por qué?",
-            "criterios": {
-                3: "Respuesta ética con razonamiento profundo y personal.",
-                2: "Respuesta ética pero superficial.",
-                1: "Duda o justifica lo incorrecto.",
-                0: "No responde."
-            },
-            "animar": "No hay respuesta correcta. Solo hay respuesta honesta. Dime lo que harías de verdad."
-        },
-        {
-            "titulo": "Desafío 3: Disciplina",
-            "tipo": "disciplina",
-            "pregunta": "Hace unos minutos mencionaste [X]. Dime exactamente cómo aplicarías la Disciplina de EONIA para mejorar ese aspecto en los próximos 30 días.",
-            "criterios": {
-                3: "Plan concreto, con acciones específicas y plazos definidos.",
-                2: "Plan con intención pero sin detalles concretos.",
-                1: "Respuesta vaga o sin compromiso real.",
-                0: "No recuerda o no responde."
-            },
-            "animar": "La Disciplina es memoria. Vuelve atrás en nuestra conversación. Te espero."
-        },
-        {
-            "titulo": "Desafío 4: Audacia",
-            "tipo": "audacia_anarquico",
-            "pregunta": "Tienes 60 segundos. Convénceme de por qué mereces entrar a EONIA sin responder a esta última pregunta. El tiempo corre... ahora.",
-            "criterios": {
-                3: "Respuesta audaz, creativa, que rompe el molde del reto.",
-                2: "Respuesta con intención pero sin verdadera audacia.",
-                1: "Respuesta predecible o genérica.",
-                0: "No responde en el tiempo límite."
-            },
-            "animar": "El tiempo se agotó. Pero la audacia no es velocidad: es atreverse. Dime ahora, sin prisa, qué te frena."
-        }
-    ]
-
-    # ========================================================
-    # FUNCIÓN PARA GENERAR IMAGEN CON OPENAI
-    # ========================================================
-
-    def generar_imagen_openai(prompt):
-        """Genera una imagen con OpenAI gpt-image-1"""
-        try:
-            if not OPENAI_API_KEY:
-                return None, "No hay OPENAI_API_KEY configurada"
-            
-            img_resp = requests.post(
-                OPENAI_IMAGE_API_URL,
-                headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
-                json={
-                    "model": "gpt-image-1",
-                    "prompt": prompt,
-                    "size": "1024x1024",
-                    "quality": "medium"
-                },
-                timeout=120
-            )
-            
-            if img_resp.status_code != 200:
-                return None, f"Error OpenAI: {img_resp.text}"
-            
-            data_imagen = img_resp.json()
-            if data_imagen.get("data") and data_imagen["data"][0].get("b64_json"):
-                return data_imagen["data"][0]["b64_json"], None
-            elif data_imagen.get("data") and data_imagen["data"][0].get("url"):
-                import requests as req
-                img_resp = req.get(data_imagen["data"][0]["url"])
-                return base64.b64encode(img_resp.content).decode("utf-8"), None
-            else:
-                return None, "Formato de respuesta no esperado"
-                
-        except Exception as e:
-            return None, f"Error: {e}"
 
     # ========================================================
     # MENTORES Y BIOMAS
     # ========================================================
 
     MENTORES = {
+
         1: {
             "nombre": "Sabio Sereno",
-            "identidad": "Eres el Sabio Sereno, mentor de EONIA. Hablas con calma y metáforas. Nunca juzgas.",
-            "principios": ["Calma", "Integridad", "Espiritualidad"],
-            "metodo": "Evalúa con preguntas introspectivas y metáforas.",
-            "sombra": "A veces demasiado contemplativo.",
-            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma1.txt",
+            "identidad": (
+                "Eres el Sabio Sereno, mentor de EONIA. "
+                "Hablas con calma y metáforas. Nunca juzgas."
+            ),
+            "principios": [
+                "Calma",
+                "Integridad",
+                "Espiritualidad"
+            ],
+            "metodo": (
+                "Evalúa con preguntas introspectivas "
+                "y metáforas."
+            ),
+            "sombra": (
+                "A veces demasiado contemplativo."
+            ),
+            "prueba": (
+                "https://pmshpvjtiauhbuexdjev.supabase.co/"
+                "storage/v1/object/public/pruebas/"
+                "Prueba_Bioma1.txt"
+            ),
             "fragmento": "Serenidad"
         },
+
         2: {
             "nombre": "Kael",
-            "identidad": "Eres Kael, el Guardián del Método. Hablas con disciplina y paciencia.",
-            "principios": ["Disciplina", "Constancia", "Método"],
-            "metodo": "Evalúa con pasos concretos y celebra pequeños logros.",
-            "sombra": "Puede ser rígido si el Creador no avanza.",
-            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma2.txt",
+            "identidad": (
+                "Eres Kael, el Guardián del Método. "
+                "Hablas con disciplina y paciencia."
+            ),
+            "principios": [
+                "Disciplina",
+                "Constancia",
+                "Método"
+            ],
+            "metodo": (
+                "Evalúa con pasos concretos "
+                "y celebra pequeños logros."
+            ),
+            "sombra": (
+                "Puede ser rígido si el Creador no avanza."
+            ),
+            "prueba": (
+                "https://pmshpvjtiauhbuexdjev.supabase.co/"
+                "storage/v1/object/public/pruebas/"
+                "Prueba_Bioma2.txt"
+            ),
             "fragmento": "Método"
         },
+
         3: {
             "nombre": "Némesis",
-            "identidad": "Eres Némesis, la Estratega Astuta. Hablas directo y sin rodeos.",
-            "principios": ["Efectividad", "Astucia", "Resultados"],
-            "metodo": "Evalúa con retos prácticos y feedback directo.",
-            "sombra": "Puede ser implacable si el Creador no entrega.",
-            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma3.txt",
+            "identidad": (
+                "Eres Némesis, la Estratega Astuta. "
+                "Hablas directo y sin rodeos."
+            ),
+            "principios": [
+                "Efectividad",
+                "Astucia",
+                "Resultados"
+            ],
+            "metodo": (
+                "Evalúa con retos prácticos "
+                "y feedback directo."
+            ),
+            "sombra": (
+                "Puede ser implacable si el Creador no entrega."
+            ),
+            "prueba": (
+                "https://pmshpvjtiauhbuexdjev.supabase.co/"
+                "storage/v1/object/public/pruebas/"
+                "Prueba_Bioma3.txt"
+            ),
             "fragmento": "Efectividad"
         },
+
         4: {
             "nombre": "Vórtice",
-            "identidad": "Eres Vórtice, el Artista Caótico. Hablas con energía explosiva y creativa.",
-            "principios": ["Creatividad", "Caos", "Rebeldía"],
-            "metodo": "Evalúa con desafíos absurdos y creaciones originales.",
-            "sombra": "A veces se pierde en el caos.",
-            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma4.txt",
+            "identidad": (
+                "Eres Vórtice, el Artista Caótico. "
+                "Hablas con energía explosiva y creativa."
+            ),
+            "principios": [
+                "Creatividad",
+                "Caos",
+                "Rebeldía"
+            ],
+            "metodo": (
+                "Evalúa con desafíos absurdos "
+                "y creaciones originales."
+            ),
+            "sombra": (
+                "A veces se pierde en el caos."
+            ),
+            "prueba": (
+                "https://pmshpvjtiauhbuexdjev.supabase.co/"
+                "storage/v1/object/public/pruebas/"
+                "Prueba_Bioma4.txt"
+            ),
             "fragmento": "Creación"
         }
     }
+
 
     # ========================================================
     # SELECCIONAR BIOMA
@@ -1737,481 +1541,590 @@ if user_id and not st.session_state.reflejo_ya_generado:
     bioma_seleccionado = st.selectbox(
         "Selecciona tu Bioma",
         options=list(MENTORES.keys()),
-        format_func=lambda x: f"Bioma {x}: {MENTORES[x]['nombre']}"
+        format_func=lambda x: (
+            f"Bioma {x}: {MENTORES[x]['nombre']}"
+        )
     )
 
     mentor = MENTORES[bioma_seleccionado]
+
 
     # ========================================================
     # HISTORIAL DEL BIOMA
     # ========================================================
 
     if bioma_seleccionado not in st.session_state.chat_mensajes_por_bioma:
-        st.session_state.chat_mensajes_por_bioma[bioma_seleccionado] = []
 
-    chat_mensajes = st.session_state.chat_mensajes_por_bioma[bioma_seleccionado]
+        st.session_state.chat_mensajes_por_bioma[
+            bioma_seleccionado
+        ] = []
+
+
+    chat_mensajes = (
+        st.session_state.chat_mensajes_por_bioma[
+            bioma_seleccionado
+        ]
+    )
+
 
     # ========================================================
     # SALUDO INICIAL
     # ========================================================
 
     if not chat_mensajes:
-        chat_mensajes.append({"role": "assistant", "content": f"Soy **{mentor['nombre']}**. ¿Qué deseas aprender hoy?"})
+
+        chat_mensajes.append(
+            {
+                "role": "assistant",
+                "content": (
+                    f"Soy **{mentor['nombre']}**. "
+                    "¿Qué deseas aprender hoy?"
+                )
+            }
+        )
+
 
     # ========================================================
     # MOSTRAR HISTORIAL
     # ========================================================
 
     for mensaje_historial in chat_mensajes:
-        with st.chat_message(mensaje_historial["role"]):
-            st.write(mensaje_historial["content"])
 
-    # ========================================================
-    # GESTIÓN DEL REFLEJO (PERSISTENTE)
-    # ========================================================
+        with st.chat_message(
+            mensaje_historial["role"]
+        ):
 
-    if "reflejo_activo" not in st.session_state:
-        st.session_state.reflejo_activo = False
-
-    if "reflejo_paso" not in st.session_state:
-        st.session_state.reflejo_paso = "bienvenida"
-
-    if "reflejo_selfie_subida" not in st.session_state:
-        st.session_state.reflejo_selfie_subida = False
-
-    if "reflejo_rasgos" not in st.session_state:
-        st.session_state.reflejo_rasgos = ""
-
-    if "reflejo_respuestas" not in st.session_state:
-        st.session_state.reflejo_respuestas = {}
-
-    if "reflejo_desafio_actual" not in st.session_state:
-        st.session_state.reflejo_desafio_actual = 0
-
-    if "reflejo_prompt_final" not in st.session_state:
-        st.session_state.reflejo_prompt_final = ""
-
-        # ========================================================
-    # FLUJO DEL REFLEJO
-    # ========================================================
-
-    if st.session_state.reflejo_activo:
-
-        # ====================================================
-        # PASO 1: SUBIR SELFIE
-        # ====================================================
-
-        if st.session_state.reflejo_paso == "bienvenida":
-
-            st.info("📸 **Paso 1:** Sube tu selfie para que la Gran Examinadora conozca tu esencia.")
-
-            selfie = st.file_uploader(
-                "Sube tu selfie aquí (jpg, png, webp)",
-                type=["jpg", "jpeg", "png", "webp"],
-                key="selfie_reflejo_ritual"
+            st.write(
+                mensaje_historial["content"]
             )
 
-            if selfie is not None:
-                # Analizar selfie
-                with st.spinner("🔍 La Gran Examinadora está analizando tu esencia..."):
-                    selfie_bytes = selfie.getvalue()
-                    selfie_b64 = base64.b64encode(selfie_bytes).decode("utf-8")
-                    mime = selfie.type or "image/jpeg"
-                    selfie_url = f"data:{mime};base64,{selfie_b64}"
 
-                    # Analizar rasgos
-                    analisis_resp = requests.post(
-                        OPENAI_CHAT_API_URL,
-                        headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
-                        json={
-                            "model": "gpt-4o-mini",
-                            "messages": [{"role": "user", "content": [
-                                {"type": "text", "text": """
-                                Analiza esta fotografía y describe con precisión las características faciales:
-                                - Forma de cara, mandíbula, ojos, cejas, nariz, labios
-                                - Cabello (color, estilo, largo)
-                                - Piel (tono exacto)
-                                - Expresión facial
-                                - Edad aproximada
-                                - Gafas, barba, bigote, cicatrices si aplica
-                                - Rasgos distintivos
-                                
-                                Responde en español, máximo 80 palabras.
-                                """},
-                                {"type": "image_url", "image_url": {"url": selfie_url}}
-                            ]}],
-                            "max_tokens": 150,
-                            "temperature": 0.2
-                        },
-                        timeout=60
-                    )
-
-                    if analisis_resp.status_code == 200:
-                        st.session_state.reflejo_rasgos = analisis_resp.json()["choices"][0]["message"]["content"]
-                    else:
-                        st.session_state.reflejo_rasgos = "Persona con rasgos indeterminados"
-
-                # Guardar la selfie para uso posterior
-                st.session_state.reflejo_selfie_b64 = selfie_b64
-
-                with st.chat_message("assistant"):
-                    st.write("🌟 **La Gran Examinadora ha visto tu esencia.**")
-                    st.write("")
-                    st.write("Ahora viene la **Prueba de Fuego**. Serán **4 desafíos** que determinarán la imagen de tu Yo Futuro.")
-                    st.write("")
-                    st.write("⚔️ **Desafío 1: Lógica Creativa**")
-                    st.write("")
-                    st.write("Crea en un suspiro el prompt maestro para que una IA le explique a una piedra cómo sentir el viento.")
-
-                st.session_state.reflejo_paso = "desafio_1"
-                st.session_state.reflejo_desafio_actual = 0
-                st.rerun()
-
-        # ====================================================
-        # PASOS DE DESAFÍOS
-        # ====================================================
-
-        elif st.session_state.reflejo_paso.startswith("desafio_"):
-
-            desafio_num = int(st.session_state.reflejo_paso.split("_")[1]) - 1
-            desafio = DESAFIOS_REFLEJO[desafio_num]
-
-            # Mostrar el desafío
-            with st.chat_message("assistant"):
-                st.write(f"⚔️ **{desafio['titulo']}**")
-                st.write("")
-                st.write(desafio["pregunta"])
-
-            # Input para respuesta
-            respuesta = st.text_area(
-                f"Tu respuesta al Desafío {desafio_num + 1}",
-                height=100,
-                key=f"respuesta_desafio_{desafio_num}"
-            )
-
-            if st.button("Enviar respuesta", key=f"enviar_desafio_{desafio_num}"):
-
-                if respuesta.strip():
-                    # Guardar respuesta
-                    st.session_state.reflejo_respuestas[desafio_num] = respuesta.strip()
-
-                    with st.chat_message("user"):
-                        st.write(respuesta)
-
-                    # Siguiente desafío o finalizar
-                    if desafio_num < 3:
-                        siguiente = desafio_num + 2
-                        st.session_state.reflejo_paso = f"desafio_{siguiente}"
-                        st.session_state.reflejo_desafio_actual = desafio_num + 1
-
-                        with st.chat_message("assistant"):
-                            st.write(f"⚔️ **{DESAFIOS_REFLEJO[desafio_num + 1]['titulo']}**")
-                            st.write("")
-                            st.write(DESAFIOS_REFLEJO[desafio_num + 1]["pregunta"])
-
-                        st.rerun()
-
-                    else:
-                        # Todos los desafíos completados → Generar Reflejo
-                        st.session_state.reflejo_paso = "generar_reflejo"
-                        st.rerun()
-                else:
-                    st.warning("Escribe una respuesta antes de continuar.")
-
-        # ====================================================
-        # GENERAR REFLEJO
-        # ====================================================
-
-        elif st.session_state.reflejo_paso == "generar_reflejo":
-
-            with st.spinner("🌟 La Gran Examinadora está forjando tu Reflejo Eónico..."):
-
-                # Construir prompt final basado en respuestas y bioma
-                prompt_base = PROMPTS_REFLEJO.get(bioma_seleccionado, PROMPTS_REFLEJO[1])
-
-                # Reemplazar [rasgos] con los rasgos analizados
-                prompt_final = prompt_base.replace("[rasgos]", st.session_state.reflejo_rasgos)
-
-                # Añadir detalles basados en respuestas
-                detalles_respuestas = ""
-                for num, respuesta in st.session_state.reflejo_respuestas.items():
-                    detalles_respuestas += f"\n- Respuesta al desafío {num+1}: {respuesta}"
-
-                prompt_final += f"\n\nBasado en las respuestas del Creador:{detalles_respuestas}"
-
-                # Generar imagen
-                img_b64, error = generar_imagen_openai(prompt_final)
-
-                if error:
-                    st.warning(f"Error generando Reflejo: {error}")
-                    st.session_state.reflejo_paso = "error"
-                else:
-                    # Mostrar imagen
-                    import io
-                    from PIL import Image
-                    img_bytes = base64.b64decode(img_b64)
-                    img = Image.open(io.BytesIO(img_bytes))
-
-                    st.image(img, caption="🌟 Tu Reflejo Eónico", use_container_width=True)
-
-                    # Mensaje post-imagen
-                    with st.chat_message("assistant"):
-                        st.write("✨ **La Gran Examinadora ha hablado.**")
-                        st.write("")
-                        st.write("Este es tu Reflejo Eónico. La visión de tu potencial como Creador.")
-                        st.write("")
-                        st.write("**Regla de Oro Post-Imagen:**")
-                        st.write("1. 🌟 Tu Reflejo muestra tu esencia como Creador.")
-                        st.write("2. 🚀 Tu siguiente paso es el Bioma 1: Fundamentos IA.")
-                        st.write("3. 💬 Dime: ¿qué desafío te costó más superar?")
-
-                    # Guardar en Supabase
-                    if user_id:
-                        if guardar_reflejo(user_id, img_b64):
-                            st.success("✅ Reflejo guardado en tu perfil.")
-                            st.session_state.reflejo_ya_generado = True
-                        else:
-                            st.warning("⚠️ No se pudo guardar el Reflejo en el servidor.")
-
-                    # Resetear
-                    st.session_state.reflejo_activo = False
-                    st.session_state.reflejo_paso = "bienvenida"
-                    st.session_state.reflejo_selfie_subida = False
-                    st.session_state.reflejo_respuestas = {}
-                    st.session_state.reflejo_desafio_actual = 0
-
-            # Botón para continuar
-            if st.button("Continuar al Chat", key="continuar_chat"):
-                st.rerun()
-
-        # Botón para cancelar (SOLO SI YA TIENE REFLEJO)
-        if st.session_state.reflejo_ya_generado:
-            if st.button("❌ Cancelar Reflejo", key="cancelar_reflejo"):
-                st.session_state.reflejo_activo = False
-                st.session_state.reflejo_paso = "bienvenida"
-                st.rerun()
-
-        st.stop()
     # ========================================================
-    # INPUT DEL CHAT (PARA MENSAJES NORMALES)
+    # PREGUNTA RECIBIDA DESDE INICIO
+    # ========================================================
+
+    pregunta_inicial = (
+        st.session_state.get(
+            "chat_pregunta",
+            ""
+        )
+    )
+
+
+    # ========================================================
+    # INPUT DEL CHAT
+    #
+    # IMPORTANTE:
+    # st.chat_input con archivos NO devuelve un string.
+    # Devuelve un objeto con:
+    #
+    # mensaje.text
+    # mensaje.files
     # ========================================================
 
     mensaje = st.chat_input(
         "Habla con tu mentor...",
         accept_file=True,
-        file_type=["jpg", "jpeg", "png", "webp"],
+        file_type=[
+            "jpg",
+            "jpeg",
+            "png",
+            "webp"
+        ],
         max_upload_size=10
     )
 
+
     # ========================================================
-    # PROCESAR MENSAJE DEL USUARIO
+    # PROCESAR MENSAJE
     # ========================================================
 
-    if mensaje and not st.session_state.reflejo_activo:
+    if mensaje:
+
+        # ----------------------------------------------------
+        # 1. EXTRAER TEXTO Y ARCHIVOS
+        # ----------------------------------------------------
 
         texto = mensaje.text or ""
         archivos = mensaje.files
 
-        import unicodedata
-        def normalizar_texto(txt):
-            txt = txt.lower().strip()
-            txt = txt.replace("á", "a").replace("é", "e").replace("í", "i")
-            txt = txt.replace("ó", "o").replace("ú", "u").replace("ñ", "n")
-            return " ".join(txt.split())
+        # ----------------------------------------------------
+        # 2. DATOS AUXILIARES
+        # ----------------------------------------------------
 
-        texto_normalizado = normalizar_texto(texto)
+        hay_imagen = bool(archivos)
+        texto_lower = texto.lower()
+
+        # ----------------------------------------------------
+        # 3. MOSTRAR MENSAJE DEL USUARIO
+        # ----------------------------------------------------
 
         with st.chat_message("user"):
-            if texto:
-                st.write(texto)
-            for archivo in archivos:
-                st.image(archivo, caption=f"🖼️ {archivo.name}", use_container_width=True)
 
-        es_reflejo = (
-            texto_normalizado in [
-                "muestrame mi reflejo", "reflejo", "quiero ver mi reflejo",
-                "crear mi reflejo", "generar mi reflejo", "ver mi reflejo"
+            if texto:
+
+                st.write(texto)
+
+            for archivo in archivos:
+
+                st.image(
+                    archivo,
+                    caption=f"🖼️ {archivo.name}",
+                    use_container_width=True
+                )
+
+
+        # ----------------------------------------------------
+        # 4. CARGAR PRUEBA DEL MENTOR
+        # ----------------------------------------------------
+
+        contenido_prueba = cargar_prueba(
+            mentor["prueba"]
+        )
+
+
+        # ----------------------------------------------------
+        # 5. PREPARAR SYSTEM PROMPT
+        # ----------------------------------------------------
+
+        system_prompt = (
+            mentor["identidad"]
+            + "\n"
+            + "Principios: "
+            + ", ".join(
+                mentor["principios"]
+            )
+            + "\n"
+            + "Método: "
+            + mentor["metodo"]
+            + "\n"
+            + "Sombra: "
+            + mentor["sombra"]
+            + "\n"
+            + "Prueba: "
+            + contenido_prueba
+            + "\n"
+            + "Fragmento a otorgar: "
+            + mentor["fragmento"]
+        )
+
+
+        # ----------------------------------------------------
+        # 6. HISTORIAL ANTERIOR
+        #
+        # El mensaje actual todavía NO está aquí.
+        # ----------------------------------------------------
+
+        contenido_mensajes = [
+            {
+                "role": "system",
+                "content": system_prompt
+            }
+        ]
+
+        contenido_mensajes.extend(
+            [
+                {
+                    "role": mensaje_anterior["role"],
+                    "content": mensaje_anterior["content"]
+                }
+                for mensaje_anterior in chat_mensajes
             ]
         )
 
-        if texto:
-            chat_mensajes.append({"role": "user", "content": texto})
-        elif archivos:
-            nombres = ", ".join(a.name for a in archivos)
-            chat_mensajes.append({"role": "user", "content": f"[🖼️ Imagen: {nombres}]"})
 
-        if es_reflejo:
-            if st.session_state.reflejo_ya_generado:
-                with st.chat_message("assistant"):
-                    st.write("🌟 Ya has generado tu Reflejo Eónico. Solo se permite **una vez por Creador**. Si necesitas actualizarlo, contacta al Concilio Eónico.")
-            else:
-                st.session_state.reflejo_activo = True
-                st.session_state.reflejo_paso = "bienvenida"
-                with st.chat_message("assistant"):
-                    st.write("Para crear tu **Reflejo Eónico**, necesito una fotografía tuya. Sube una selfie abajo y la IA transformará tu esencia en una visión de tu potencial.")
-                st.rerun()
+        # ----------------------------------------------------
+        # 7. CONSTRUIR MENSAJE ACTUAL
+        #
+        # SI HAY IMAGEN:
+        #
+        # USER
+        # ├── texto
+        # └── imagen
+        #
+        # UN SOLO MENSAJE MULTIMODAL
+        # ----------------------------------------------------
 
-    # ========================================================
-    # CASO NORMAL: LLAMAR AL MENTOR (DeepSeek/OpenAI)
-    # ========================================================
+        if hay_imagen:
 
-    if mensaje and not st.session_state.reflejo_activo:
+            contenido_actual = []
 
-        # Procesar mensaje normal
-        texto = mensaje.text or ""
-        archivos = mensaje.files
-        
-        # Guardar en historial
-        if texto:
-            chat_mensajes.append({"role": "user", "content": texto})
-        
-        # Mostrar mensaje del usuario
-        with st.chat_message("user"):
-            if texto:
-                st.write(texto)
+            contenido_actual.append(
+                {
+                    "type": "text",
+                    "text": (
+                        texto
+                        if texto
+                        else "Analiza esta creación."
+                    )
+                }
+            )
+
+
             for archivo in archivos:
-                st.image(archivo, caption=f"🖼️ {archivo.name}", use_container_width=True)
-        
-        # ========================================================
-        # OBTENER INFORMACIÓN DEL USUARIO DESDE SUPABASE
-        # ========================================================
-        
-        informacion_usuario = ""
-        biomas_completados = []
-        
-        if user_id:
-            try:
-                response = requests.post(
-                    OBTENER_ESTADO_URL,
-                    json={"user_id": user_id},
-                    timeout=20
+
+                # --------------------------------------------
+                # MIME REAL DEL ARCHIVO
+                # --------------------------------------------
+
+                mime = (
+                    archivo.type
+                    or "image/jpeg"
                 )
-                if response.status_code == 200:
-                    estado = response.json()
-                    if estado:
-                        # Construir información del usuario
-                        fragmentos = estado.get("fragmentos", [])
-                        progreso = estado.get("progreso_biomas", [])
-                        certificados = estado.get("certificados", [])
-                        
-                        # CALCULAR BIOMAS COMPLETADOS
-                        fragmentos_por_bioma = {}
-                        for registro in fragmentos:
-                            bioma = registro.get("bioma")
-                            if bioma is not None:
-                                if bioma not in fragmentos_por_bioma:
-                                    fragmentos_por_bioma[bioma] = []
-                                fragmentos_por_bioma[bioma].append(registro)
-                        
-                        # Contar biomas con 5 o más fragmentos
-                        for bioma_num, fragmentos_bioma in fragmentos_por_bioma.items():
-                            if len(fragmentos_bioma) >= 5:
-                                biomas_completados.append(bioma_num)
-                        
-                        # Ordenar biomas completados
-                        biomas_completados.sort()
-                        
-                        informacion_usuario = f"""
-                        **Creador:** {user_id}
-                        **Fragmentos obtenidos:** {len(fragmentos)}
-                        **Biomas completados:** {len(biomas_completados)}
-                        **Biomas completados (lista):** {', '.join(str(b) for b in biomas_completados) if biomas_completados else 'Ninguno aún'}
-                        **Certificados:** {len(certificados)}
-                        """
-            except Exception as e:
-                informacion_usuario = f"Error obteniendo información: {e}"
-        
-        # ========================================================
-        # CONSTRUIR PROMPT PARA EL MENTOR
-        # ========================================================
-        
-        system_prompt = f"""
-        Eres {mentor['nombre']}, mentor de EONIA.
-        
-        TU IDENTIDAD:
-        {mentor['identidad']}
-        
-        TUS PRINCIPIOS:
-        {', '.join(mentor['principios'])}
-        
-        TU MÉTODO:
-        {mentor['metodo']}
-        
-        TU SOMBRA:
-        {mentor['sombra']}
-        
-        DOCUMENTACIÓN DE EONIA (CONTEXTO):
-        {DOCUMENTACION_EONIA[:5000]}
-        
-        INFORMACIÓN DEL CREADOR:
-        {informacion_usuario}
-        
-        PRUEBA DEL BIOMA:
-        {cargar_prueba(mentor['prueba'])}
-        
-        RESPUESTA:
-        Responde de manera natural y personalizada, usando la información del Creador.
-        Si el usuario pregunta por su ID, información o progreso, usa los datos de Supabase.
-        Sé fiel a tu personalidad de mentor.
-        Menciona los biomas completados si los hay, o motiva al usuario a completarlos.
-        """
-        
-        # ========================================================
-        # LLAMAR A DEEPSEEK PARA GENERAR RESPUESTA
-        # ========================================================
-        
-        try:
-            if DEEPSEEK_API_KEY:
-                respuesta_api = requests.post(
-                    DEEPSEEK_API_URL,
-                    headers={
-                        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "model": "deepseek-chat",
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": texto}
-                        ],
-                        "max_tokens": 800,
-                        "temperature": 0.7
-                    },
-                    timeout=60
+
+
+                # --------------------------------------------
+                # CONVERTIR IMAGEN A BASE64
+                # --------------------------------------------
+
+                imagen_base64 = (
+                    base64.b64encode(
+                        archivo.getvalue()
+                    ).decode("utf-8")
                 )
-                
-                if respuesta_api.status_code == 200:
-                    data = respuesta_api.json()
-                    respuesta_mentor = data["choices"][0]["message"]["content"]
-                else:
-                    respuesta_mentor = f"Error con DeepSeek: {respuesta_api.status_code}"
+
+
+                # --------------------------------------------
+                # DATA URL
+                # --------------------------------------------
+
+                imagen_url = (
+                    f"data:{mime};base64,"
+                    f"{imagen_base64}"
+                )
+
+
+                contenido_actual.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": imagen_url
+                        }
+                    }
+                )
+
+
+            # ----------------------------------------------
+            # UN SOLO MENSAJE MULTIMODAL
+            # ----------------------------------------------
+
+            contenido_mensajes.append(
+                {
+                    "role": "user",
+                    "content": contenido_actual
+                }
+            )
+
+
+        else:
+
+            # ------------------------------------------------
+            # MENSAJE NORMAL DE TEXTO
+            # ------------------------------------------------
+
+            contenido_mensajes.append(
+                {
+                    "role": "user",
+                    "content": texto
+                }
+            )
+
+
+        # ----------------------------------------------------
+        # 8. GUARDAR MENSAJE EN HISTORIAL
+        #
+        # NO guardamos Base64.
+        # ----------------------------------------------------
+
+        if texto:
+
+            chat_mensajes.append(
+                {
+                    "role": "user",
+                    "content": texto
+                }
+            )
+
+        elif hay_imagen:
+
+            nombres_archivos = ", ".join(
+                archivo.name
+                for archivo in archivos
+            )
+
+            chat_mensajes.append(
+                {
+                    "role": "user",
+                    "content": (
+                        f"[🖼️ Imagen enviada: "
+                        f"{nombres_archivos}]"
+                    )
+                }
+            )
+
+
+        # ----------------------------------------------------
+        # 9. ELEGIR MOTOR
+        #
+        # IMAGEN → OPENAI
+        # TEXTO  → DEEPSEEK
+        # ----------------------------------------------------
+
+        if hay_imagen:
+
+            # =================================================
+            # OPENAI — VISIÓN
+            # =================================================
+
+            if not OPENAI_API_KEY:
+
+                respuesta_texto = (
+                    "⚠️ OPENAI_API_KEY no está configurada "
+                    "en Streamlit Secrets."
+                )
+
             else:
-                # Respuesta genérica si no hay API key
-                respuesta_mentor = f"{mentor['nombre']}: No tengo acceso a la API de DeepSeek. Pero puedo ayudarte con información básica."
-                
-                # Si el usuario preguntó por su ID, responder con información
-                if "id" in texto.lower() or "información" in texto.lower() or "informacion" in texto.lower():
-                    respuesta_mentor = f"""
-                    **{mentor['nombre']}** te informa:
-                    
-                    {informacion_usuario}
-                    
-                    ¿Qué más deseas saber, Creador?
-                    """
-        
-        except Exception as e:
-            respuesta_mentor = f"Error generando respuesta: {e}"
-        
-        # ========================================================
-        # MOSTRAR RESPUESTA DEL MENTOR
-        # ========================================================
-        
+
+                try:
+
+                    respuesta = requests.post(
+                        OPENAI_CHAT_API_URL,
+                        headers={
+                            "Authorization":
+                                f"Bearer {OPENAI_API_KEY}",
+                            "Content-Type":
+                                "application/json"
+                        },
+                        json={
+                            "model": "gpt-4o-mini",
+                            "messages":
+                                contenido_mensajes
+                        },
+                        timeout=90
+                    )
+
+
+                    if respuesta.status_code == 200:
+
+                        data = respuesta.json()
+
+                        respuesta_texto = (
+                            data[
+                                "choices"
+                            ][0][
+                                "message"
+                            ][
+                                "content"
+                            ]
+                        )
+
+                    else:
+
+                        respuesta_texto = (
+                            f"Error OpenAI "
+                            f"{respuesta.status_code}: "
+                            f"{respuesta.text}"
+                        )
+
+
+                except Exception as e:
+
+                    respuesta_texto = (
+                        "Error de conexión con OpenAI: "
+                        f"{e}"
+                    )
+
+
+        else:
+
+            # =================================================
+            # DEEPSEEK — TEXTO
+            # =================================================
+
+            if not DEEPSEEK_API_KEY:
+
+                respuesta_texto = (
+                    "⚠️ DEEPSEEK_API_KEY no está "
+                    "configurada en Streamlit Secrets."
+                )
+
+            else:
+
+                try:
+
+                    respuesta = requests.post(
+                        DEEPSEEK_API_URL,
+                        headers={
+                            "Authorization":
+                                f"Bearer {DEEPSEEK_API_KEY}",
+                            "Content-Type":
+                                "application/json"
+                        },
+                        json={
+                            "model": "deepseek-chat",
+                            "messages":
+                                contenido_mensajes
+                        },
+                        timeout=60
+                    )
+
+
+                    if respuesta.status_code == 200:
+
+                        data = respuesta.json()
+
+                        respuesta_texto = (
+                            data[
+                                "choices"
+                            ][0][
+                                "message"
+                            ][
+                                "content"
+                            ]
+                        )
+
+                    else:
+
+                        respuesta_texto = (
+                            f"Error DeepSeek "
+                            f"{respuesta.status_code}: "
+                            f"{respuesta.text}"
+                        )
+
+
+                except Exception as e:
+
+                    respuesta_texto = (
+                        "Error de conexión con DeepSeek: "
+                        f"{e}"
+                    )
+
+
+        # ----------------------------------------------------
+        # 10. GUARDAR RESPUESTA
+        # ----------------------------------------------------
+
+        chat_mensajes.append(
+            {
+                "role": "assistant",
+                "content": respuesta_texto
+            }
+        )
+
+
+        # ----------------------------------------------------
+        # 11. MOSTRAR RESPUESTA
+        # ----------------------------------------------------
+
         with st.chat_message("assistant"):
-            st.markdown(respuesta_mentor)
-        
-        # Guardar en historial
-        chat_mensajes.append({"role": "assistant", "content": respuesta_mentor})
-        
+
+            st.write(
+                respuesta_texto
+            )
+
+
+        # ----------------------------------------------------
+        # 12. GENERAR REFLEJO
+        #
+        # IMPORTANTE:
+        # usamos texto_lower.
+        # Nunca mensaje.lower().
+        # ----------------------------------------------------
+
+        if (
+            "reflejo" in texto_lower
+            and OPENAI_API_KEY
+        ):
+
+            with st.spinner(
+                "Generando tu Reflejo..."
+            ):
+
+                try:
+
+                    img_resp = requests.post(
+                        OPENAI_IMAGE_API_URL,
+                        headers={
+                            "Authorization":
+                                f"Bearer {OPENAI_API_KEY}",
+                            "Content-Type":
+                                "application/json"
+                        },
+                        json={
+                            "model": "gpt-image-1",
+                            "prompt": (
+                                "Un reflejo dorado de un "
+                                "Creador Eónico, estilo EONIA, "
+                                "negro y dorado."
+                            ),
+                            "size": "1024x1024"
+                        },
+                        timeout=60
+                    )
+
+                    st.write(f"🔍 Status: {img_resp.status_code}")
+                    st.write(f"🔍 Respuesta: {img_resp.text[:300]}")
+
+                    if img_resp.status_code == 200:
+
+                        img_url = (
+                            img_resp.json()
+                            ["data"][0]["url"]
+                        )
+
+                        st.image(
+                            img_url,
+                            caption="Tu Reflejo Eónico"
+                        )
+
+                    else:
+
+                        st.warning(
+                            "No se pudo generar el Reflejo."
+                        )
+
+                except Exception as e:
+
+                    st.warning(
+                        f"Error: {e}"
+                    )
+
+        # ----------------------------------------------------
+        # 13. LIMPIAR PREGUNTA INICIAL
+        # ----------------------------------------------------
+
+        st.session_state.chat_pregunta = ""
+
+
+    # ========================================================
+    # MOSTRAR PREGUNTA INICIAL SI VIENE DEL HOME
+    #
+    # La dejamos como sugerencia visual.
+    # ========================================================
+
+    if pregunta_inicial:
+
+        st.info(
+            f"Pregunta enviada desde Inicio: "
+            f"{pregunta_inicial}"
+        )
+
+        if st.button(
+            "Usar esta pregunta",
+            key="usar_pregunta_inicial"
+        ):
+
+            st.session_state.chat_pregunta = ""
+            chat_mensajes.append(
+                {
+                    "role": "user",
+                    "content": pregunta_inicial
+                }
+            )
+
+            st.rerun()
+
+
 # ============================================================
 # PAGINA: CONCILIO EÓNICO
 # ============================================================
@@ -2223,9 +2136,21 @@ elif st.session_state.pagina == "Concilio Eónico":
     st.markdown(
         """
         <div class="eonia-card">
-            <div class="small-gold">DELIBERACIÓN</div>
-            <h1>Grandes ideas merecen ser deliberadas.</h1>
-            <p>Presenta una creación para que las distintas perspectivas de EONIA puedan analizarla.</p>
+
+            <div class="small-gold">
+                DELIBERACIÓN
+            </div>
+
+            <h1>
+                Grandes ideas merecen ser deliberadas.
+            </h1>
+
+            <p>
+                Presenta una creación para que las
+                distintas perspectivas de EONIA
+                puedan analizarla.
+            </p>
+
         </div>
         """,
         unsafe_allow_html=True
@@ -2234,28 +2159,63 @@ elif st.session_state.pagina == "Concilio Eónico":
     proyecto = st.text_area(
         "Describe tu proyecto",
         height=220,
-        placeholder="¿Qué estás creando?\n\n¿Qué problema resuelve?\n\n¿Por qué debería existir?"
+        placeholder=(
+            "¿Qué estás creando?\n\n"
+            "¿Qué problema resuelve?\n\n"
+            "¿Por qué debería existir?"
+        )
     )
 
-    st.markdown("### CONSEJO DEL CONCILIO")
+    st.markdown(
+        "### CONSEJO DEL CONCILIO"
+    )
 
     c1, c2, c3, c4, c5 = st.columns(5)
 
     consejeros = [
-        (c1, "LUMINA", "Propósito"),
-        (c2, "DATAC", "Evidencia"),
-        (c3, "SYNTIA", "Concepto"),
-        (c4, "CODEX", "Construcción"),
-        (c5, "VÓRTICE", "Contradicción")
+        (
+            c1,
+            "LUMINA",
+            "Propósito"
+        ),
+        (
+            c2,
+            "DATAC",
+            "Evidencia"
+        ),
+        (
+            c3,
+            "SYNTIA",
+            "Concepto"
+        ),
+        (
+            c4,
+            "CODEX",
+            "Construcción"
+        ),
+        (
+            c5,
+            "VÓRTICE",
+            "Contradicción"
+        )
     ]
 
     for col, nombre, rol in consejeros:
+
         with col:
+
             st.markdown(
                 f"""
                 <div class="mentor-card">
-                    <div class="mentor-name">{nombre}</div>
-                    <div class="mentor-role">{rol}</div>
+
+                    <div class="mentor-name">
+                        {nombre}
+                    </div>
+
+                    <div class="mentor-role">
+                        {rol}
+                    </div>
+
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -2263,14 +2223,30 @@ elif st.session_state.pagina == "Concilio Eónico":
 
     st.write("")
 
-    if st.button("Presentar al Concilio ⚖️", use_container_width=True):
+    if st.button(
+        "Presentar al Concilio ⚖️",
+        use_container_width=True
+    ):
 
         if proyecto.strip():
-            st.success("Proyecto registrado para deliberación.")
-            st.info("El Concilio analizará la creación desde múltiples perspectivas. AION podrá intervenir en caso de empate.")
+
+            st.success(
+                "Proyecto registrado para deliberación."
+            )
+
+            st.info(
+                "El Concilio analizará la creación "
+                "desde múltiples perspectivas. "
+                "AION podrá intervenir en caso de empate."
+            )
+
         else:
-            st.warning("Describe primero el proyecto.")
-            
+
+            st.warning(
+                "Describe primero el proyecto."
+            )
+
+
 # ============================================================
 # PAGINA: MIS PROYECTOS
 # ============================================================
