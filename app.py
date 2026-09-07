@@ -1815,7 +1815,7 @@ elif st.session_state.pagina == "Chat Eónico":
     if "reflejo_prompt_final" not in st.session_state:
         st.session_state.reflejo_prompt_final = ""
 
-    # ========================================================
+        # ========================================================
     # FLUJO DEL REFLEJO
     # ========================================================
 
@@ -2008,14 +2008,14 @@ elif st.session_state.pagina == "Chat Eónico":
             if st.button("Continuar al Chat", key="continuar_chat"):
                 st.rerun()
 
-        # Botón para cancelar
-        if st.button("❌ Cancelar Reflejo", key="cancelar_reflejo"):
-            st.session_state.reflejo_activo = False
-            st.session_state.reflejo_paso = "bienvenida"
-            st.rerun()
+        # Botón para cancelar (SOLO SI YA TIENE REFLEJO)
+        if st.session_state.reflejo_ya_generado:
+            if st.button("❌ Cancelar Reflejo", key="cancelar_reflejo"):
+                st.session_state.reflejo_activo = False
+                st.session_state.reflejo_paso = "bienvenida"
+                st.rerun()
 
         st.stop()
-
     # ========================================================
     # INPUT DEL CHAT (PARA MENSAJES NORMALES)
     # ========================================================
