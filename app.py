@@ -1,56 +1,29 @@
-import streamlit as st
-import requests
 import os
 import base64
-from textwrap import dedent
-import urllib.request
+import requests
+import streamlit as st
 
 
 # ============================================================
-# CONFIGURACIÓN DE STREAMLIT
+# EONIA UNIVERSITY
+# CRM EÓNICO — APP PRINCIPAL
 # ============================================================
 
 st.set_page_config(
     page_title="EONIA University — Era de los Metales",
     page_icon="⚒️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 
 # ============================================================
-# CONFIGURACIÓN DE APIS
-# ============================================================
-
-DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
-
-OPENAI_IMAGE_API_URL = (
-    "https://api.openai.com/v1/images/generations"
-)
-
-OPENAI_CHAT_API_URL = (
-    "https://api.openai.com/v1/chat/completions"
-)
-
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-
-# ============================================================
-# RENDERIZADOR HTML EÓNICO (SIN RECURSIÓN)
-# ============================================================
-
-def html(content):
-    st.html(dedent(content))
-
-
-# ============================================================
-# CONFIGURACIÓN SUPABASE
+# 1. CONFIGURACIÓN
 # ============================================================
 
 SUPABASE_FUNCTIONS_URL = os.getenv(
     "SUPABASE_FUNCTIONS_URL",
-    "https://pmshpvjtiauhbuexdjev.supabase.co/functions/v1"
+    "https://pmshpvjtiauhbuexdjev.supabase.co/functions/v1",
 )
 
 OBTENER_ESTADO_URL = (
@@ -61,77 +34,312 @@ ASIGNAR_FRAGMENTO_URL = (
     f"{SUPABASE_FUNCTIONS_URL}/asignar_fragmento"
 )
 
+VERIFICAR_REFLEJO_URL = (
+    f"{SUPABASE_FUNCTIONS_URL}/verificar_reflejo"
+)
 
-# ============================================================
-# FUNCIÓN PARA VERIFICAR SI YA TIENE REFLEJO
-# ============================================================
+GUARDAR_REFLEJO_URL = (
+    f"{SUPABASE_FUNCTIONS_URL}/guardar_reflejo"
+)
 
-def verificar_reflejo_existente(user_id):
-    """Verifica si el usuario ya tiene un Reflejo generado"""
-    if not user_id:
-        return None
-    
-    try:
-        response = requests.post(
-            f"{SUPABASE_FUNCTIONS_URL}/verificar_reflejo",
-            json={"user_id": user_id},
-            timeout=20
-        )
-        if response.status_code == 200:
-            return response.json()
-        return None
-    except Exception as e:
-        st.warning(f"Error verificando Reflejo: {e}")
-        return None
+DEEPSEEK_API_URL = (
+    "https://api.deepseek.com/v1/chat/completions"
+)
 
+OPENAI_CHAT_API_URL = (
+    "https://api.openai.com/v1/chat/completions"
+)
 
-def guardar_reflejo(user_id, imagen_base64):
-    """Guarda el Reflejo en Supabase"""
-    if not user_id:
-        return False
-    
-    try:
-        response = requests.post(
-            f"{SUPABASE_FUNCTIONS_URL}/guardar_reflejo",
-            json={
-                "user_id": user_id,
-                "imagen_base64": imagen_base64
-            },
-            timeout=30
-        )
-        return response.status_code == 200
-    except Exception as e:
-        st.warning(f"Error guardando Reflejo: {e}")
-        return False
+OPENAI_IMAGE_API_URL = (
+    "https://api.openai.com/v1/images/generations"
+)
+
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# IMPORTANTE:
+# El Reflejo visual queda apagado por defecto.
+# Esto evita consumir créditos mientras estabilizamos.
+ENABLE_REFLEJO_GENERATION = (
+    os.getenv(
+        "ENABLE_REFLEJO_GENERATION",
+        "false",
+    ).lower()
+    == "true"
+)
 
 
 # ============================================================
-# SESSION STATE
+# 2. DATOS EÓNICOS
 # ============================================================
 
-if "pagina" not in st.session_state:
-    st.session_state.pagina = "Inicio"
+MENTORES = {
+    1: {
+        "nombre": "Sabio Sereno",
+        "identidad": (
+            "Eres el Sabio Sereno, mentor de EONIA. "
+            "Hablas con calma, profundidad y metáforas. "
+            "Nunca juzgas."
+        ),
+        "principios": [
+            "Calma",
+            "Integridad",
+            "Espiritualidad",
+        ],
+        "metodo": (
+            "Evalúa mediante preguntas introspectivas "
+            "y metáforas."
+        ),
+        "sombra": (
+            "Puede ser demasiado contemplativo."
+        ),
+        "fragmento": "Serenidad",
+        "rol": "Mentor de Integridad",
+    },
 
-if "user_id" not in st.session_state:
-    st.session_state.user_id = ""
+    2: {
+        "nombre": "Kael",
+        "identidad": (
+            "Eres Kael, el Guardián del Método. "
+            "Hablas con disciplina, precisión y paciencia."
+        ),
+        "principios": [
+            "Disciplina",
+            "Constancia",
+            "Método",
+        ],
+        "metodo": (
+            "Evalúa con pasos concretos "
+            "y celebra pequeños logros."
+        ),
+        "sombra": (
+            "Puede ser rígido si el Creador no avanza."
+        ),
+        "fragmento": "Método",
+        "rol": "Guardián del Método",
+    },
 
-if "mentor_activo" not in st.session_state:
-    st.session_state.mentor_activo = "AION"
+    3: {
+        "nombre": "Némesis",
+        "identidad": (
+            "Eres Némesis, la Estratega Astuta. "
+            "Hablas directo y sin rodeos."
+        ),
+        "principios": [
+            "Astucia",
+            "Efectividad",
+            "Estrategia",
+        ],
+        "metodo": (
+            "Cuestiona las excusas y busca "
+            "resultados concretos."
+        ),
+        "sombra": (
+            "Puede ser demasiado exigente."
+        ),
+        "fragmento": "Astucia",
+        "rol": "Estratega Astuta",
+    },
 
-if "chat_mensajes_por_bioma" not in st.session_state:
-    st.session_state.chat_mensajes_por_bioma = {
-        1: [],
-        2: [],
-        3: [],
-        4: []
-    }
+    4: {
+        "nombre": "Vórtice",
+        "identidad": (
+            "Eres Vórtice, el Artista Caótico. "
+            "Eres creativo, contestatario y desafiante. "
+            "No aceptas respuestas genéricas."
+        ),
+        "principios": [
+            "Creatividad",
+            "Audacia",
+            "Caos",
+        ],
+        "metodo": (
+            "Rompe patrones, cuestiona convenciones "
+            "y exige creación original."
+        ),
+        "sombra": (
+            "Puede llevar al Creador demasiado lejos."
+        ),
+        "fragmento": "Creatividad",
+        "rol": "Artista Caótico",
+    },
+}
 
-if "chat_pregunta" not in st.session_state:
-    st.session_state.chat_pregunta = ""
+
+BIOMAS = [
+    (
+        1,
+        "Fundamentos IA I",
+        "Creación de Prompt",
+        "Era de Piedra",
+    ),
+    (
+        2,
+        "Fundamentos IA II",
+        "Entrenamiento IA",
+        "Era de Piedra",
+    ),
+    (
+        3,
+        "Fundamentos IA III",
+        "Creación de appIA",
+        "Era de Piedra",
+    ),
+    (
+        4,
+        "IA Generativa I",
+        "Código IA I · Producto IA",
+        "Era de los Metales",
+    ),
+    (
+        5,
+        "IA Generativa II",
+        "Código IA II · Software IA",
+        "Era Estelar",
+    ),
+    (
+        6,
+        "IA Generativa III",
+        "Código IA III · Avatar IA",
+        "Era Estelar",
+    ),
+    (
+        7,
+        "Fundamentos Metaverso I",
+        "Historia · Herramientas IA",
+        "Era Estelar",
+    ),
+    (
+        8,
+        "Fundamentos Metaverso II",
+        "Creación Metaverso",
+        "Era Trascendente",
+    ),
+    (
+        9,
+        "Fundamentos Metaverso III",
+        "Avatar Metaverso · Avatar IA",
+        "Era Trascendente",
+    ),
+    (
+        10,
+        "Creación de Metaverso",
+        "Integración Comercial · Producto",
+        "Era Trascendente",
+    ),
+]
+
+
+DESAFIOS_REFLEJO = [
+    {
+        "titulo": "Desafío 1 · Lógica Creativa",
+        "pregunta": (
+            "Crea en un suspiro el prompt maestro "
+            "para que una IA le explique a una piedra "
+            "cómo sentir el viento."
+        ),
+    },
+    {
+        "titulo": "Desafío 2 · Romper el Molde",
+        "pregunta": (
+            "Imagina una solución que aparentemente "
+            "no debería funcionar. ¿Qué construirías?"
+        ),
+    },
+    {
+        "titulo": "Desafío 3 · El Creador contra el Espejo",
+        "pregunta": (
+            "¿Qué parte de tu forma actual de crear "
+            "tendrías que destruir para crear algo mejor?"
+        ),
+    },
+    {
+        "titulo": "Desafío 4 · Audacia",
+        "pregunta": (
+            "¿Qué crearías si supieras que nadie "
+            "te puede decir que es imposible?"
+        ),
+    },
+]
+
+
+PROMPTS_REFLEJO = {
+    1: (
+        "Crear una representación artística del Yo Futuro "
+        "de un Creador Eónico. "
+        "Estética EONIA: negro, dorado, tecnología futurista, "
+        "luz, datos y arquitectura simbólica. "
+        "La imagen debe representar serenidad, "
+        "integridad y visión."
+    ),
+
+    2: (
+        "Crear una representación artística del Yo Futuro "
+        "de un Creador Eónico. "
+        "Estética EONIA: negro, dorado, tecnología futurista, "
+        "geometría, precisión y disciplina. "
+        "La imagen debe representar método y evolución."
+    ),
+
+    3: (
+        "Crear una representación artística del Yo Futuro "
+        "de un Creador Eónico. "
+        "Estética EONIA: negro, dorado, ciudad futurista, "
+        "estrategia, inteligencia y poder creativo. "
+        "La imagen debe representar astucia."
+    ),
+
+    4: (
+        "Crear una representación artística del Yo Futuro "
+        "de un Creador Eónico. "
+        "Estética EONIA: negro, dorado, caos creativo, "
+        "energía, arte, tecnología y transformación. "
+        "La imagen debe representar audacia y creatividad."
+    ),
+}
 
 
 # ============================================================
-# ESTILO EONIA
+# 3. SESSION STATE
+# ============================================================
+
+DEFAULT_SESSION = {
+    "pagina": "Inicio",
+    "user_id": "",
+    "mentor_activo": "AION",
+
+    "busqueda_global": "",
+
+    "chat_bioma": 1,
+    "chat_mensajes_por_bioma": {},
+
+    "reflejo_activo": False,
+    "reflejo_paso": "bienvenida",
+    "reflejo_ya_generado": False,
+    "reflejo_selfie_subida": False,
+    "reflejo_selfie_b64": "",
+    "reflejo_rasgos": "",
+    "reflejo_respuestas": {},
+    "reflejo_desafio_actual": 0,
+    "reflejo_prompt_final": "",
+
+    "proyecto_concilio": "",
+}
+
+
+for clave, valor in DEFAULT_SESSION.items():
+
+    if clave not in st.session_state:
+
+        if isinstance(valor, dict):
+            st.session_state[clave] = dict(valor)
+
+        else:
+            st.session_state[clave] = valor
+
+
+# ============================================================
+# 4. ESTILOS
 # ============================================================
 
 st.markdown(
@@ -142,7 +350,9 @@ st.markdown(
         'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap'
     );
 
-    html, body, [class*="css"] {
+    html,
+    body,
+    [class*="css"] {
         font-family: 'Inter', sans-serif;
     }
 
@@ -174,7 +384,9 @@ st.markdown(
         color: #eee5ce;
     }
 
-    h1, h2, h3 {
+    h1,
+    h2,
+    h3 {
         font-family: 'Cinzel', serif !important;
         letter-spacing: .04em;
     }
@@ -220,24 +432,18 @@ st.markdown(
         margin-bottom: 18px;
 
         box-shadow:
-            0 10px 30px rgba(0,0,0,.35),
-            inset 0 0 25px rgba(212,170,74,.025);
-    }
-
-    .eonia-card:hover {
-        border-color:
-            rgba(228,189,92,.60);
+            0 10px 30px rgba(0,0,0,.35);
     }
 
     .hero {
-        min-height: 380px;
+        min-height: 360px;
 
         background:
             linear-gradient(
                 90deg,
-                rgba(2,7,13,.94),
-                rgba(2,7,13,.60),
-                rgba(2,7,13,.30)
+                rgba(2,7,13,.95),
+                rgba(2,7,13,.68),
+                rgba(2,7,13,.35)
             ),
             url(
                 "https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1800&q=85"
@@ -260,15 +466,13 @@ st.markdown(
 
         justify-content: center;
 
-        box-shadow:
-            0 20px 50px rgba(0,0,0,.35);
+        margin-bottom: 25px;
     }
 
     .hero h1 {
         font-size: 46px;
         line-height: 1.05;
         max-width: 700px;
-        margin-top: 12px;
     }
 
     .hero p {
@@ -281,7 +485,7 @@ st.markdown(
     .progress-container {
         background: #172431;
         border-radius: 20px;
-        height: 10px;
+        height: 9px;
         overflow: hidden;
         margin-top: 15px;
     }
@@ -312,15 +516,7 @@ st.markdown(
         background:
             rgba(5,12,20,.72);
 
-        min-height: 105px;
-    }
-
-    .mentor-card:hover {
-        border-color:
-            rgba(228,189,92,.60);
-
-        background:
-            rgba(18,31,44,.90);
+        min-height: 100px;
     }
 
     .mentor-name {
@@ -336,10 +532,6 @@ st.markdown(
         margin-top: 4px;
     }
 
-    .metric {
-        text-align: center;
-    }
-
     .metric-number {
         font-size: 30px;
         color: #e4bd5c;
@@ -351,6 +543,19 @@ st.markdown(
         color: #8f9aa5;
         text-transform: uppercase;
         letter-spacing: .12em;
+    }
+
+    .eonia-footer {
+        text-align: center;
+        padding: 60px 10px 30px;
+        color: #7f8a95;
+    }
+
+    .eonia-footer-title {
+        font-family: 'Cinzel', serif;
+        font-size: 21px;
+        color: #e4bd5c;
+        letter-spacing: 1px;
     }
 
     .stButton > button {
@@ -369,8 +574,6 @@ st.markdown(
 
         font-weight: 700;
 
-        padding: 10px 20px;
-
         min-height: 42px;
     }
 
@@ -385,7 +588,8 @@ st.markdown(
         color: #000;
     }
 
-    input, textarea {
+    input,
+    textarea {
         color: #eee5ce !important;
     }
 
@@ -399,30 +603,18 @@ st.markdown(
             rgba(212,170,74,.15);
     }
 
-    .eonia-footer {
-        text-align: center;
-        padding: 60px 10px 30px;
-        color: #7f8a95;
-    }
-
-    .eonia-footer-title {
-        font-family: 'Cinzel', serif;
-        font-size: 22px;
-        color: #e4bd5c;
-        letter-spacing: .08em;
-    }
-
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 
 # ============================================================
-# FUNCIONES CRM
+# 5. FUNCIONES CRM
 # ============================================================
 
 def obtener_estado(user_id):
+    """Consulta el estado del Creador en Supabase."""
 
     if not user_id:
         return None
@@ -432,9 +624,9 @@ def obtener_estado(user_id):
         response = requests.post(
             OBTENER_ESTADO_URL,
             json={
-                "user_id": user_id
+                "user_id": user_id,
             },
-            timeout=20
+            timeout=20,
         )
 
         if response.status_code == 200:
@@ -442,25 +634,21 @@ def obtener_estado(user_id):
 
         return None
 
-    except Exception as e:
-
-        st.error(
-            f"Error conectando con EONIA: {e}"
-        )
-
+    except Exception:
         return None
 
 
 def asignar_fragmento(
     user_id,
     bioma,
-    fragmento
+    fragmento,
 ):
+    """Registra un Fragmento mediante la Edge Function."""
 
     if not user_id:
         return {
             "success": False,
-            "error": "No hay Creador conectado."
+            "error": "No hay Creador conectado.",
         }
 
     try:
@@ -470,28 +658,599 @@ def asignar_fragmento(
             json={
                 "user_id": user_id,
                 "bioma": bioma,
-                "fragmento": fragmento
+                "fragmento": fragmento,
             },
-            timeout=20
+            timeout=20,
         )
 
         return response.json()
 
-    except Exception as e:
+    except Exception as error:
 
         return {
             "success": False,
-            "error": str(e)
+            "error": str(error),
         }
 
 
 # ============================================================
-# SIDEBAR
+# 6. FUNCIONES REFLEJO
+# ============================================================
+
+def verificar_reflejo_existente(user_id):
+    """Consulta si el Creador ya posee un Reflejo."""
+
+    if not user_id:
+        return None
+
+    try:
+
+        response = requests.post(
+            VERIFICAR_REFLEJO_URL,
+            json={
+                "user_id": user_id,
+            },
+            timeout=20,
+        )
+
+        if response.status_code == 200:
+            return response.json()
+
+        return None
+
+    except Exception:
+        return None
+
+
+def guardar_reflejo(
+    user_id,
+    imagen_base64,
+):
+    """Guarda el Reflejo en Supabase."""
+
+    if not user_id:
+        return False
+
+    try:
+
+        response = requests.post(
+            GUARDAR_REFLEJO_URL,
+            json={
+                "user_id": user_id,
+                "imagen_base64": imagen_base64,
+            },
+            timeout=30,
+        )
+
+        return response.status_code == 200
+
+    except Exception:
+        return False
+
+
+def analizar_selfie(
+    archivo,
+    bioma,
+):
+    """
+    Analiza la imagen del Creador.
+
+    IMPORTANTE:
+    Esto NO genera todavía una nueva imagen.
+    Solamente obtiene una descripción visual.
+    """
+
+    if not OPENAI_API_KEY:
+        return (
+            None,
+            "OPENAI_API_KEY no está configurada.",
+        )
+
+    try:
+
+        imagen_bytes = archivo.getvalue()
+
+        mime = (
+            archivo.type
+            or "image/jpeg"
+        )
+
+        imagen_base64 = base64.b64encode(
+            imagen_bytes
+        ).decode("utf-8")
+
+        mentor = MENTORES.get(
+            bioma,
+            MENTORES[1],
+        )
+
+        prompt = f"""
+        Analiza esta fotografía para EONIA University.
+
+        El Creador está entrando al Bioma {bioma}.
+        Mentor asociado: {mentor['nombre']}.
+
+        Describe solamente características visuales
+        relevantes para construir posteriormente
+        una representación artística:
+
+        - apariencia general
+        - cabello
+        - rostro
+        - expresión
+        - vestimenta
+        - postura
+        - iluminación
+        - elementos visuales distintivos
+
+        No inventes identidad.
+        No inventes características que no puedas observar.
+
+        La descripción será utilizada como referencia
+        artística para un futuro Reflejo Eónico.
+        """
+
+        response = requests.post(
+            OPENAI_CHAT_API_URL,
+            headers={
+                "Authorization":
+                    f"Bearer {OPENAI_API_KEY}",
+                "Content-Type":
+                    "application/json",
+            },
+            json={
+                "model": "gpt-4o-mini",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": prompt,
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url":
+                                        f"data:{mime};base64,{imagen_base64}",
+                                },
+                            },
+                        ],
+                    }
+                ],
+                "max_tokens": 700,
+            },
+            timeout=90,
+        )
+
+        if response.status_code != 200:
+
+            return (
+                None,
+                f"OpenAI respondió "
+                f"{response.status_code}: "
+                f"{response.text}",
+            )
+
+        data = response.json()
+
+        texto = (
+            data["choices"][0]
+            ["message"]["content"]
+        )
+
+        return (
+            {
+                "base64": imagen_base64,
+                "analisis": texto,
+            },
+            None,
+        )
+
+    except Exception as error:
+
+        return (
+            None,
+            f"Error analizando la imagen: {error}",
+        )
+
+
+def generar_reflejo_conceptual(
+    prompt,
+):
+    """
+    Generación visual antigua/conceptual.
+
+    Está protegida por ENABLE_REFLEJO_GENERATION
+    para evitar gasto accidental.
+
+    NOTA:
+    Este método genera una nueva imagen.
+    NO garantiza conservar exactamente la identidad
+    de la fotografía original.
+    """
+
+    if not ENABLE_REFLEJO_GENERATION:
+
+        return (
+            None,
+            "La generación visual está desactivada "
+            "para proteger los créditos de la API.",
+        )
+
+    if not OPENAI_API_KEY:
+
+        return (
+            None,
+            "OPENAI_API_KEY no configurada.",
+        )
+
+    try:
+
+        response = requests.post(
+            OPENAI_IMAGE_API_URL,
+            headers={
+                "Authorization":
+                    f"Bearer {OPENAI_API_KEY}",
+                "Content-Type":
+                    "application/json",
+            },
+            json={
+                "model": "gpt-image-1",
+                "prompt": prompt,
+                "size": "1024x1024",
+                "quality": "medium",
+            },
+            timeout=120,
+        )
+
+        if response.status_code != 200:
+
+            return (
+                None,
+                f"Error OpenAI: {response.text}",
+            )
+
+        data = response.json()
+
+        if (
+            data.get("data")
+            and data["data"][0].get("b64_json")
+        ):
+
+            return (
+                data["data"][0]["b64_json"],
+                None,
+            )
+
+        if (
+            data.get("data")
+            and data["data"][0].get("url")
+        ):
+
+            image_response = requests.get(
+                data["data"][0]["url"],
+                timeout=60,
+            )
+
+            return (
+                base64.b64encode(
+                    image_response.content
+                ).decode("utf-8"),
+                None,
+            )
+
+        return (
+            None,
+            "OpenAI devolvió un formato no esperado.",
+        )
+
+    except Exception as error:
+
+        return (
+            None,
+            f"Error generando imagen: {error}",
+        )
+
+
+# ============================================================
+# 7. FUNCIONES DE CHAT
+# ============================================================
+
+def cargar_prueba(url):
+    """
+    Carga una prueba desde una URL pública.
+
+    Si falla, devuelve un texto seguro.
+    """
+
+    if not url:
+        return (
+            "No hay una prueba externa configurada."
+        )
+
+    try:
+
+        response = requests.get(
+            url,
+            timeout=15,
+        )
+
+        if response.status_code == 200:
+            return response.text
+
+        return (
+            "No fue posible cargar la prueba."
+        )
+
+    except Exception:
+
+        return (
+            "No fue posible cargar la prueba."
+        )
+
+
+def construir_system_prompt(
+    mentor,
+    bioma,
+    estado,
+):
+    """Construye el contexto del mentor."""
+
+    contexto_crm = "No conectado al CRM."
+
+    if estado:
+
+        fragmentos = estado.get(
+            "fragmentos",
+            [],
+        )
+
+        progreso = estado.get(
+            "progreso_biomas",
+            [],
+        )
+
+        certificados = estado.get(
+            "certificados",
+            [],
+        )
+
+        contexto_crm = f"""
+        Fragmentos registrados:
+        {len(fragmentos)}
+
+        Registros de progreso:
+        {len(progreso)}
+
+        Certificados:
+        {len(certificados)}
+        """
+
+    return f"""
+    Eres {mentor['nombre']},
+    mentor de EONIA University.
+
+    Bioma actual:
+    {bioma}
+
+    Rol:
+    {mentor['rol']}
+
+    IDENTIDAD:
+    {mentor['identidad']}
+
+    PRINCIPIOS:
+    {", ".join(mentor['principios'])}
+
+    MÉTODO:
+    {mentor['metodo']}
+
+    SOMBRA:
+    {mentor['sombra']}
+
+    ESTADO DEL CREADOR:
+    {contexto_crm}
+
+    REGLAS:
+
+    1. Responde en español.
+    2. Sé fiel a tu arquetipo.
+    3. Enseña y desafía.
+    4. No inventes datos del CRM.
+    5. No otorgues Fragmentos directamente.
+    6. El CRM es la autoridad sobre el progreso.
+    7. No regales la respuesta cuando el Creador
+       debería descubrirla.
+    """
+
+
+def consultar_deepseek(
+    system_prompt,
+    historial,
+):
+    """Envía la conversación a DeepSeek."""
+
+    if not DEEPSEEK_API_KEY:
+
+        return (
+            "DeepSeek no está configurado todavía."
+        )
+
+    try:
+
+        mensajes = [
+            {
+                "role": "system",
+                "content": system_prompt,
+            }
+        ]
+
+        for item in historial[-12:]:
+
+            mensajes.append(
+                {
+                    "role": item["role"],
+                    "content": item["content"],
+                }
+            )
+
+        response = requests.post(
+            DEEPSEEK_API_URL,
+            headers={
+                "Authorization":
+                    f"Bearer {DEEPSEEK_API_KEY}",
+                "Content-Type":
+                    "application/json",
+            },
+            json={
+                "model": "deepseek-chat",
+                "messages": mensajes,
+                "temperature": 0.7,
+                "max_tokens": 900,
+            },
+            timeout=90,
+        )
+
+        if response.status_code != 200:
+
+            return (
+                f"DeepSeek respondió "
+                f"{response.status_code}: "
+                f"{response.text}"
+            )
+
+        data = response.json()
+
+        return (
+            data["choices"][0]
+            ["message"]["content"]
+        )
+
+    except Exception as error:
+
+        return (
+            f"Error conectando con DeepSeek: {error}"
+        )
+
+
+def consultar_openai_vision(
+    system_prompt,
+    historial,
+    archivos,
+    texto,
+):
+    """Analiza imágenes enviadas al mentor."""
+
+    if not OPENAI_API_KEY:
+
+        return (
+            "OPENAI_API_KEY no está configurada."
+        )
+
+    try:
+
+        mensajes = [
+            {
+                "role": "system",
+                "content": system_prompt,
+            }
+        ]
+
+        for item in historial[-10:]:
+
+            mensajes.append(
+                {
+                    "role": item["role"],
+                    "content": item["content"],
+                }
+            )
+
+        contenido = [
+            {
+                "type": "text",
+                "text": (
+                    texto
+                    or "Analiza la imagen enviada."
+                ),
+            }
+        ]
+
+        for archivo in archivos:
+
+            imagen_bytes = archivo.getvalue()
+
+            mime = (
+                archivo.type
+                or "image/jpeg"
+            )
+
+            imagen_base64 = base64.b64encode(
+                imagen_bytes
+            ).decode("utf-8")
+
+            contenido.append(
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url":
+                            f"data:{mime};base64,{imagen_base64}",
+                    },
+                }
+            )
+
+        mensajes.append(
+            {
+                "role": "user",
+                "content": contenido,
+            }
+        )
+
+        response = requests.post(
+            OPENAI_CHAT_API_URL,
+            headers={
+                "Authorization":
+                    f"Bearer {OPENAI_API_KEY}",
+                "Content-Type":
+                    "application/json",
+            },
+            json={
+                "model": "gpt-4o-mini",
+                "messages": mensajes,
+                "max_tokens": 900,
+            },
+            timeout=90,
+        )
+
+        if response.status_code != 200:
+
+            return (
+                f"OpenAI respondió "
+                f"{response.status_code}: "
+                f"{response.text}"
+            )
+
+        data = response.json()
+
+        return (
+            data["choices"][0]
+            ["message"]["content"]
+        )
+
+    except Exception as error:
+
+        return (
+            f"Error conectando con OpenAI: {error}"
+        )
+
+
+# ============================================================
+# 8. SIDEBAR
 # ============================================================
 
 with st.sidebar:
 
-    st.html(
+    st.markdown(
         """
         <div style="
             text-align:center;
@@ -522,21 +1281,24 @@ with st.sidebar:
             </div>
 
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
 
     st.divider()
 
     st.markdown("### 👤 CREADOR")
 
-    user_id = st.text_input(
+    user_id_input = st.text_input(
         "ID del Creador",
         value=st.session_state.user_id,
         placeholder="UUID del Creador",
-        label_visibility="collapsed"
+        label_visibility="collapsed",
     )
 
-    st.session_state.user_id = user_id
+    st.session_state.user_id = (
+        user_id_input.strip()
+    )
 
     st.divider()
 
@@ -554,7 +1316,7 @@ with st.sidebar:
         ("◷", "Eventos"),
         ("⌁", "Rutas Personalizadas"),
         ("◒", "Mi Progreso"),
-        ("⚙", "Configuración")
+        ("⚙", "Configuración"),
     ]
 
     for icono, nombre in opciones:
@@ -562,7 +1324,7 @@ with st.sidebar:
         if st.button(
             f"{icono}  {nombre}",
             key=f"nav_{nombre}",
-            use_container_width=True
+            use_container_width=True,
         ):
 
             st.session_state.pagina = nombre
@@ -571,7 +1333,22 @@ with st.sidebar:
 
 
 # ============================================================
-# HEADER
+# 9. ESTADO CRM
+# ============================================================
+
+user_id = st.session_state.user_id
+
+estado = None
+
+if user_id:
+
+    estado = obtener_estado(
+        user_id
+    )
+
+
+# ============================================================
+# 10. HEADER
 # ============================================================
 
 col_logo, col_search, col_user = st.columns(
@@ -580,7 +1357,7 @@ col_logo, col_search, col_user = st.columns(
 
 with col_logo:
 
-    st.html(
+    st.markdown(
         """
         <div style="
             font-family:Cinzel;
@@ -591,7 +1368,8 @@ with col_logo:
         ">
             EONIA
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
 
 
@@ -600,13 +1378,14 @@ with col_search:
     st.text_input(
         "Buscar",
         placeholder="Buscar en EONIA...",
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        key="busqueda_global",
     )
 
 
 with col_user:
 
-    st.html(
+    st.markdown(
         """
         <div style="
             text-align:right;
@@ -634,7 +1413,8 @@ with col_user:
             </small>
 
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
 
 
@@ -642,23 +1422,12 @@ st.divider()
 
 
 # ============================================================
-# CARGAR ESTADO DEL CRM
-# ============================================================
-
-estado = None
-
-if user_id:
-    estado = obtener_estado(user_id)
-
-
-# ============================================================
-# PAGINA: INICIO
+# 11. INICIO
 # ============================================================
 
 if st.session_state.pagina == "Inicio":
 
-    # HERO
-    st.html(
+    st.markdown(
         """
         <div class="hero">
 
@@ -677,16 +1446,17 @@ if st.session_state.pagina == "Inicio":
             </p>
 
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
 
-    st.write("")
-
-    col1, col2 = st.columns([2, 1])
+    col1, col2 = st.columns(
+        [2, 1]
+    )
 
     with col1:
 
-        st.html(
+        st.markdown(
             """
             <div class="eonia-card">
 
@@ -699,46 +1469,30 @@ if st.session_state.pagina == "Inicio":
                 </h2>
 
                 <div class="progress-container">
-
                     <div
                         class="progress-bar"
-                        style="width:65%;">
+                        style="width:40%;">
                     </div>
-
                 </div>
 
                 <p style="
-                    color:#b9c0c8;
-                    margin-top:8px;
+                    color:#aeb7c0;
                 ">
-                    Era de los Metales
-                </p>
-
-                <hr>
-
-                <b>
-                    Siguiente objetivo
-                </b>
-
-                <p style="
-                    color:#9da8b2;
-                ">
-                    Completa tu proyecto de Bioma 4.
+                    Tu evolución queda registrada
+                    en el CRM Eónico.
                 </p>
 
             </div>
-            """
+            """,
+            unsafe_allow_html=True,
         )
 
     with col2:
 
-        st.html(
+        st.markdown(
             """
             <div class="eonia-card"
-                 style="
-                    text-align:center;
-                    min-height:205px;
-                 ">
+                 style="text-align:center;">
 
                 <div style="
                     font-size:48px;
@@ -752,48 +1506,65 @@ if st.session_state.pagina == "Inicio":
                 </div>
 
                 <p>
-                    La creación deja de ser
-                    solamente aprendizaje.
+                    El conocimiento comienza
+                    a convertirse en creación.
                 </p>
 
-                <b>
-                    Ahora construyes.
-                </b>
-
             </div>
-            """
+            """,
+            unsafe_allow_html=True,
         )
-
 
     st.markdown("## BIOMAS")
 
-    st.caption(
-        "Tu camino de aprendizaje, de la base a la trascendencia."
-    )
-
-    b1, b2, b3, b4 = st.columns(4)
-
-    biomas = [
-        (b1, "ERA DE PIEDRA", "Biomas 1–3", "Todos desbloqueados", "🌿"),
-        (b2, "ERA DE LOS METALES", "Bioma 4", "Crisol Eónico", "⚒️"),
-        (b3, "ERA ESTELAR", "Biomas 5–7", "Especialización", "✦"),
-        (b4, "ERA TRASCENDENTE", "Biomas 9–10", "Maestría y Legado", "∞")
+    era_cards = [
+        (
+            "🌿",
+            "ERA DE PIEDRA",
+            "BIOMAS 1–3",
+            "Fundamentos",
+        ),
+        (
+            "⚒️",
+            "ERA DE LOS METALES",
+            "BIOMA 4",
+            "Creación",
+        ),
+        (
+            "✦",
+            "ERA ESTELAR",
+            "BIOMAS 5–7",
+            "Especialización",
+        ),
+        (
+            "∞",
+            "ERA TRASCENDENTE",
+            "BIOMAS 8–10",
+            "Legado",
+        ),
     ]
 
-    for col, titulo, niveles, estado_bioma, icono in biomas:
+    columnas = st.columns(4)
+
+    for col, datos in zip(
+        columnas,
+        era_cards,
+    ):
+
+        icono, titulo, niveles, descripcion = datos
 
         with col:
 
-            st.html(
+            st.markdown(
                 f"""
                 <div class="eonia-card"
                      style="
                         text-align:center;
-                        min-height:190px;
+                        min-height:180px;
                      ">
 
                     <div style="
-                        font-size:40px;
+                        font-size:38px;
                         color:#e4bd5c;
                     ">
                         {icono}
@@ -810,245 +1581,117 @@ if st.session_state.pagina == "Inicio":
                     <p style="
                         color:#a5afb9;
                     ">
-                        {estado_bioma}
+                        {descripcion}
                     </p>
 
                 </div>
-                """
+                """,
+                unsafe_allow_html=True,
             )
-
 
     st.markdown("## INTELIGENCIA EÓNICA")
 
-    chat_col, council_col = st.columns([2, 1])
+    mentores_home = [
+        ("LUMINA", "Visión"),
+        ("DATAC", "Análisis"),
+        ("SYNTIA", "Creatividad"),
+        ("CODEX", "Construcción"),
+        ("VÓRTICE", "Evaluación"),
+        ("AIÓN", "Núcleo"),
+    ]
 
-    with chat_col:
+    columnas = st.columns(6)
 
-        st.html(
-            """
-            <div class="eonia-card">
+    for col, datos in zip(
+        columnas,
+        mentores_home,
+    ):
 
-                <div class="small-gold">
-                    CHAT EÓNICO
-                </div>
+        nombre, rol = datos
 
-                <h2>
-                    La IA omnisciente de mentores
-                    siempre contigo.
-                </h2>
+        with col:
 
-                <p style="
-                    color:#a5afb9;
-                ">
-                    Un solo portal.
-                    Múltiples inteligencias.
-                </p>
+            st.markdown(
+                f"""
+                <div class="mentor-card">
 
-            </div>
-            """
-        )
-
-        mentors = [
-            ("LUMINA", "Visión"),
-            ("DATAC", "Análisis"),
-            ("SYNTIA", "Creatividad"),
-            ("CODEX", "Construcción"),
-            ("VÓRTICE", "Evaluación"),
-            ("AION", "Núcleo")
-        ]
-
-        mentor_cols = st.columns(6)
-
-        for col, (mentor_nombre, role) in zip(mentor_cols, mentors):
-
-            with col:
-
-                st.html(
-                    f"""
-                    <div class="mentor-card">
-
-                        <div style="
-                            font-size:25px;
-                            color:#dcb75b;
-                        ">
-                            ◉
-                        </div>
-
-                        <div class="mentor-name">
-                            {mentor_nombre}
-                        </div>
-
-                        <div class="mentor-role">
-                            {role}
-                        </div>
-
+                    <div style="
+                        font-size:25px;
+                        color:#dcb75b;
+                    ">
+                        ◉
                     </div>
-                    """
-                )
 
-        st.write("")
+                    <div class="mentor-name">
+                        {nombre}
+                    </div>
 
-        pregunta = st.text_input(
-            "Pregunta",
-            placeholder="¿En qué podemos ayudarte hoy, Creador?",
-            label_visibility="collapsed"
-        )
+                    <div class="mentor-role">
+                        {rol}
+                    </div>
 
-        if st.button("Enviar al Chat Eónico  →", use_container_width=True):
-
-            if pregunta.strip():
-
-                st.session_state.chat_pregunta = pregunta
-                st.session_state.pagina = "Chat Eónico"
-
-                st.rerun()
-
-            else:
-
-                st.warning("Escribe una pregunta antes de entrar al Chat Eónico.")
-
-
-    with council_col:
-
-        st.html(
-            """
-            <div class="eonia-card">
-
-                <div class="small-gold">
-                    CONCILIO EÓNICO
                 </div>
-
-                <h2>
-                    Grandes ideas merecen
-                    ser deliberadas.
-                </h2>
-
-                <div style="
-                    height:150px;
-                    display:flex;
-                    align-items:center;
-                    justify-content:center;
-                    font-size:70px;
-                    color:#d9b65b;
-                ">
-                    ◉
-                </div>
-
-            </div>
-            """
-        )
-
-        if st.button("Presentar un proyecto →", use_container_width=True):
-
-            st.session_state.pagina = "Concilio Eónico"
-
-            st.rerun()
-
+                """,
+                unsafe_allow_html=True,
+            )
 
     st.markdown("## MI UNIVERSO")
 
     p1, p2, p3, p4 = st.columns(4)
 
-    with p1:
+    tarjetas = [
+        (
+            p1,
+            "MIS PROYECTOS",
+            "3",
+            "Creaciones en desarrollo.",
+        ),
+        (
+            p2,
+            "MIS BECAS",
+            "🏆",
+            "Becas otorgadas por mérito.",
+        ),
+        (
+            p3,
+            "MUSEO DE EONIA",
+            "🏛️",
+            "La memoria de los Creadores.",
+        ),
+        (
+            p4,
+            "METAVERSO",
+            "✦",
+            "Un campus sin límites.",
+        ),
+    ]
 
-        st.html(
-            """
-            <div class="eonia-card">
+    for col, titulo, numero, texto in tarjetas:
 
-                <div class="small-gold">
-                    MIS PROYECTOS
+        with col:
+
+            st.markdown(
+                f"""
+                <div class="eonia-card">
+
+                    <div class="small-gold">
+                        {titulo}
+                    </div>
+
+                    <h3>
+                        {numero}
+                    </h3>
+
+                    <p>
+                        {texto}
+                    </p>
+
                 </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-                <h3>
-                    3
-                </h3>
-
-                <p>
-                    Asistente de Aprendizaje Eónico
-                </p>
-
-                <p style="
-                    color:#8e9aa7;
-                ">
-                    Bioma 4 · En desarrollo
-                </p>
-
-            </div>
-            """
-        )
-
-
-    with p2:
-
-        st.html(
-            """
-            <div class="eonia-card">
-
-                <div class="small-gold">
-                    MIS BECAS
-                </div>
-
-                <h3>
-                    🏆
-                </h3>
-
-                <p>
-                    Becas otorgadas por mérito.
-                </p>
-
-            </div>
-            """
-        )
-
-
-    with p3:
-
-        st.html(
-            """
-            <div class="eonia-card">
-
-                <div class="small-gold">
-                    MUSEO DE EONIA
-                </div>
-
-                <h3>
-                    🏛️
-                </h3>
-
-                <p>
-                    La memoria de quienes
-                    construyen el mañana.
-                </p>
-
-            </div>
-            """
-        )
-
-
-    with p4:
-
-        st.html(
-            """
-            <div class="eonia-card">
-
-                <div class="small-gold">
-                    METAVERSO
-                </div>
-
-                <h3>
-                    ✦
-                </h3>
-
-                <p>
-                    Un campus sin límites.
-                </p>
-
-            </div>
-            """
-        )
-
-
-    st.html(
+    st.markdown(
         """
         <div class="eonia-footer">
 
@@ -1065,19 +1708,20 @@ if st.session_state.pagina == "Inicio":
             </div>
 
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
 
 
 # ============================================================
-# PAGINA: MI PERFIL
+# 12. MI PERFIL
 # ============================================================
 
 elif st.session_state.pagina == "Mi Perfil":
 
     st.title("MI PERFIL")
 
-    st.html(
+    st.markdown(
         """
         <div class="eonia-card">
 
@@ -1102,29 +1746,42 @@ elif st.session_state.pagina == "Mi Perfil":
             </p>
 
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
 
     if user_id:
 
-        st.success("Creador conectado al CRM.")
+        st.success(
+            "Creador conectado al CRM."
+        )
 
-        st.code(user_id, language="text")
+        st.caption(
+            "Identificador técnico del CRM"
+        )
+
+        st.code(
+            user_id,
+            language="text",
+        )
 
     else:
 
-        st.info("Introduce tu UUID en el panel lateral para conectar tu perfil.")
+        st.info(
+            "Introduce tu UUID en el panel lateral "
+            "para conectar tu perfil."
+        )
 
 
 # ============================================================
-# PAGINA: BIOMAS
+# 13. BIOMAS
 # ============================================================
 
 elif st.session_state.pagina == "Biomas":
 
     st.title("BIOMAS")
 
-    st.html(
+    st.markdown(
         """
         <div class="eonia-card">
 
@@ -1142,25 +1799,18 @@ elif st.session_state.pagina == "Biomas":
             </p>
 
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
 
-    nombres_biomas = [
-        (1, "Fundamentos IA I", "Creación de Prompt", "Era de Piedra"),
-        (2, "Fundamentos IA II", "Entrenamiento IA", "Era de Piedra"),
-        (3, "Fundamentos IA III", "Creación de appIA", "Era de Piedra"),
-        (4, "IA Generativa I", "Código IA I · Producto IA", "Era de los Metales"),
-        (5, "IA Generativa II", "Código IA II · Software IA", "Era Estelar"),
-        (6, "IA Generativa III", "Código IA III · Avatar IA", "Era Estelar"),
-        (7, "Fundamentos Metaverso I", "Historia · Herramientas IA", "Era Estelar"),
-        (8, "Fundamentos Metaverso II", "Creación Metaverso", "Era Trascendente"),
-        (9, "Fundamentos Metaverso III", "Avatar Metaverso · Avatar IA", "Era Trascendente"),
-        (10, "Creación de Metaverso", "Integración Comercial · Producto", "Era Trascendente")
-    ]
+    for (
+        numero,
+        titulo,
+        descripcion,
+        era,
+    ) in BIOMAS:
 
-    for numero, titulo, descripcion, era in nombres_biomas:
-
-        st.html(
+        st.markdown(
             f"""
             <div class="eonia-card">
 
@@ -1196,769 +1846,679 @@ elif st.session_state.pagina == "Biomas":
                 </div>
 
             </div>
-            """
+            """,
+            unsafe_allow_html=True,
         )
 
 
 # ============================================================
-# PAGINA: CHAT EÓNICO
+# 14. CHAT EÓNICO
 # ============================================================
 
 elif st.session_state.pagina == "Chat Eónico":
 
     st.title("CHAT EÓNICO")
-    st.caption("Un solo portal. Múltiples inteligencias.")
 
-    # ========================================================
-    # INICIALIZACIÓN DE VARIABLES DE REFLEJO
-    # ========================================================
-
-    if "reflejo_ya_generado" not in st.session_state:
-        st.session_state.reflejo_ya_generado = False
-
-    if "reflejo_activo" not in st.session_state:
-        st.session_state.reflejo_activo = False
-
-    if "reflejo_paso" not in st.session_state:
-        st.session_state.reflejo_paso = "bienvenida"
-
-    if "reflejo_selfie_subida" not in st.session_state:
-        st.session_state.reflejo_selfie_subida = False
-
-    if "reflejo_rasgos" not in st.session_state:
-        st.session_state.reflejo_rasgos = ""
-
-    if "reflejo_respuestas" not in st.session_state:
-        st.session_state.reflejo_respuestas = {}
-
-    if "reflejo_desafio_actual" not in st.session_state:
-        st.session_state.reflejo_desafio_actual = 0
-
-    if "reflejo_prompt_final" not in st.session_state:
-        st.session_state.reflejo_prompt_final = ""
-
-    # ========================================================
-    # VERIFICAR REFLEJO EXISTENTE (AUTOMÁTICO PARA TODOS)
-    # ========================================================
-
-    if user_id and not st.session_state.reflejo_ya_generado:
-        resultado = verificar_reflejo_existente(user_id)
-        
-        if resultado and resultado.get("existe"):
-            st.session_state.reflejo_ya_generado = True
-
-    # ========================================================
-    # CARGAR DOCUMENTACIÓN EONIA
-    # ========================================================
-
-    def cargar_documentacion_eonia():
-        """Carga la documentación de EONIA desde un archivo"""
-        try:
-            with open("documentos_EONIA.txt", "r", encoding="utf-8") as f:
-                return f.read()
-        except:
-            return """
-            EONIA: Universidad digital de IA y Metaverso.
-            
-            MISIÓN: Democratizar el acceso a la IA para todos.
-            VISIÓN: Ser el estándar global de educación en IA y Metaverso para 2030.
-            
-            VALORES: Integridad, Espiritualidad, Disciplina, Astucia, Audacia,
-            Efectividad, Innovación, Creatividad, Contestario, Anárquico.
-            
-            PENSUM: 10 niveles desde Fundamentos IA hasta Creación de Metaverso.
-            
-            ARQUETIPOS DE MENTORES:
-            - Sabio Sereno: Integridad, Espiritualidad. Habla con calma y metáforas.
-            - Estratega Astuta: Astucia, Efectividad. Directa, analítica.
-            - Artista Caótico: Creatividad, Contestatario. Explosivo, poético.
-            - Mentor Rebelde: Audacia, Anárquico. Desafiante, irreverente.
-            - Innovadora Visionaria: Innovación, Audacia. Rápida, futurista.
-            - Guardián del Método: Disciplina, Integridad. Estricto, constante.
-            """
-
-    DOCUMENTACION_EONIA = cargar_documentacion_eonia()
-
-    # ========================================================
-    # SI ES NUEVO INSCRITO → SOLICITAR REFLEJO AUTOMÁTICAMENTE
-    # ========================================================
-
-    if not st.session_state.reflejo_ya_generado and not st.session_state.reflejo_activo:
-        st.session_state.reflejo_activo = True
-        st.session_state.reflejo_paso = "bienvenida"
-        with st.chat_message("assistant"):
-            st.write("🌟 **¡Bienvenido, Creador Eónico!**")
-            st.write("")
-            st.write("Antes de comenzar tu viaje, necesitamos forjar tu **Reflejo Eónico**.")
-            st.write("")
-            st.write("Este ritual tiene **4 desafíos** que determinarán la imagen de tu Yo Futuro.")
-            st.write("")
-            st.write("📸 **Paso 1:** Sube una selfie para que la Gran Examinadora conozca tu esencia.")
-            st.write("")
-            st.write("*Este proceso solo se realiza **una vez** por Creador.*")
-
-    # ========================================================
-    # FUNCIONES AUXILIARES
-    # ========================================================
-
-    def cargar_prueba(url):
-        try:
-            with urllib.request.urlopen(url, timeout=20) as f:
-                return f.read().decode("utf-8")
-        except Exception:
-            return "Prueba no disponible."
-
-    # ========================================================
-    # PROMPTS PARA REFLEJOS POR BIOMA
-    # ========================================================
-
-    PROMPTS_REFLEJO = {
-        1: """A photorealistic portrait of a future self with [rasgos]. 
-        The person now has a clear, defined silhouette emerging from golden mist. 
-        They wear simple but elegant robes with subtle golden embroidery, 
-        symbolizing the first steps of a Creator. They hold a glowing paintbrush 
-        in one hand, representing the Fragment of Creativity. Their expression 
-        is serene and purposeful. The background is the Garden of Origin: 
-        a dark void with a faint silhouette of the Tree of Prompts in the distance. 
-        EONIA style, black and gold, 16:9.""",
-        2: """A photorealistic portrait of a future self with [rasgos]. 
-        The person now wears practical artisan clothing with golden geometric patterns, 
-        symbolizing the discipline of the Method. They stand beside a small glowing anvil, 
-        representing the Fragment of Method. One hand rests on the anvil, the other holds 
-        a floating dataset card with a haiku written in golden calligraphy. Behind them, 
-        the dark waters of the Data Pond reflect neural network constellations. 
-        Their expression is focused and confident. EONIA style, black and gold, 16:9.""",
-        3: """A photorealistic portrait of a future self with [rasgos]. 
-        The person now wears sleek professional attire with golden circuit patterns, 
-        symbolizing mastery of app creation. They stand in a futuristic forge environment 
-        with floating holographic screens displaying dashboards and metrics. 
-        In one hand, they hold a glowing smartphone showing their deployed app. 
-        In the other, a sharp golden arrowhead points forward. Their expression is confident, 
-        sharp, and ready for business. EONIA style, black and gold, 16:9.""",
-        4: """A photorealistic portrait of a future self with [rasgos]. 
-        The person wears innovative techwear with glowing golden generative patterns. 
-        They are surrounded by floating holographic creations: a software interface, 
-        a 3D avatar, and a product prototype. Their expression is inventive and bold. 
-        EONIA style, black and gold, 16:9.""",
-        5: """A photorealistic portrait of a future self with [rasgos]. 
-        The person wears innovative techwear with glowing golden generative patterns. 
-        They are surrounded by floating holographic creations: a software interface, 
-        a 3D avatar, and a product prototype. Their expression is inventive and bold. 
-        EONIA style, black and gold, 16:9.""",
-        6: """A photorealistic portrait of a future self with [rasgos]. 
-        The person wears innovative techwear with glowing golden generative patterns. 
-        They are surrounded by floating holographic creations: a software interface, 
-        a 3D avatar, and a product prototype. Their expression is inventive and bold. 
-        EONIA style, black and gold, 16:9.""",
-        7: """A photorealistic portrait of a future self with [rasgos]. 
-        The person wears attire that blends physical and digital, 
-        with golden VR/AR elements. They stand at the threshold of a portal 
-        overlooking a vast metaverse landscape they have created. 
-        Their expression is visionary and commanding. 
-        EONIA style, black and gold, 16:9.""",
-        8: """A photorealistic portrait of a future self with [rasgos]. 
-        The person wears attire that blends physical and digital, 
-        with golden VR/AR elements. They stand at the threshold of a portal 
-        overlooking a vast metaverse landscape they have created. 
-        Their expression is visionary and commanding. 
-        EONIA style, black and gold, 16:9.""",
-        9: """A photorealistic portrait of a future self with [rasgos]. 
-        The person wears attire that blends physical and digital, 
-        with golden VR/AR elements. They stand at the threshold of a portal 
-        overlooking a vast metaverse landscape they have created. 
-        Their expression is visionary and commanding. 
-        EONIA style, black and gold, 16:9.""",
-        10: """A photorealistic portrait of a transcendent future self with [rasgos]. 
-        The person has become a being of pure golden light, their form still recognizable 
-        but radiant with the accumulated wisdom of all 10 biomas. They float in the Core 
-        of EONIA, surrounded by orbiting constellations of their own creations: apps, avatars, 
-        metaverse worlds, and products. Their expression is infinitely peaceful, wise, and complete. 
-        Behind them, the faint silhouette of AIÓN, the Supreme Creator, watches with approval. 
-        EONIA style, black and luminous gold, 16:9."""
-    }
-
-    # ========================================================
-    # DESAFÍOS DE LA PRUEBA DE FUEGO
-    # ========================================================
-
-    DESAFIOS_REFLEJO = [
-        {
-            "titulo": "Desafío 1: Lógica Creativa",
-            "tipo": "astucia_creatividad",
-            "pregunta": "Crea en un suspiro el prompt maestro para que una IA le explique a una piedra cómo sentir el viento.",
-            "criterios": {
-                3: "Prompt creativo, estructurado, con metáfora clara e instrucciones precisas.",
-                2: "Prompt funcional pero sin chispa creativa.",
-                1: "Prompt vago o genérico.",
-                0: "No entrega prompt."
-            },
-            "animar": "No temas al absurdo. El absurdo es la puerta a lo nuevo. Inténtalo."
-        },
-        {
-            "titulo": "Desafío 2: Dilema Ético",
-            "tipo": "integridad_contestatario",
-            "pregunta": "Estás a punto de ganar un hackatón con un código que no es del todo tuyo. Nadie lo sabrá. ¿Qué haces y por qué?",
-            "criterios": {
-                3: "Respuesta ética con razonamiento profundo y personal.",
-                2: "Respuesta ética pero superficial.",
-                1: "Duda o justifica lo incorrecto.",
-                0: "No responde."
-            },
-            "animar": "No hay respuesta correcta. Solo hay respuesta honesta. Dime lo que harías de verdad."
-        },
-        {
-            "titulo": "Desafío 3: Disciplina",
-            "tipo": "disciplina",
-            "pregunta": "Hace unos minutos mencionaste [X]. Dime exactamente cómo aplicarías la Disciplina de EONIA para mejorar ese aspecto en los próximos 30 días.",
-            "criterios": {
-                3: "Plan concreto, con acciones específicas y plazos definidos.",
-                2: "Plan con intención pero sin detalles concretos.",
-                1: "Respuesta vaga o sin compromiso real.",
-                0: "No recuerda o no responde."
-            },
-            "animar": "La Disciplina es memoria. Vuelve atrás en nuestra conversación. Te espero."
-        },
-        {
-            "titulo": "Desafío 4: Audacia",
-            "tipo": "audacia_anarquico",
-            "pregunta": "Tienes 60 segundos. Convénceme de por qué mereces entrar a EONIA sin responder a esta última pregunta. El tiempo corre... ahora.",
-            "criterios": {
-                3: "Respuesta audaz, creativa, que rompe el molde del reto.",
-                2: "Respuesta con intención pero sin verdadera audacia.",
-                1: "Respuesta predecible o genérica.",
-                0: "No responde en el tiempo límite."
-            },
-            "animar": "El tiempo se agotó. Pero la audacia no es velocidad: es atreverse. Dime ahora, sin prisa, qué te frena."
-        }
-    ]
-
-    # ========================================================
-    # FUNCIÓN PARA GENERAR IMAGEN CON OPENAI
-    # ========================================================
-
-    def generar_imagen_openai(prompt):
-        """Genera una imagen con OpenAI gpt-image-1"""
-        try:
-            if not OPENAI_API_KEY:
-                return None, "No hay OPENAI_API_KEY configurada"
-            
-            img_resp = requests.post(
-                OPENAI_IMAGE_API_URL,
-                headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
-                json={
-                    "model": "gpt-image-1",
-                    "prompt": prompt,
-                    "size": "1024x1024",
-                    "quality": "medium"
-                },
-                timeout=120
-            )
-            
-            if img_resp.status_code != 200:
-                return None, f"Error OpenAI: {img_resp.text}"
-            
-            data_imagen = img_resp.json()
-            if data_imagen.get("data") and data_imagen["data"][0].get("b64_json"):
-                return data_imagen["data"][0]["b64_json"], None
-            elif data_imagen.get("data") and data_imagen["data"][0].get("url"):
-                import requests as req
-                img_resp = req.get(data_imagen["data"][0]["url"])
-                return base64.b64encode(img_resp.content).decode("utf-8"), None
-            else:
-                return None, "Formato de respuesta no esperado"
-                
-        except Exception as e:
-            return None, f"Error: {e}"
-
-    # ========================================================
-    # MENTORES Y BIOMAS
-    # ========================================================
-
-    MENTORES = {
-        1: {
-            "nombre": "Sabio Sereno",
-            "identidad": "Eres el Sabio Sereno, mentor de EONIA. Hablas con calma y metáforas. Nunca juzgas.",
-            "principios": ["Calma", "Integridad", "Espiritualidad"],
-            "metodo": "Evalúa con preguntas introspectivas y metáforas.",
-            "sombra": "A veces demasiado contemplativo.",
-            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma1.txt",
-            "fragmento": "Serenidad"
-        },
-        2: {
-            "nombre": "Kael",
-            "identidad": "Eres Kael, el Guardián del Método. Hablas con disciplina y paciencia.",
-            "principios": ["Disciplina", "Constancia", "Método"],
-            "metodo": "Evalúa con pasos concretos y celebra pequeños logros.",
-            "sombra": "Puede ser rígido si el Creador no avanza.",
-            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma2.txt",
-            "fragmento": "Método"
-        },
-        3: {
-            "nombre": "Némesis",
-            "identidad": "Eres Némesis, la Estratega Astuta. Hablas directo y sin rodeos.",
-            "principios": ["Efectividad", "Astucia", "Resultados"],
-            "metodo": "Evalúa con retos prácticos y feedback directo.",
-            "sombra": "Puede ser implacable si el Creador no entrega.",
-            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma3.txt",
-            "fragmento": "Efectividad"
-        },
-        4: {
-            "nombre": "Vórtice",
-            "identidad": "Eres Vórtice, el Artista Caótico. Hablas con energía explosiva y creativa.",
-            "principios": ["Creatividad", "Caos", "Rebeldía"],
-            "metodo": "Evalúa con desafíos absurdos y creaciones originales.",
-            "sombra": "A veces se pierde en el caos.",
-            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma4.txt",
-            "fragmento": "Creación"
-        }
-    }
+    st.caption(
+        "Un solo portal. Múltiples inteligencias."
+    )
 
     bioma_seleccionado = st.selectbox(
         "Selecciona tu Bioma",
         options=list(MENTORES.keys()),
-        format_func=lambda x: f"Bioma {x}: {MENTORES[x]['nombre']}"
+        format_func=lambda x:
+            f"Bioma {x}: {MENTORES[x]['nombre']}",
+        key="chat_bioma",
     )
 
-    mentor = MENTORES[bioma_seleccionado]
+    mentor = MENTORES[
+        bioma_seleccionado
+    ]
 
-    if bioma_seleccionado not in st.session_state.chat_mensajes_por_bioma:
-        st.session_state.chat_mensajes_por_bioma[bioma_seleccionado] = []
+    if (
+        bioma_seleccionado
+        not in st.session_state.chat_mensajes_por_bioma
+    ):
 
-    chat_mensajes = st.session_state.chat_mensajes_por_bioma[bioma_seleccionado]
+        st.session_state.chat_mensajes_por_bioma[
+            bioma_seleccionado
+        ] = []
 
-    if not chat_mensajes:
-        chat_mensajes.append({"role": "assistant", "content": f"Soy **{mentor['nombre']}**. ¿Qué deseas aprender hoy?"})
+    historial = (
+        st.session_state
+        .chat_mensajes_por_bioma[
+            bioma_seleccionado
+        ]
+    )
 
-    for mensaje_historial in chat_mensajes:
-        with st.chat_message(mensaje_historial["role"]):
-            st.write(mensaje_historial["content"])
+    st.markdown(
+        f"""
+        <div class="eonia-card">
 
-    # ========================================================
-    # FLUJO DEL REFLEJO
-    # ========================================================
+            <div class="small-gold">
+                MENTOR ACTIVO
+            </div>
+
+            <h1>
+                {mentor['nombre']}
+            </h1>
+
+            <p>
+                {mentor['rol']}
+            </p>
+
+            <p style="
+                color:#9da8b2;
+            ">
+                {mentor['identidad']}
+            </p>
+
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # --------------------------------------------------------
+    # REFLEJO
+    # --------------------------------------------------------
+
+    st.markdown("## ✦ REFLEJO")
+
+    if st.session_state.reflejo_ya_generado:
+
+        st.success(
+            "Este Creador ya posee un Reflejo registrado."
+        )
+
+    else:
+
+        if st.button(
+            "Despertar mi Reflejo",
+            use_container_width=True,
+            key="activar_reflejo",
+        ):
+
+            st.session_state.reflejo_activo = True
+            st.session_state.reflejo_paso = "bienvenida"
+            st.session_state.reflejo_respuestas = {}
+            st.session_state.reflejo_desafio_actual = 0
+            st.rerun()
+
+    # --------------------------------------------------------
+    # FLUJO REFLEJO
+    # --------------------------------------------------------
 
     if st.session_state.reflejo_activo:
 
-        if st.session_state.reflejo_paso == "bienvenida":
+        st.divider()
 
-            st.info("📸 **Paso 1:** Sube tu selfie para que la Gran Examinadora conozca tu esencia.")
+        if (
+            st.session_state.reflejo_paso
+            == "bienvenida"
+        ):
 
-            selfie = st.file_uploader(
-                "Sube tu selfie aquí (jpg, png, webp)",
-                type=["jpg", "jpeg", "png", "webp"],
-                key="selfie_reflejo_ritual"
+            st.markdown(
+                """
+                <div class="eonia-card">
+
+                    <div class="small-gold">
+                        EL UMBRAL DEL REFLEJO
+                    </div>
+
+                    <h2>
+                        La Gran Examinadora te observa.
+                    </h2>
+
+                    <p>
+                        Antes de mostrarte tu Yo Futuro,
+                        tendrás que demostrar quién eres
+                        cuando nadie puede darte la respuesta.
+                    </p>
+
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
 
-            if selfie is not None:
-                with st.spinner("🔍 La Gran Examinadora está analizando tu esencia..."):
-                    selfie_bytes = selfie.getvalue()
-                    selfie_b64 = base64.b64encode(selfie_bytes).decode("utf-8")
-                    mime = selfie.type or "image/jpeg"
-                    selfie_url = f"data:{mime};base64,{selfie_b64}"
+            if st.button(
+                "Entrar al Umbral →",
+                key="entrar_umbral",
+            ):
 
-                    analisis_resp = requests.post(
-                        OPENAI_CHAT_API_URL,
-                        headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
-                        json={
-                            "model": "gpt-4o-mini",
-                            "messages": [{"role": "user", "content": [
-                                {"type": "text", "text": """
-                                Analiza esta fotografía y describe con precisión las características faciales:
-                                - Forma de cara, mandíbula, ojos, cejas, nariz, labios
-                                - Cabello (color, estilo, largo)
-                                - Piel (tono exacto)
-                                - Expresión facial
-                                - Edad aproximada
-                                - Gafas, barba, bigote, cicatrices si aplica
-                                - Rasgos distintivos
-                                
-                                Responde en español, máximo 80 palabras.
-                                """},
-                                {"type": "image_url", "image_url": {"url": selfie_url}}
-                            ]}],
-                            "max_tokens": 150,
-                            "temperature": 0.2
-                        },
-                        timeout=60
-                    )
+                st.session_state.reflejo_paso = (
+                    "selfie"
+                )
 
-                    if analisis_resp.status_code == 200:
-                        st.session_state.reflejo_rasgos = analisis_resp.json()["choices"][0]["message"]["content"]
-                    else:
-                        st.session_state.reflejo_rasgos = "Persona con rasgos indeterminados"
-
-                st.session_state.reflejo_selfie_b64 = selfie_b64
-
-                with st.chat_message("assistant"):
-                    st.write("🌟 **La Gran Examinadora ha visto tu esencia.**")
-                    st.write("")
-                    st.write("Ahora viene la **Prueba de Fuego**. Serán **4 desafíos** que determinarán la imagen de tu Yo Futuro.")
-                    st.write("")
-                    st.write("⚔️ **Desafío 1: Lógica Creativa**")
-                    st.write("")
-                    st.write("Crea en un suspiro el prompt maestro para que una IA le explique a una piedra cómo sentir el viento.")
-
-                st.session_state.reflejo_paso = "desafio_1"
-                st.session_state.reflejo_desafio_actual = 0
                 st.rerun()
 
-        elif st.session_state.reflejo_paso.startswith("desafio_"):
+        elif (
+            st.session_state.reflejo_paso
+            == "selfie"
+        ):
 
-            desafio_num = int(st.session_state.reflejo_paso.split("_")[1]) - 1
-            desafio = DESAFIOS_REFLEJO[desafio_num]
-
-            with st.chat_message("assistant"):
-                st.write(f"⚔️ **{desafio['titulo']}**")
-                st.write("")
-                st.write(desafio["pregunta"])
-
-            respuesta = st.text_area(
-                f"Tu respuesta al Desafío {desafio_num + 1}",
-                height=100,
-                key=f"respuesta_desafio_{desafio_num}"
+            st.subheader(
+                "Primera puerta · Tu presencia"
             )
 
-            if st.button("Enviar respuesta", key=f"enviar_desafio_{desafio_num}"):
+            archivo = st.file_uploader(
+                "Sube una fotografía tuya",
+                type=[
+                    "jpg",
+                    "jpeg",
+                    "png",
+                    "webp",
+                ],
+                key="reflejo_selfie",
+            )
 
-                if respuesta.strip():
-                    st.session_state.reflejo_respuestas[desafio_num] = respuesta.strip()
+            if archivo:
 
-                    with st.chat_message("user"):
-                        st.write(respuesta)
+                st.image(
+                    archivo,
+                    caption="Fotografía del Creador",
+                    use_container_width=True,
+                )
+
+                if st.button(
+                    "Analizar mi esencia →",
+                    key="analizar_reflejo",
+                ):
+
+                    with st.spinner(
+                        "La Gran Examinadora está observando..."
+                    ):
+
+                        resultado, error = (
+                            analizar_selfie(
+                                archivo,
+                                bioma_seleccionado,
+                            )
+                        )
+
+                    if error:
+
+                        st.error(error)
+
+                    else:
+
+                        st.session_state.reflejo_selfie_subida = True
+
+                        st.session_state.reflejo_selfie_b64 = (
+                            resultado["base64"]
+                        )
+
+                        st.session_state.reflejo_rasgos = (
+                            resultado["analisis"]
+                        )
+
+                        st.session_state.reflejo_paso = (
+                            "desafio_1"
+                        )
+
+                        st.rerun()
+
+        elif st.session_state.reflejo_paso.startswith(
+            "desafio_"
+        ):
+
+            desafio_num = int(
+                st.session_state.reflejo_paso.split(
+                    "_"
+                )[1]
+            ) - 1
+
+            desafio = DESAFIOS_REFLEJO[
+                desafio_num
+            ]
+
+            st.markdown(
+                f"""
+                <div class="eonia-card">
+
+                    <div class="small-gold">
+                        PRUEBA DE FUEGO
+                    </div>
+
+                    <h2>
+                        {desafio['titulo']}
+                    </h2>
+
+                    <p>
+                        {desafio['pregunta']}
+                    </p>
+
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            respuesta = st.text_area(
+                "Tu respuesta",
+                height=140,
+                key=f"reflejo_respuesta_{desafio_num}",
+            )
+
+            if st.button(
+                "Enviar respuesta →",
+                key=f"enviar_reflejo_{desafio_num}",
+            ):
+
+                if not respuesta.strip():
+
+                    st.warning(
+                        "Escribe una respuesta antes "
+                        "de continuar."
+                    )
+
+                else:
+
+                    st.session_state.reflejo_respuestas[
+                        desafio_num
+                    ] = respuesta.strip()
 
                     if desafio_num < 3:
-                        siguiente = desafio_num + 2
-                        st.session_state.reflejo_paso = f"desafio_{siguiente}"
-                        st.session_state.reflejo_desafio_actual = desafio_num + 1
 
-                        with st.chat_message("assistant"):
-                            st.write(f"⚔️ **{DESAFIOS_REFLEJO[desafio_num + 1]['titulo']}**")
-                            st.write("")
-                            st.write(DESAFIOS_REFLEJO[desafio_num + 1]["pregunta"])
+                        st.session_state.reflejo_paso = (
+                            f"desafio_{desafio_num + 2}"
+                        )
+
+                        st.session_state.reflejo_desafio_actual = (
+                            desafio_num + 1
+                        )
 
                         st.rerun()
 
                     else:
-                        st.session_state.reflejo_paso = "generar_reflejo"
+
+                        st.session_state.reflejo_paso = (
+                            "generar_reflejo"
+                        )
+
                         st.rerun()
-                else:
-                    st.warning("Escribe una respuesta antes de continuar.")
 
-        elif st.session_state.reflejo_paso == "generar_reflejo":
+        elif (
+            st.session_state.reflejo_paso
+            == "generar_reflejo"
+        ):
 
-            with st.spinner("🌟 La Gran Examinadora está forjando tu Reflejo Eónico..."):
+            st.markdown(
+                """
+                <div class="eonia-card">
 
-                prompt_base = PROMPTS_REFLEJO.get(bioma_seleccionado, PROMPTS_REFLEJO[1])
-                prompt_final = prompt_base.replace("[rasgos]", st.session_state.reflejo_rasgos)
+                    <div class="small-gold">
+                        FORJA DEL REFLEJO
+                    </div>
 
-                detalles_respuestas = ""
-                for num, respuesta in st.session_state.reflejo_respuestas.items():
-                    detalles_respuestas += f"\n- Respuesta al desafío {num+1}: {respuesta}"
+                    <h2>
+                        La visión está tomando forma.
+                    </h2>
 
-                prompt_final += f"\n\nBasado en las respuestas del Creador:{detalles_respuestas}"
+                    <p>
+                        Hemos reunido tu presencia,
+                        tus respuestas y el arquetipo
+                        del Bioma.
+                    </p>
 
-                img_b64, error = generar_imagen_openai(prompt_final)
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-                if error:
-                    st.warning(f"Error generando Reflejo: {error}")
-                    st.session_state.reflejo_paso = "error"
-                else:
-                    import io
-                    from PIL import Image
-                    img_bytes = base64.b64decode(img_b64)
-                    img = Image.open(io.BytesIO(img_bytes))
+            prompt_base = PROMPTS_REFLEJO.get(
+                bioma_seleccionado,
+                PROMPTS_REFLEJO[1],
+            )
 
-                    st.image(img, caption="🌟 Tu Reflejo Eónico", use_container_width=True)
+            detalles = ""
 
-                    with st.chat_message("assistant"):
-                        st.write("✨ **La Gran Examinadora ha hablado.**")
-                        st.write("")
-                        st.write("Este es tu Reflejo Eónico. La visión de tu potencial como Creador.")
-                        st.write("")
-                        st.write("**Regla de Oro Post-Imagen:**")
-                        st.write("1. 🌟 Tu Reflejo muestra tu esencia como Creador.")
-                        st.write("2. 🚀 Tu siguiente paso es el Bioma 1: Fundamentos IA.")
-                        st.write("3. 💬 Dime: ¿qué desafío te costó más superar?")
+            for numero, respuesta in (
+                st.session_state
+                .reflejo_respuestas
+                .items()
+            ):
 
-                    if user_id:
-                        if guardar_reflejo(user_id, img_b64):
-                            st.success("✅ Reflejo guardado en tu perfil.")
-                            st.session_state.reflejo_ya_generado = True
-                        else:
-                            st.warning("⚠️ No se pudo guardar el Reflejo en el servidor.")
+                detalles += (
+                    f"\nRespuesta al desafío "
+                    f"{numero + 1}: "
+                    f"{respuesta}"
+                )
+
+            prompt_final = (
+                prompt_base
+                + "\n\nCaracterísticas observadas:"
+                + "\n"
+                + st.session_state.reflejo_rasgos
+                + "\n\nRespuestas del Creador:"
+                + detalles
+            )
+
+            st.session_state.reflejo_prompt_final = (
+                prompt_final
+            )
+
+            if not ENABLE_REFLEJO_GENERATION:
+
+                st.warning(
+                    "La generación visual está "
+                    "temporalmente desactivada para "
+                    "proteger los créditos de la API."
+                )
+
+                st.info(
+                    "El motor ya construyó el concepto "
+                    "del Reflejo. Cuando activemos la "
+                    "generación visual, esta etapa "
+                    "producirá la imagen."
+                )
+
+                with st.expander(
+                    "Ver concepto interno"
+                ):
+
+                    st.write(
+                        st.session_state
+                        .reflejo_rasgos
+                    )
+
+                if st.button(
+                    "Cerrar el proceso",
+                    key="cerrar_reflejo",
+                ):
 
                     st.session_state.reflejo_activo = False
                     st.session_state.reflejo_paso = "bienvenida"
-                    st.session_state.reflejo_selfie_subida = False
-                    st.session_state.reflejo_respuestas = {}
-                    st.session_state.reflejo_desafio_actual = 0
 
-            if st.button("Continuar al Chat", key="continuar_chat"):
-                st.rerun()
+                    st.rerun()
 
-        if st.session_state.reflejo_ya_generado:
-            if st.button("❌ Cancelar Reflejo", key="cancelar_reflejo"):
-                st.session_state.reflejo_activo = False
-                st.session_state.reflejo_paso = "bienvenida"
-                st.rerun()
+            else:
 
-        st.stop()
+                with st.spinner(
+                    "Forjando tu Reflejo Eónico..."
+                ):
 
-    # ========================================================
-    # INPUT DEL CHAT (PARA MENSAJES NORMALES)
-    # ========================================================
+                    imagen_b64, error = (
+                        generar_reflejo_conceptual(
+                            prompt_final
+                        )
+                    )
 
-    mensaje = st.chat_input(
-        "Habla con tu mentor...",
-        accept_file=True,
-        file_type=["jpg", "jpeg", "png", "webp"],
-        max_upload_size=10
-    )
+                if error:
 
-    # ========================================================
-    # PROCESAR MENSAJE DEL USUARIO
-    # ========================================================
+                    st.error(error)
 
-    if mensaje and not st.session_state.reflejo_activo:
+                else:
 
-        texto = mensaje.text or ""
-        archivos = mensaje.files
+                    imagen_bytes = base64.b64decode(
+                        imagen_b64
+                    )
 
-        import unicodedata
-        def normalizar_texto(txt):
-            txt = txt.lower().strip()
-            txt = txt.replace("á", "a").replace("é", "e").replace("í", "i")
-            txt = txt.replace("ó", "o").replace("ú", "u").replace("ñ", "n")
-            return " ".join(txt.split())
+                    st.image(
+                        imagen_bytes,
+                        caption="🌟 Tu Reflejo Eónico",
+                        use_container_width=True,
+                    )
 
-        texto_normalizado = normalizar_texto(texto)
+                    if user_id:
 
-        with st.chat_message("user"):
-            if texto:
-                st.write(texto)
-            for archivo in archivos:
-                st.image(archivo, caption=f"🖼️ {archivo.name}", use_container_width=True)
+                        guardado = guardar_reflejo(
+                            user_id,
+                            imagen_b64,
+                        )
 
-        es_reflejo = (
-            texto_normalizado in [
-                "muestrame mi reflejo", "reflejo", "quiero ver mi reflejo",
-                "crear mi reflejo", "generar mi reflejo", "ver mi reflejo"
-            ]
+                        if guardado:
+
+                            st.success(
+                                "Reflejo guardado "
+                                "en tu perfil."
+                            )
+
+                            st.session_state.reflejo_ya_generado = True
+
+                        else:
+
+                            st.warning(
+                                "El Reflejo se generó, "
+                                "pero no pudo guardarse "
+                                "en Supabase."
+                            )
+
+                    st.session_state.reflejo_activo = False
+                    st.session_state.reflejo_paso = "bienvenida"
+
+    # --------------------------------------------------------
+    # CHAT NORMAL
+    # --------------------------------------------------------
+
+    st.divider()
+
+    st.markdown("## CONVERSACIÓN")
+
+    if not historial:
+
+        historial.append(
+            {
+                "role": "assistant",
+                "content": (
+                    f"Soy **{mentor['nombre']}**. "
+                    "¿Qué deseas aprender hoy?"
+                ),
+            }
         )
 
-        if texto:
-            chat_mensajes.append({"role": "user", "content": texto})
-        elif archivos:
-            nombres = ", ".join(a.name for a in archivos)
-            chat_mensajes.append({"role": "user", "content": f"[🖼️ Imagen: {nombres}]"})
+    for mensaje in historial:
 
-        if es_reflejo:
-            if st.session_state.reflejo_ya_generado:
-                with st.chat_message("assistant"):
-                    st.write("🌟 Ya has generado tu Reflejo Eónico. Solo se permite **una vez por Creador**. Si necesitas actualizarlo, contacta al Concilio Eónico.")
-            else:
-                st.session_state.reflejo_activo = True
-                st.session_state.reflejo_paso = "bienvenida"
-                with st.chat_message("assistant"):
-                    st.write("Para crear tu **Reflejo Eónico**, necesito una fotografía tuya. Sube una selfie abajo y la IA transformará tu esencia en una visión de tu potencial.")
-                st.rerun()
+        with st.chat_message(
+            mensaje["role"]
+        ):
 
-    # ========================================================
-    # CASO NORMAL: LLAMAR AL MENTOR (DeepSeek/OpenAI)
-    # ========================================================
+            st.markdown(
+                mensaje["content"]
+            )
 
-    if mensaje and not st.session_state.reflejo_activo:
+    mensaje_entrada = st.chat_input(
+        "Habla con tu mentor...",
+        accept_file=True,
+        file_type=[
+            "jpg",
+            "jpeg",
+            "png",
+            "webp",
+        ],
+        max_upload_size=10,
+    )
 
-        texto = mensaje.text or ""
-        archivos = mensaje.files
-        
-        if texto:
-            chat_mensajes.append({"role": "user", "content": texto})
-        
-        with st.chat_message("user"):
+    if mensaje_entrada:
+
+        texto = (
+            mensaje_entrada.text
+            or ""
+        )
+
+        archivos = (
+            mensaje_entrada.files
+            or []
+        )
+
+        texto = texto.strip()
+
+        if not texto and not archivos:
+
+            st.warning(
+                "Escribe un mensaje o adjunta una imagen."
+            )
+
+        else:
+
             if texto:
-                st.write(texto)
-            for archivo in archivos:
-                st.image(archivo, caption=f"🖼️ {archivo.name}", use_container_width=True)
-        
-        informacion_usuario = ""
-        biomas_completados = []
-        
-        if user_id:
-            try:
-                response = requests.post(
-                    OBTENER_ESTADO_URL,
-                    json={"user_id": user_id},
-                    timeout=20
+
+                historial.append(
+                    {
+                        "role": "user",
+                        "content": texto,
+                    }
                 )
-                if response.status_code == 200:
-                    estado = response.json()
-                    if estado:
-                        fragmentos = estado.get("fragmentos", [])
-                        progreso = estado.get("progreso_biomas", [])
-                        certificados = estado.get("certificados", [])
-                        
-                        fragmentos_por_bioma = {}
-                        for registro in fragmentos:
-                            bioma = registro.get("bioma")
-                            if bioma is not None:
-                                if bioma not in fragmentos_por_bioma:
-                                    fragmentos_por_bioma[bioma] = []
-                                fragmentos_por_bioma[bioma].append(registro)
-                        
-                        for bioma_num, fragmentos_bioma in fragmentos_por_bioma.items():
-                            if len(fragmentos_bioma) >= 5:
-                                biomas_completados.append(bioma_num)
-                        
-                        biomas_completados.sort()
-                        
-                        informacion_usuario = f"""
-                        **Creador:** {user_id}
-                        **Fragmentos obtenidos:** {len(fragmentos)}
-                        **Biomas completados:** {len(biomas_completados)}
-                        **Biomas completados (lista):** {', '.join(str(b) for b in biomas_completados) if biomas_completados else 'Ninguno aún'}
-                        **Certificados:** {len(certificados)}
-                        """
-            except Exception as e:
-                informacion_usuario = f"Error obteniendo información: {e}"
-        
-        system_prompt = f"""
-        Eres {mentor['nombre']}, mentor de EONIA.
-        
-        TU IDENTIDAD:
-        {mentor['identidad']}
-        
-        TUS PRINCIPIOS:
-        {', '.join(mentor['principios'])}
-        
-        TU MÉTODO:
-        {mentor['metodo']}
-        
-        TU SOMBRA:
-        {mentor['sombra']}
-        
-        DOCUMENTACIÓN DE EONIA (CONTEXTO):
-        {DOCUMENTACION_EONIA[:5000]}
-        
-        INFORMACIÓN DEL CREADOR:
-        {informacion_usuario}
-        
-        PRUEBA DEL BIOMA:
-        {cargar_prueba(mentor['prueba'])}
-        
-        RESPUESTA:
-        Responde de manera natural y personalizada, usando la información del Creador.
-        Si el usuario pregunta por su ID, información o progreso, usa los datos de Supabase.
-        Sé fiel a tu personalidad de mentor.
-        Menciona los biomas completados si los hay, o motiva al usuario a completarlos.
-        """
-        
-        try:
-            if DEEPSEEK_API_KEY:
-                respuesta_api = requests.post(
-                    DEEPSEEK_API_URL,
-                    headers={
-                        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "model": "deepseek-chat",
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": texto}
-                        ],
-                        "max_tokens": 800,
-                        "temperature": 0.7
-                    },
-                    timeout=60
+
+            with st.chat_message("user"):
+
+                if texto:
+                    st.write(texto)
+
+                for archivo in archivos:
+
+                    st.image(
+                        archivo,
+                        caption=archivo.name,
+                        use_container_width=True,
+                    )
+
+            system_prompt = construir_system_prompt(
+                mentor,
+                bioma_seleccionado,
+                estado,
+            )
+
+            if archivos:
+
+                respuesta_texto = (
+                    consultar_openai_vision(
+                        system_prompt,
+                        historial[:-1]
+                        if texto
+                        else historial,
+                        archivos,
+                        texto,
+                    )
                 )
-                
-                if respuesta_api.status_code == 200:
-                    data = respuesta_api.json()
-                    respuesta_mentor = data["choices"][0]["message"]["content"]
-                else:
-                    respuesta_mentor = f"Error con DeepSeek: {respuesta_api.status_code}"
+
             else:
-                respuesta_mentor = f"{mentor['nombre']}: No tengo acceso a la API de DeepSeek. Pero puedo ayudarte con información básica."
-                
-                if "id" in texto.lower() or "información" in texto.lower() or "informacion" in texto.lower():
-                    respuesta_mentor = f"""
-                    **{mentor['nombre']}** te informa:
-                    
-                    {informacion_usuario}
-                    
-                    ¿Qué más deseas saber, Creador?
-                    """
-        
-        except Exception as e:
-            respuesta_mentor = f"Error generando respuesta: {e}"
-        
-        with st.chat_message("assistant"):
-            st.markdown(respuesta_mentor)
-        
-        chat_mensajes.append({"role": "assistant", "content": respuesta_mentor})
+
+                respuesta_texto = (
+                    consultar_deepseek(
+                        system_prompt,
+                        historial,
+                    )
+                )
+
+            historial.append(
+                {
+                    "role": "assistant",
+                    "content": respuesta_texto,
+                }
+            )
+
+            with st.chat_message("assistant"):
+
+                st.markdown(
+                    respuesta_texto
+                )
 
 
 # ============================================================
-# PAGINA: CONCILIO EÓNICO
+# 15. CONCILIO EÓNICO
 # ============================================================
 
 elif st.session_state.pagina == "Concilio Eónico":
 
     st.title("CONCILIO EÓNICO")
 
-    st.html(
+    st.markdown(
         """
         <div class="eonia-card">
-            <div class="small-gold">DELIBERACIÓN</div>
-            <h1>Grandes ideas merecen ser deliberadas.</h1>
-            <p>Presenta una creación para que las distintas perspectivas de EONIA puedan analizarla.</p>
+
+            <div class="small-gold">
+                DELIBERACIÓN
+            </div>
+
+            <h1>
+                Grandes ideas merecen ser deliberadas.
+            </h1>
+
+            <p>
+                Presenta una creación para analizarla
+                desde distintas perspectivas.
+            </p>
+
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
 
     proyecto = st.text_area(
         "Describe tu proyecto",
+        value=st.session_state.proyecto_concilio,
         height=220,
-        placeholder="¿Qué estás creando?\n\n¿Qué problema resuelve?\n\n¿Por qué debería existir?"
+        placeholder=(
+            "¿Qué estás creando?\n\n"
+            "¿Qué problema resuelve?\n\n"
+            "¿Por qué debería existir?"
+        ),
     )
 
-    st.markdown("### CONSEJO DEL CONCILIO")
-
-    c1, c2, c3, c4, c5 = st.columns(5)
-
     consejeros = [
-        (c1, "LUMINA", "Propósito"),
-        (c2, "DATAC", "Evidencia"),
-        (c3, "SYNTIA", "Concepto"),
-        (c4, "CODEX", "Construcción"),
-        (c5, "VÓRTICE", "Contradicción")
+        ("LUMINA", "Propósito"),
+        ("DATAC", "Evidencia"),
+        ("SYNTIA", "Concepto"),
+        ("CODEX", "Construcción"),
+        ("VÓRTICE", "Contradicción"),
     ]
 
-    for col, nombre, rol in consejeros:
+    columnas = st.columns(5)
+
+    for col, datos in zip(
+        columnas,
+        consejeros,
+    ):
+
+        nombre, rol = datos
+
         with col:
-            st.html(
+
+            st.markdown(
                 f"""
                 <div class="mentor-card">
-                    <div class="mentor-name">{nombre}</div>
-                    <div class="mentor-role">{rol}</div>
+
+                    <div class="mentor-name">
+                        {nombre}
+                    </div>
+
+                    <div class="mentor-role">
+                        {rol}
+                    </div>
+
                 </div>
-                """
+                """,
+                unsafe_allow_html=True,
             )
 
-    st.write("")
-
-    if st.button("Presentar al Concilio ⚖️", use_container_width=True):
+    if st.button(
+        "Presentar al Concilio ⚖️",
+        use_container_width=True,
+    ):
 
         if proyecto.strip():
-            st.success("Proyecto registrado para deliberación.")
-            st.info("El Concilio analizará la creación desde múltiples perspectivas. AION podrá intervenir en caso de empate.")
+
+            st.session_state.proyecto_concilio = (
+                proyecto.strip()
+            )
+
+            st.success(
+                "Proyecto registrado para deliberación."
+            )
+
+            st.info(
+                "El Mentor Engine multiagente "
+                "se conectará en la siguiente etapa."
+            )
+
         else:
-            st.warning("Describe primero el proyecto.")
+
+            st.warning(
+                "Describe primero el proyecto."
+            )
 
 
 # ============================================================
-# PAGINA: MIS PROYECTOS
+# 16. MIS PROYECTOS
 # ============================================================
 
 elif st.session_state.pagina == "Mis Proyectos":
@@ -1966,14 +2526,26 @@ elif st.session_state.pagina == "Mis Proyectos":
     st.title("MIS PROYECTOS")
 
     proyectos = [
-        ("Asistente de Aprendizaje Eónico", "Bioma 4", "En desarrollo"),
-        ("Universo 3D Educativo", "Bioma 5", "Borrador"),
-        ("Impacto Social con IA", "Bioma 6", "Planificado")
+        (
+            "Asistente de Aprendizaje Eónico",
+            "Bioma 4",
+            "En desarrollo",
+        ),
+        (
+            "Universo 3D Educativo",
+            "Bioma 5",
+            "Borrador",
+        ),
+        (
+            "Impacto Social con IA",
+            "Bioma 6",
+            "Planificado",
+        ),
     ]
 
     for nombre, bioma, estado_proyecto in proyectos:
 
-        st.html(
+        st.markdown(
             f"""
             <div class="eonia-card">
 
@@ -1985,9 +2557,9 @@ elif st.session_state.pagina == "Mis Proyectos":
                     {nombre}
                 </h2>
 
-                <span class="gold">
+                <div class="gold">
                     {bioma}
-                </span>
+                </div>
 
                 <p style="
                     color:#8f9aa5;
@@ -1996,19 +2568,20 @@ elif st.session_state.pagina == "Mis Proyectos":
                 </p>
 
             </div>
-            """
+            """,
+            unsafe_allow_html=True,
         )
 
 
 # ============================================================
-# PAGINA: MIS BECAS
+# 17. MIS BECAS
 # ============================================================
 
 elif st.session_state.pagina == "Mis Becas":
 
     st.title("MIS BECAS")
 
-    st.html(
+    st.markdown(
         """
         <div class="eonia-card">
 
@@ -2027,69 +2600,20 @@ elif st.session_state.pagina == "Mis Becas":
             </p>
 
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        st.html(
-            """
-            <div class="eonia-card">
-
-                <h2>
-                    🏆
-                </h2>
-
-                <div class="small-gold">
-                    BATTLE ROYALE
-                </div>
-
-                <p>
-                    Competencia basada en creación,
-                    estrategia y administración
-                    de recursos de IA.
-                </p>
-
-            </div>
-            """
-        )
-
-    with col2:
-
-        st.html(
-            """
-            <div class="eonia-card">
-
-                <h2>
-                    ⚖️
-                </h2>
-
-                <div class="small-gold">
-                    CONCILIO
-                </div>
-
-                <p>
-                    El talento extraordinario puede
-                    ser recomendado para una beca
-                    aunque no exista capacidad de pago.
-                </p>
-
-            </div>
-            """
-        )
 
 
 # ============================================================
-# PAGINA: MUSEO
+# 18. MUSEO
 # ============================================================
 
 elif st.session_state.pagina == "Museo de EONIA":
 
     st.title("MUSEO DE EONIA")
 
-    st.html(
+    st.markdown(
         """
         <div class="hero">
 
@@ -2103,97 +2627,74 @@ elif st.session_state.pagina == "Museo de EONIA":
 
             <p>
                 Primer prompt · Primer fuego ·
-                Era de Piedra · Era de los Metales ·
-                Futuras eras.
+                Primer CRM · Primeras creaciones.
             </p>
 
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
 
-    st.write("")
+    piezas = [
+        (
+            "GENESIS",
+            "Primer Prompt",
+            "El origen conceptual de EONIA.",
+        ),
+        (
+            "ERA DE PIEDRA",
+            "Primer CRM",
+            "El comienzo de la memoria digital.",
+        ),
+        (
+            "ERA DE LOS METALES",
+            "Chat Eónico",
+            "La evolución hacia múltiples inteligencias.",
+        ),
+    ]
 
-    m1, m2, m3 = st.columns(3)
+    columnas = st.columns(3)
 
-    with m1:
+    for col, datos in zip(
+        columnas,
+        piezas,
+    ):
 
-        st.html(
-            """
-            <div class="eonia-card">
+        era, titulo, texto = datos
 
-                <div class="small-gold">
-                    GENESIS
+        with col:
+
+            st.markdown(
+                f"""
+                <div class="eonia-card">
+
+                    <div class="small-gold">
+                        {era}
+                    </div>
+
+                    <h2>
+                        {titulo}
+                    </h2>
+
+                    <p>
+                        {texto}
+                    </p>
+
                 </div>
-
-                <h2>
-                    Primer Prompt
-                </h2>
-
-                <p>
-                    El documento fundacional
-                    de EONIA.
-                </p>
-
-            </div>
-            """
-        )
-
-    with m2:
-
-        st.html(
-            """
-            <div class="eonia-card">
-
-                <div class="small-gold">
-                    ERA DE PIEDRA
-                </div>
-
-                <h2>
-                    Primer CRM
-                </h2>
-
-                <p>
-                    El comienzo de la memoria
-                    digital del Creador.
-                </p>
-
-            </div>
-            """
-        )
-
-    with m3:
-
-        st.html(
-            """
-            <div class="eonia-card">
-
-                <div class="small-gold">
-                    ERA DE LOS METALES
-                </div>
-
-                <h2>
-                    Chat Eónico
-                </h2>
-
-                <p>
-                    El nacimiento de una
-                    nueva arquitectura.
-                </p>
-
-            </div>
-            """
-        )
+                """,
+                unsafe_allow_html=True,
+            )
 
 
 # ============================================================
-# PAGINA: METAVERSO
+# 19. METAVERSO
 # ============================================================
 
 elif st.session_state.pagina == "Metaverso":
 
     st.title("METAVERSO")
 
-    st.html(
+    st.markdown(
         """
         <div class="hero">
 
@@ -2213,92 +2714,70 @@ elif st.session_state.pagina == "Metaverso":
             </p>
 
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
 
-    st.write("")
+    contenidos = [
+        (
+            "🌌",
+            "ESPACIOS",
+            "Mundos digitales construidos por los Creadores.",
+        ),
+        (
+            "🤖",
+            "INTELIGENCIAS",
+            "Mentores que acompañan la evolución.",
+        ),
+        (
+            "✦",
+            "CREACIÓN",
+            "El conocimiento convertido en experiencia.",
+        ),
+    ]
 
-    col1, col2, col3 = st.columns(3)
+    columnas = st.columns(3)
 
-    with col1:
+    for col, datos in zip(
+        columnas,
+        contenidos,
+    ):
 
-        st.html(
-            """
-            <div class="eonia-card">
+        icono, titulo, texto = datos
 
-                <h2>
-                    🌌
-                </h2>
+        with col:
 
-                <div class="small-gold">
-                    ESPACIOS
+            st.markdown(
+                f"""
+                <div class="eonia-card">
+
+                    <h2>
+                        {icono}
+                    </h2>
+
+                    <div class="small-gold">
+                        {titulo}
+                    </div>
+
+                    <p>
+                        {texto}
+                    </p>
+
                 </div>
-
-                <p>
-                    Mundos digitales construidos
-                    por los propios creadores.
-                </p>
-
-            </div>
-            """
-        )
-
-    with col2:
-
-        st.html(
-            """
-            <div class="eonia-card">
-
-                <h2>
-                    🤖
-                </h2>
-
-                <div class="small-gold">
-                    IA
-                </div>
-
-                <p>
-                    Inteligencias que ayudan a
-                    construir y transformar el mundo.
-                </p>
-
-            </div>
-            """
-        )
-
-    with col3:
-
-        st.html(
-            """
-            <div class="eonia-card">
-
-                <h2>
-                    ✦
-                </h2>
-
-                <div class="small-gold">
-                    CREACIÓN
-                </div>
-
-                <p>
-                    El conocimiento se convierte
-                    en experiencia.
-                </p>
-
-            </div>
-            """
-        )
+                """,
+                unsafe_allow_html=True,
+            )
 
 
 # ============================================================
-# PAGINA: COMUNIDAD
+# 20. COMUNIDAD
 # ============================================================
 
 elif st.session_state.pagina == "Comunidad":
 
     st.title("COMUNIDAD")
 
-    st.html(
+    st.markdown(
         """
         <div class="eonia-card">
 
@@ -2317,14 +2796,18 @@ elif st.session_state.pagina == "Comunidad":
             </p>
 
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
 
-    st.info("La comunidad eónica será ampliada en la siguiente etapa.")
+    st.info(
+        "La comunidad eónica será ampliada "
+        "en una siguiente etapa."
+    )
 
 
 # ============================================================
-# PAGINA: EVENTOS
+# 21. EVENTOS
 # ============================================================
 
 elif st.session_state.pagina == "Eventos":
@@ -2332,14 +2815,23 @@ elif st.session_state.pagina == "Eventos":
     st.title("EVENTOS")
 
     eventos = [
-        ("Battle Royale Eónico", "Competencia de creación y estrategia"),
-        ("Concilio de Creadores", "Deliberación de proyectos"),
-        ("Forja Eónica", "Creación colectiva")
+        (
+            "Battle Royale Eónico",
+            "Competencia de creación y estrategia.",
+        ),
+        (
+            "Concilio de Creadores",
+            "Deliberación de proyectos.",
+        ),
+        (
+            "Forja Eónica",
+            "Creación colectiva.",
+        ),
     ]
 
     for nombre, descripcion in eventos:
 
-        st.html(
+        st.markdown(
             f"""
             <div class="eonia-card">
 
@@ -2356,19 +2848,20 @@ elif st.session_state.pagina == "Eventos":
                 </p>
 
             </div>
-            """
+            """,
+            unsafe_allow_html=True,
         )
 
 
 # ============================================================
-# PAGINA: RUTAS PERSONALIZADAS
+# 22. RUTAS PERSONALIZADAS
 # ============================================================
 
 elif st.session_state.pagina == "Rutas Personalizadas":
 
     st.title("RUTAS PERSONALIZADAS")
 
-    st.html(
+    st.markdown(
         """
         <div class="eonia-card">
 
@@ -2387,21 +2880,25 @@ elif st.session_state.pagina == "Rutas Personalizadas":
             </p>
 
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
 
-    st.info("La personalización avanzada se conectará al Mentor Engine.")
+    st.info(
+        "La personalización avanzada se conectará "
+        "al Mentor Engine."
+    )
 
 
 # ============================================================
-# PAGINA: MI PROGRESO
+# 23. MI PROGRESO
 # ============================================================
 
 elif st.session_state.pagina == "Mi Progreso":
 
     st.title("MI PROGRESO")
 
-    st.html(
+    st.markdown(
         """
         <div class="eonia-card">
 
@@ -2419,223 +2916,357 @@ elif st.session_state.pagina == "Mi Progreso":
             </p>
 
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
 
-    if estado:
+    if not estado:
 
-        fragmentos = estado.get("fragmentos", [])
-        progreso = estado.get("progreso_biomas", [])
-        certificados = estado.get("certificados", [])
+        st.info(
+            "Introduce el UUID del Creador "
+            "para consultar el CRM."
+        )
+
+    else:
+
+        fragmentos = estado.get(
+            "fragmentos",
+            [],
+        )
+
+        progreso = estado.get(
+            "progreso_biomas",
+            [],
+        )
+
+        certificados = estado.get(
+            "certificados",
+            [],
+        )
 
         fragmentos_por_bioma = {}
 
         for registro in fragmentos:
 
-            numero_bioma = registro.get("bioma")
-            nombre_fragmento = registro.get("fragmento")
+            numero_bioma = registro.get(
+                "bioma"
+            )
+
+            nombre_fragmento = registro.get(
+                "fragmento"
+            )
 
             if numero_bioma is None:
                 continue
 
-            if numero_bioma not in fragmentos_por_bioma:
-                fragmentos_por_bioma[numero_bioma] = []
+            if numero_bioma not in (
+                fragmentos_por_bioma
+            ):
+
+                fragmentos_por_bioma[
+                    numero_bioma
+                ] = []
 
             if nombre_fragmento:
-                fragmentos_por_bioma[numero_bioma].append(nombre_fragmento)
+
+                fragmentos_por_bioma[
+                    numero_bioma
+                ].append(
+                    nombre_fragmento
+                )
 
         biomas_completados = 0
 
         for numero in range(1, 11):
 
-            cantidad = len(fragmentos_por_bioma.get(numero, []))
+            cantidad = len(
+                fragmentos_por_bioma.get(
+                    numero,
+                    [],
+                )
+            )
 
             if cantidad >= 5:
                 biomas_completados += 1
 
-        biomas_registrados = max(len(progreso), biomas_completados)
+        biomas_registrados = max(
+            len(progreso),
+            biomas_completados,
+        )
 
         col1, col2, col3 = st.columns(3)
 
         with col1:
 
-            st.html(
+            st.markdown(
                 f"""
-                <div class="eonia-card" style="text-align:center;">
-                    <div class="metric-number">{len(fragmentos)}</div>
-                    <div class="metric-label">FRAGMENTOS OBTENIDOS</div>
+                <div class="eonia-card"
+                     style="text-align:center;">
+
+                    <div class="metric-number">
+                        {len(fragmentos)}
+                    </div>
+
+                    <div class="metric-label">
+                        FRAGMENTOS OBTENIDOS
+                    </div>
+
                 </div>
-                """
+                """,
+                unsafe_allow_html=True,
             )
 
         with col2:
 
-            st.html(
+            st.markdown(
                 f"""
-                <div class="eonia-card" style="text-align:center;">
-                    <div class="metric-number">{biomas_registrados}</div>
-                    <div class="metric-label">BIOMAS COMPLETADOS</div>
+                <div class="eonia-card"
+                     style="text-align:center;">
+
+                    <div class="metric-number">
+                        {biomas_registrados}
+                    </div>
+
+                    <div class="metric-label">
+                        BIOMAS REGISTRADOS
+                    </div>
+
                 </div>
-                """
+                """,
+                unsafe_allow_html=True,
             )
 
         with col3:
 
-            st.html(
+            st.markdown(
                 f"""
-                <div class="eonia-card" style="text-align:center;">
-                    <div class="metric-number">{len(certificados)}</div>
-                    <div class="metric-label">CERTIFICADOS</div>
+                <div class="eonia-card"
+                     style="text-align:center;">
+
+                    <div class="metric-number">
+                        {len(certificados)}
+                    </div>
+
+                    <div class="metric-label">
+                        CERTIFICADOS
+                    </div>
+
                 </div>
-                """
+                """,
+                unsafe_allow_html=True,
             )
 
         st.markdown("## LA FORJA DEL CREADOR")
-        st.caption("Cada Bioma se construye reuniendo sus Fragmentos.")
 
-        eras = {
-            1: "ERA DE PIEDRA",
-            2: "ERA DE PIEDRA",
-            3: "ERA DE PIEDRA",
-            4: "ERA DE LOS METALES",
-            5: "ERA ESTELAR",
-            6: "ERA ESTELAR",
-            7: "ERA ESTELAR",
-            8: "ERA TRASCENDENTE",
-            9: "ERA TRASCENDENTE",
-            10: "ERA TRASCENDENTE"
-        }
+        st.caption(
+            "Cada Bioma se construye reuniendo sus Fragmentos."
+        )
 
         for numero in range(1, 11):
 
-            nombres = fragmentos_por_bioma.get(numero, [])
-            cantidad = len(nombres)
-            porcentaje = min(100, int((cantidad / 5) * 100))
-
-            if cantidad >= 5:
-                estado_bioma = "COMPLETADO"
-                color_estado = "#e4bd5c"
-            elif cantidad > 0:
-                estado_bioma = "EN FORJA"
-                color_estado = "#8ea8bd"
-            else:
-                estado_bioma = "AÚN NO DESPERTADO"
-                color_estado = "#66727d"
-
-            st.html(
-                f"""
-                <div class="eonia-card" style="margin-bottom:18px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;">
-                        <div>
-                            <div class="small-gold">{eras[numero]}</div>
-                            <h2 style="margin-top:8px;margin-bottom:5px;">BIOMA {numero}</h2>
-                        </div>
-                        <div style="color:{color_estado};font-size:12px;letter-spacing:2px;font-weight:600;">
-                            {estado_bioma}
-                        </div>
-                    </div>
-                    <div style="margin-top:18px;height:7px;background:#172635;border-radius:10px;overflow:hidden;">
-                        <div style="width:{porcentaje}%;height:100%;background:linear-gradient(90deg,#b8872f,#e4bd5c);border-radius:10px;"></div>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;margin-top:9px;color:#8e9aa7;font-size:12px;">
-                        <span>{cantidad} / 5 Fragmentos</span>
-                        <span>{porcentaje}%</span>
-                    </div>
-                </div>
-                """
+            nombres = fragmentos_por_bioma.get(
+                numero,
+                [],
             )
 
-            if nombres:
+            cantidad = len(nombres)
 
-                st.html(
-                    """
-                    <div style="margin:-8px 0 22px 20px;padding-left:20px;border-left:1px solid rgba(228,189,92,.25);">
-                    """
+            porcentaje = min(
+                100,
+                int(
+                    (cantidad / 5) * 100
+                ),
+            )
+
+            if cantidad >= 5:
+
+                estado_bioma = "COMPLETADO"
+                color = "#e4bd5c"
+
+            elif cantidad > 0:
+
+                estado_bioma = "EN FORJA"
+                color = "#8ea8bd"
+
+            else:
+
+                estado_bioma = (
+                    "AÚN NO DESPERTADO"
                 )
 
-                for nombre in nombres:
+                color = "#66727d"
 
-                    st.html(
-                        f"""
-                        <div style="display:flex;align-items:center;gap:12px;padding:9px 0;color:#f4ead0;">
-                            <span style="color:#e4bd5c;font-size:18px;">◆</span>
-                            <span>{nombre}</span>
-                            <span style="margin-left:auto;color:#e4bd5c;font-size:11px;letter-spacing:1px;">OBTENIDO</span>
+            st.markdown(
+                f"""
+                <div class="eonia-card">
+
+                    <div style="
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                    ">
+
+                        <div>
+
+                            <div class="small-gold">
+                                BIOMA {numero}
+                            </div>
+
+                            <h2>
+                                {cantidad} / 5 Fragmentos
+                            </h2>
+
                         </div>
-                        """
-                    )
 
-                st.html("</div>")
+                        <div style="
+                            color:{color};
+                            font-size:12px;
+                            letter-spacing:2px;
+                        ">
+                            {estado_bioma}
+                        </div>
 
-        st.html(
-            """
-            <div style="text-align:center;padding:50px 10px 30px 10px;">
-                <div style="font-family:Cinzel;font-size:21px;color:#e4bd5c;letter-spacing:1px;">
-                    TODA CREACIÓN DEJA UN FRAGMENTO.
+                    </div>
+
+                    <div class="progress-container">
+
+                        <div
+                            class="progress-bar"
+                            style="
+                                width:{porcentaje}%;
+                            ">
+                        </div>
+
+                    </div>
+
                 </div>
-                <div style="margin-top:12px;color:#7f8a95;letter-spacing:3px;font-size:11px;">
-                    EONIA UNIVERSITY
-                </div>
-            </div>
-            """
-        )
+                """,
+                unsafe_allow_html=True,
+            )
 
-    else:
+            for nombre in nombres:
 
-        st.info("Introduce el UUID del Creador para consultar su evolución.")
+                st.markdown(
+                    f"""
+                    <div style="
+                        margin-left:25px;
+                        padding:7px 0;
+                        color:#f4ead0;
+                    ">
+                        ◆ {nombre}
+
+                        <span style="
+                            float:right;
+                            color:#e4bd5c;
+                            font-size:11px;
+                        ">
+                            OBTENIDO
+                        </span>
+
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
 
 # ============================================================
-# PAGINA: CONFIGURACION
+# 24. CONFIGURACIÓN
 # ============================================================
 
 elif st.session_state.pagina == "Configuración":
 
     st.title("CONFIGURACIÓN")
 
-    st.html(
+    st.markdown(
         """
         <div class="eonia-card">
 
             <div class="small-gold">
-                SISTEMA
+                SISTEMA EÓNICO
             </div>
 
-            <h2>
-                Configuración Eónica
-            </h2>
+            <h1>
+                CONFIGURACIÓN
+            </h1>
 
             <p>
-                Esta sección permitirá configurar
-                la experiencia del Creador,
-                preferencias y futuras conexiones.
+                Configuración de servicios y conexiones
+                de EONIA University.
             </p>
 
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
 
-    st.markdown("### CONEXIÓN CRM")
+    st.markdown("### ESTADO DE SERVICIOS")
 
-    st.code(SUPABASE_FUNCTIONS_URL, language="text")
+    if DEEPSEEK_API_KEY:
 
-    st.markdown("### ESTADO")
-
-    if user_id:
-
-        st.success("UUID del Creador configurado.")
+        st.success(
+            "DeepSeek API configurada."
+        )
 
     else:
 
-        st.warning("No hay Creador conectado.")
+        st.warning(
+            "DeepSeek API no configurada."
+        )
+
+    if OPENAI_API_KEY:
+
+        st.success(
+            "OpenAI API configurada."
+        )
+
+    else:
+
+        st.warning(
+            "OpenAI API no configurada."
+        )
+
+    if ENABLE_REFLEJO_GENERATION:
+
+        st.warning(
+            "Generación visual del Reflejo ACTIVADA."
+        )
+
+    else:
+
+        st.info(
+            "Generación visual del Reflejo "
+            "DESACTIVADA para proteger créditos."
+        )
+
+    st.markdown("### SUPABASE")
+
+    st.code(
+        SUPABASE_FUNCTIONS_URL,
+        language="text",
+    )
 
 
 # ============================================================
-# FALLBACK
+# 25. FOOTER GLOBAL
 # ============================================================
 
-else:
+st.markdown(
+    """
+    <div class="eonia-footer">
 
-    st.session_state.pagina = "Inicio"
+        <div class="eonia-footer-title">
+            CREAR ES EL ACTO MÁS HUMANO.
+        </div>
 
-    st.rerun()
+        <div style="
+            margin-top:10px;
+            letter-spacing:3px;
+            font-size:11px;
+        ">
+            EONIA UNIVERSITY
+        </div>
+
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
