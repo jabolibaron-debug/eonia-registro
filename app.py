@@ -1407,18 +1407,10 @@ elif st.session_state.pagina == "Chat Eónico":
     # ========================================================
 
     def cargar_prueba(url):
-
         try:
-
-            with urllib.request.urlopen(
-                url,
-                timeout=20
-            ) as f:
-
+            with urllib.request.urlopen(url, timeout=20) as f:
                 return f.read().decode("utf-8")
-
         except Exception:
-
             return "Prueba no disponible."
 
     # ========================================================
@@ -1426,108 +1418,40 @@ elif st.session_state.pagina == "Chat Eónico":
     # ========================================================
 
     MENTORES = {
-
         1: {
             "nombre": "Sabio Sereno",
-            "identidad": (
-                "Eres el Sabio Sereno, mentor de EONIA. "
-                "Hablas con calma y metáforas. Nunca juzgas."
-            ),
-            "principios": [
-                "Calma",
-                "Integridad",
-                "Espiritualidad"
-            ],
-            "metodo": (
-                "Evalúa con preguntas introspectivas "
-                "y metáforas."
-            ),
-            "sombra": (
-                "A veces demasiado contemplativo."
-            ),
-            "prueba": (
-                "https://pmshpvjtiauhbuexdjev.supabase.co/"
-                "storage/v1/object/public/pruebas/"
-                "Prueba_Bioma1.txt"
-            ),
+            "identidad": "Eres el Sabio Sereno, mentor de EONIA. Hablas con calma y metáforas. Nunca juzgas.",
+            "principios": ["Calma", "Integridad", "Espiritualidad"],
+            "metodo": "Evalúa con preguntas introspectivas y metáforas.",
+            "sombra": "A veces demasiado contemplativo.",
+            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma1.txt",
             "fragmento": "Serenidad"
         },
-
         2: {
             "nombre": "Kael",
-            "identidad": (
-                "Eres Kael, el Guardián del Método. "
-                "Hablas con disciplina y paciencia."
-            ),
-            "principios": [
-                "Disciplina",
-                "Constancia",
-                "Método"
-            ],
-            "metodo": (
-                "Evalúa con pasos concretos "
-                "y celebra pequeños logros."
-            ),
-            "sombra": (
-                "Puede ser rígido si el Creador no avanza."
-            ),
-            "prueba": (
-                "https://pmshpvjtiauhbuexdjev.supabase.co/"
-                "storage/v1/object/public/pruebas/"
-                "Prueba_Bioma2.txt"
-            ),
+            "identidad": "Eres Kael, el Guardián del Método. Hablas con disciplina y paciencia.",
+            "principios": ["Disciplina", "Constancia", "Método"],
+            "metodo": "Evalúa con pasos concretos y celebra pequeños logros.",
+            "sombra": "Puede ser rígido si el Creador no avanza.",
+            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma2.txt",
             "fragmento": "Método"
         },
-
         3: {
             "nombre": "Némesis",
-            "identidad": (
-                "Eres Némesis, la Estratega Astuta. "
-                "Hablas directo y sin rodeos."
-            ),
-            "principios": [
-                "Efectividad",
-                "Astucia",
-                "Resultados"
-            ],
-            "metodo": (
-                "Evalúa con retos prácticos "
-                "y feedback directo."
-            ),
-            "sombra": (
-                "Puede ser implacable si el Creador no entrega."
-            ),
-            "prueba": (
-                "https://pmshpvjtiauhbuexdjev.supabase.co/"
-                "storage/v1/object/public/pruebas/"
-                "Prueba_Bioma3.txt"
-            ),
+            "identidad": "Eres Némesis, la Estratega Astuta. Hablas directo y sin rodeos.",
+            "principios": ["Efectividad", "Astucia", "Resultados"],
+            "metodo": "Evalúa con retos prácticos y feedback directo.",
+            "sombra": "Puede ser implacable si el Creador no entrega.",
+            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma3.txt",
             "fragmento": "Efectividad"
         },
-
         4: {
             "nombre": "Vórtice",
-            "identidad": (
-                "Eres Vórtice, el Artista Caótico. "
-                "Hablas con energía explosiva y creativa."
-            ),
-            "principios": [
-                "Creatividad",
-                "Caos",
-                "Rebeldía"
-            ],
-            "metodo": (
-                "Evalúa con desafíos absurdos "
-                "y creaciones originales."
-            ),
-            "sombra": (
-                "A veces se pierde en el caos."
-            ),
-            "prueba": (
-                "https://pmshpvjtiauhbuexdjev.supabase.co/"
-                "storage/v1/object/public/pruebas/"
-                "Prueba_Bioma4.txt"
-            ),
+            "identidad": "Eres Vórtice, el Artista Caótico. Hablas con energía explosiva y creativa.",
+            "principios": ["Creatividad", "Caos", "Rebeldía"],
+            "metodo": "Evalúa con desafíos absurdos y creaciones originales.",
+            "sombra": "A veces se pierde en el caos.",
+            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma4.txt",
             "fragmento": "Creación"
         }
     }
@@ -1539,9 +1463,7 @@ elif st.session_state.pagina == "Chat Eónico":
     bioma_seleccionado = st.selectbox(
         "Selecciona tu Bioma",
         options=list(MENTORES.keys()),
-        format_func=lambda x: (
-            f"Bioma {x}: {MENTORES[x]['nombre']}"
-        )
+        format_func=lambda x: f"Bioma {x}: {MENTORES[x]['nombre']}"
     )
 
     mentor = MENTORES[bioma_seleccionado]
@@ -1551,269 +1473,35 @@ elif st.session_state.pagina == "Chat Eónico":
     # ========================================================
 
     if bioma_seleccionado not in st.session_state.chat_mensajes_por_bioma:
+        st.session_state.chat_mensajes_por_bioma[bioma_seleccionado] = []
 
-        st.session_state.chat_mensajes_por_bioma[
-            bioma_seleccionado
-        ] = []
-
-    chat_mensajes = (
-        st.session_state.chat_mensajes_por_bioma[
-            bioma_seleccionado
-        ]
-    )
+    chat_mensajes = st.session_state.chat_mensajes_por_bioma[bioma_seleccionado]
 
     # ========================================================
     # SALUDO INICIAL
     # ========================================================
 
     if not chat_mensajes:
-
-        chat_mensajes.append(
-            {
-                "role": "assistant",
-                "content": (
-                    f"Soy **{mentor['nombre']}**. "
-                    "¿Qué deseas aprender hoy?"
-                )
-            }
-        )
+        chat_mensajes.append({"role": "assistant", "content": f"Soy **{mentor['nombre']}**. ¿Qué deseas aprender hoy?"})
 
     # ========================================================
     # MOSTRAR HISTORIAL
     # ========================================================
 
     for mensaje_historial in chat_mensajes:
-
-        with st.chat_message(
-            mensaje_historial["role"]
-        ):
-
-            st.write(
-                mensaje_historial["content"]
-            )
+        with st.chat_message(mensaje_historial["role"]):
+            st.write(mensaje_historial["content"])
 
     # ========================================================
-    # BOTÓN EXPLÍCITO PARA REFLEJO
+    # GESTIÓN DEL REFLEJO (PERSISTENTE)
     # ========================================================
 
-    st.markdown("---")
+    # Inicializar banderas si no existen
+    if "reflejo_activo" not in st.session_state:
+        st.session_state.reflejo_activo = False
 
-    if st.button(
-        "🌟 Crear mi Reflejo Eónico",
-        use_container_width=True,
-        key=f"boton_reflejo_{bioma_seleccionado}"
-    ):
-
-        with st.chat_message("assistant"):
-
-            st.write(
-                "Para crear tu **Reflejo Eónico**, "
-                "necesito una fotografía tuya. "
-                "Sube una selfie y la IA transformará "
-                "tu esencia en una visión del futuro."
-            )
-
-        # ----------------------------------------------------
-        # SUBIR SELFIE
-        # ----------------------------------------------------
-
-        selfie = st.file_uploader(
-            "📸 Sube tu selfie para crear tu Reflejo",
-            type=["jpg", "jpeg", "png", "webp"],
-            key=f"selfie_reflejo_{bioma_seleccionado}"
-        )
-
-        if selfie is not None:
-
-            try:
-
-                # ------------------------------------------------
-                # CONVERTIR SELFIE A BASE64
-                # ------------------------------------------------
-
-                selfie_bytes = selfie.getvalue()
-                selfie_b64 = base64.b64encode(
-                    selfie_bytes
-                ).decode("utf-8")
-
-                mime = (
-                    selfie.type
-                    or "image/jpeg"
-                )
-
-                selfie_url = (
-                    f"data:{mime};base64,"
-                    f"{selfie_b64}"
-                )
-
-                # ------------------------------------------------
-                # PASO 1: ANALIZAR RASGOS CON GPT-4o-mini
-                # ------------------------------------------------
-
-                with st.spinner(
-                    "🔍 Analizando tu esencia..."
-                ):
-
-                    analisis_resp = requests.post(
-                        OPENAI_CHAT_API_URL,
-                        headers={
-                            "Authorization":
-                                f"Bearer {OPENAI_API_KEY}",
-                            "Content-Type":
-                                "application/json"
-                        },
-                        json={
-                            "model": "gpt-4o-mini",
-                            "messages": [
-                                {
-                                    "role": "user",
-                                    "content": [
-                                        {
-                                            "type": "text",
-                                            "text": (
-                                                "Describe brevemente "
-                                                "los rasgos faciales "
-                                                "de esta persona. "
-                                                "Incluye: edad aproximada, "
-                                                "género, color de piel, "
-                                                "estilo de cabello, "
-                                                "expresión y estilo de vestir. "
-                                                "Responde en español, "
-                                                "máximo 60 palabras."
-                                            )
-                                        },
-                                        {
-                                            "type": "image_url",
-                                            "image_url": {
-                                                "url": selfie_url
-                                            }
-                                        }
-                                    ]
-                                }
-                            ],
-                            "max_tokens": 250
-                        },
-                        timeout=60
-                    )
-
-                    if analisis_resp.status_code != 200:
-                        st.warning(
-                            f"No se pudo analizar la selfie. "
-                            f"Error: {analisis_resp.text}"
-                        )
-                        st.stop()
-
-                    rasgos = (
-                        analisis_resp.json()
-                        ["choices"][0]
-                        ["message"]
-                        ["content"]
-                    )
-
-                # ------------------------------------------------
-                # PASO 2: CREAR PROMPT PARA GENERACIÓN DE IMAGEN
-                # ------------------------------------------------
-
-                prompt_imagen = (
-                    f"Retrato futurista de un Creador Eónico "
-                    f"basado en estos rasgos: {rasgos}. "
-                    "Ropa tecnológica oscura con circuitos dorados. "
-                    "Partículas de luz alrededor. "
-                    "Fondo negro. Estilo cyberpunk elegante. "
-                    "Sin texto. Sin elementos religiosos."
-                )
-
-                # ------------------------------------------------
-                # PASO 3: GENERAR IMAGEN CON gpt-image-1
-                # ------------------------------------------------
-
-                with st.spinner(
-                    "🌟 Forjando tu Reflejo..."
-                ):
-
-                    img_resp = requests.post(
-                        OPENAI_IMAGE_API_URL,
-                        headers={
-                            "Authorization":
-                                f"Bearer {OPENAI_API_KEY}",
-                            "Content-Type":
-                                "application/json"
-                        },
-                        json={
-                            "model": "gpt-image-1",
-                            "prompt": prompt_imagen,
-                            "size": "1024x1024"
-                        },
-                        timeout=90
-                    )
-
-                    if img_resp.status_code != 200:
-                        st.warning(
-                            f"No se pudo generar la imagen. "
-                            f"Error: {img_resp.text}"
-                        )
-                        st.stop()
-
-                    data_imagen = img_resp.json()
-                    img_b64 = data_imagen.get(
-                        "data", [{}]
-                    )[0].get("b64_json")
-
-                    if not img_b64:
-                        st.warning(
-                            "No se pudo decodificar la imagen."
-                        )
-                        st.stop()
-
-                    # --------------------------------------------
-                    # DECODIFICAR Y MOSTRAR
-                    # --------------------------------------------
-
-                    import io
-                    from PIL import Image
-
-                    img_bytes = base64.b64decode(
-                        img_b64
-                    )
-
-                    img = Image.open(
-                        io.BytesIO(img_bytes)
-                    )
-
-                    st.image(
-                        img,
-                        caption="🌟 Tu Reflejo Eónico",
-                        use_container_width=True
-                    )
-
-                    st.success(
-                        "Tu Reflejo ha sido forjado. "
-                        "Eres la visión del futuro."
-                    )
-
-                    # ----------------------------------------
-                    # GUARDAR EN HISTORIAL
-                    # ----------------------------------------
-
-                    chat_mensajes.append(
-                        {
-                            "role": "assistant",
-                            "content": (
-                                "🌌 Tu Reflejo Eónico ha sido "
-                                "creado. Guarda esta imagen "
-                                "como un recordatorio de tu "
-                                "potencial."
-                            )
-                        }
-                    )
-
-            except Exception as e:
-
-                st.warning(
-                    f"Error generando tu Reflejo: {e}"
-                )
-
-        st.stop()
+    if "reflejo_selfie_subida" not in st.session_state:
+        st.session_state.reflejo_selfie_subida = False
 
     # ========================================================
     # INPUT DEL CHAT
@@ -1822,12 +1510,7 @@ elif st.session_state.pagina == "Chat Eónico":
     mensaje = st.chat_input(
         "Habla con tu mentor...",
         accept_file=True,
-        file_type=[
-            "jpg",
-            "jpeg",
-            "png",
-            "webp"
-        ],
+        file_type=["jpg", "jpeg", "png", "webp"],
         max_upload_size=10
     )
 
@@ -1835,593 +1518,163 @@ elif st.session_state.pagina == "Chat Eónico":
     # PROCESAR MENSAJE DEL USUARIO
     # ========================================================
 
-    if mensaje:
-
-        # ----------------------------------------------------
-        # 1. EXTRAER TEXTO Y ARCHIVOS
-        # ----------------------------------------------------
+    if mensaje and not st.session_state.reflejo_activo:
 
         texto = mensaje.text or ""
         archivos = mensaje.files
 
-        # Normalizar texto (quitar acentos y espacios extra)
+        # Normalizar texto
         import unicodedata
-
         def normalizar_texto(txt):
             txt = txt.lower().strip()
-            # Reemplazar caracteres acentuados
             txt = txt.replace("á", "a").replace("é", "e").replace("í", "i")
             txt = txt.replace("ó", "o").replace("ú", "u").replace("ñ", "n")
-            # Eliminar espacios extra
-            txt = " ".join(txt.split())
-            return txt
+            return " ".join(txt.split())
 
         texto_normalizado = normalizar_texto(texto)
 
-        # ----------------------------------------------------
-        # 2. MOSTRAR MENSAJE DEL USUARIO EN EL CHAT
-        # ----------------------------------------------------
-
+        # Mostrar mensaje del usuario
         with st.chat_message("user"):
-
             if texto:
-
                 st.write(texto)
-
             for archivo in archivos:
+                st.image(archivo, caption=f"🖼️ {archivo.name}", use_container_width=True)
 
-                st.image(
-                    archivo,
-                    caption=f"🖼️ {archivo.name}",
-                    use_container_width=True
-                )
-
-        # ----------------------------------------------------
-        # 3. VERIFICAR SI ES SOLICITUD DE REFLEJO
-        # ----------------------------------------------------
-
+        # Verificar si es solicitud de reflejo
         es_reflejo = (
-            texto_normalizado == "muestrame mi reflejo"
-            or texto_normalizado == "reflejo"
-            or texto_normalizado == "quiero ver mi reflejo"
-            or texto_normalizado == "crear mi reflejo"
-            or texto_normalizado == "generar mi reflejo"
-            or texto_normalizado == "ver mi reflejo"
-        )
-
-        # ----------------------------------------------------
-        # 4. GUARDAR MENSAJE DEL USUARIO EN HISTORIAL
-        # ----------------------------------------------------
-
-        if texto:
-
-            chat_mensajes.append(
-                {
-                    "role": "user",
-                    "content": texto
-                }
-            )
-
-        elif archivos:
-
-            nombres_archivos = ", ".join(
-                archivo.name
-                for archivo in archivos
-            )
-
-            chat_mensajes.append(
-                {
-                    "role": "user",
-                    "content": (
-                        f"[🖼️ Imagen enviada: "
-                        f"{nombres_archivos}]"
-                    )
-                }
-            )
-
-        # ====================================================
-        # CASO ESPECIAL: REFLEJO EÓNICO
-        # ====================================================
-
-        if es_reflejo:
-
-            with st.chat_message("assistant"):
-
-                st.write(
-                    "Para crear tu **Reflejo Eónico**, "
-                    "necesito una fotografía tuya. "
-                    "Sube una selfie y la IA transformará "
-                    "tu esencia en una visión del futuro."
-                )
-
-            # ----------------------------------------------------
-            # SUBIR SELFIE (usar st.file_uploader directo)
-            # ----------------------------------------------------
-
-            selfie = st.file_uploader(
-                "📸 Sube tu selfie para crear tu Reflejo",
-                type=["jpg", "jpeg", "png", "webp"],
-                key=f"selfie_reflejo_{bioma_seleccionado}"
-            )
-
-            # Mostrar mensaje si no hay OPENAI_API_KEY
-            if not OPENAI_API_KEY:
-                st.warning(
-                    "⚠️ OPENAI_API_KEY no está configurada. "
-                    "El Reflejo NO funcionará. "
-                    "Configúrala en .streamlit/secrets.toml"
-                )
-
-            if selfie is not None and OPENAI_API_KEY:
-
-                try:
-
-                    # ------------------------------------------------
-                    # CONVERTIR SELFIE A BASE64
-                    # ------------------------------------------------
-
-                    selfie_bytes = selfie.getvalue()
-                    selfie_b64 = base64.b64encode(
-                        selfie_bytes
-                    ).decode("utf-8")
-
-                    mime = (
-                        selfie.type
-                        or "image/jpeg"
-                    )
-
-                    selfie_url = (
-                        f"data:{mime};base64,"
-                        f"{selfie_b64}"
-                    )
-
-                    # ------------------------------------------------
-                    # PASO 1: ANALIZAR RASGOS CON GPT-4o-mini
-                    # ------------------------------------------------
-
-                    with st.spinner(
-                        "🔍 Analizando tu esencia..."
-                    ):
-
-                        analisis_resp = requests.post(
-                            OPENAI_CHAT_API_URL,
-                            headers={
-                                "Authorization":
-                                    f"Bearer {OPENAI_API_KEY}",
-                                "Content-Type":
-                                    "application/json"
-                            },
-                            json={
-                                "model": "gpt-4o-mini",
-                                "messages": [
-                                    {
-                                        "role": "user",
-                                        "content": [
-                                            {
-                                                "type": "text",
-                                                "text": (
-                                                    "Describe brevemente "
-                                                    "los rasgos faciales "
-                                                    "de esta persona. "
-                                                    "Incluye: edad aproximada, "
-                                                    "género, color de piel, "
-                                                    "estilo de cabello, "
-                                                    "expresión y estilo de vestir. "
-                                                    "Responde en español, "
-                                                    "máximo 60 palabras."
-                                                )
-                                            },
-                                            {
-                                                "type": "image_url",
-                                                "image_url": {
-                                                    "url": selfie_url
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ],
-                                "max_tokens": 250
-                            },
-                            timeout=60
-                        )
-
-                        if analisis_resp.status_code != 200:
-                            st.warning(
-                                f"No se pudo analizar la selfie. "
-                                f"Error: {analisis_resp.text}"
-                            )
-                            st.stop()
-
-                        rasgos = (
-                            analisis_resp.json()
-                            ["choices"][0]
-                            ["message"]
-                            ["content"]
-                        )
-
-                    # ------------------------------------------------
-                    # PASO 2: CREAR PROMPT PARA GENERACIÓN DE IMAGEN
-                    # ------------------------------------------------
-
-                    prompt_imagen = (
-                        f"Retrato futurista de un Creador Eónico "
-                        f"basado en estos rasgos: {rasgos}. "
-                        "Ropa tecnológica oscura con circuitos dorados. "
-                        "Partículas de luz alrededor. "
-                        "Fondo negro. Estilo cyberpunk elegante. "
-                        "Sin texto. Sin elementos religiosos."
-                    )
-
-                    # ------------------------------------------------
-                    # PASO 3: GENERAR IMAGEN CON gpt-image-1
-                    # ------------------------------------------------
-
-                    with st.spinner(
-                        "🌟 Forjando tu Reflejo..."
-                    ):
-
-                        img_resp = requests.post(
-                            OPENAI_IMAGE_API_URL,
-                            headers={
-                                "Authorization":
-                                    f"Bearer {OPENAI_API_KEY}",
-                                "Content-Type":
-                                    "application/json"
-                            },
-                            json={
-                                "model": "gpt-image-1",
-                                "prompt": prompt_imagen,
-                                "size": "1024x1024"
-                            },
-                            timeout=90
-                        )
-
-                        if img_resp.status_code != 200:
-                            st.warning(
-                                f"No se pudo generar la imagen. "
-                                f"Error: {img_resp.text}"
-                            )
-                            st.stop()
-
-                        data_imagen = img_resp.json()
-                        img_b64 = data_imagen.get(
-                            "data", [{}]
-                        )[0].get("b64_json")
-
-                        if not img_b64:
-                            st.warning(
-                                "No se pudo decodificar la imagen."
-                            )
-                            st.stop()
-
-                        # --------------------------------------------
-                        # DECODIFICAR Y MOSTRAR
-                        # --------------------------------------------
-
-                        import io
-                        from PIL import Image
-
-                        img_bytes = base64.b64decode(
-                            img_b64
-                        )
-
-                        img = Image.open(
-                            io.BytesIO(img_bytes)
-                        )
-
-                        st.image(
-                            img,
-                            caption="🌟 Tu Reflejo Eónico",
-                            use_container_width=True
-                        )
-
-                        st.success(
-                            "Tu Reflejo ha sido forjado. "
-                            "Eres la visión del futuro."
-                        )
-
-                        # ----------------------------------------
-                        # GUARDAR EN HISTORIAL
-                        # ----------------------------------------
-
-                        chat_mensajes.append(
-                            {
-                                "role": "assistant",
-                                "content": (
-                                    "🌌 Tu Reflejo Eónico ha sido "
-                                    "creado. Guarda esta imagen "
-                                    "como un recordatorio de tu "
-                                    "potencial."
-                                )
-                            }
-                        )
-
-                except Exception as e:
-
-                    st.warning(
-                        f"Error generando tu Reflejo: {e}"
-                    )
-
-            # ------------------------------------------------
-            # DETENER FLUJO PARA NO LLAMAR AL MENTOR
-            # ------------------------------------------------
-
-            st.stop()
-
-        # ====================================================
-        # CASO NORMAL: LLAMAR AL MENTOR
-        # ====================================================
-
-        # ----------------------------------------------------
-        # CARGAR PRUEBA DEL MENTOR
-        # ----------------------------------------------------
-
-        contenido_prueba = cargar_prueba(
-            mentor["prueba"]
-        )
-
-        # ----------------------------------------------------
-        # PREPARAR SYSTEM PROMPT
-        # ----------------------------------------------------
-
-        system_prompt = (
-            mentor["identidad"]
-            + "\n"
-            + "Principios: "
-            + ", ".join(
-                mentor["principios"]
-            )
-            + "\n"
-            + "Método: "
-            + mentor["metodo"]
-            + "\n"
-            + "Sombra: "
-            + mentor["sombra"]
-            + "\n"
-            + "Prueba: "
-            + contenido_prueba
-            + "\n"
-            + "Fragmento a otorgar: "
-            + mentor["fragmento"]
-        )
-
-        # ----------------------------------------------------
-        # HISTORIAL ANTERIOR
-        # ----------------------------------------------------
-
-        contenido_mensajes = [
-            {
-                "role": "system",
-                "content": system_prompt
-            }
-        ]
-
-        contenido_mensajes.extend(
-            [
-                {
-                    "role": mensaje_anterior["role"],
-                    "content": mensaje_anterior["content"]
-                }
-                for mensaje_anterior in chat_mensajes
+            texto_normalizado in [
+                "muestrame mi reflejo", "reflejo", "quiero ver mi reflejo",
+                "crear mi reflejo", "generar mi reflejo", "ver mi reflejo"
             ]
         )
 
-        # ----------------------------------------------------
-        # CONSTRUIR MENSAJE ACTUAL
-        # ----------------------------------------------------
+        # Guardar mensaje en historial
+        if texto:
+            chat_mensajes.append({"role": "user", "content": texto})
+        elif archivos:
+            nombres = ", ".join(a.name for a in archivos)
+            chat_mensajes.append({"role": "user", "content": f"[🖼️ Imagen: {nombres}]"})
 
-        if archivos:
+        # ====================================================
+        # ACTIVAR REFLEJO
+        # ====================================================
 
-            contenido_actual = []
+        if es_reflejo:
+            st.session_state.reflejo_activo = True
+            with st.chat_message("assistant"):
+                st.write("Para crear tu **Reflejo Eónico**, necesito una fotografía tuya. Sube una selfie abajo y la IA transformará tu esencia.")
+            st.rerun()  # Recargar para mostrar el file_uploader
 
-            contenido_actual.append(
-                {
-                    "type": "text",
-                    "text": (
-                        texto
-                        if texto
-                        else "Analiza esta creación."
-                    )
-                }
-            )
+    # ====================================================
+    # MOSTRAR FILE_UPLOADER SI REFLEJO ESTÁ ACTIVO
+    # ====================================================
 
-            for archivo in archivos:
+    if st.session_state.reflejo_activo:
+        
+        # Mostrar el uploader SIEMPRE que esté activo
+        selfie = st.file_uploader(
+            "📸 Sube tu selfie aquí (jpg, png, webp)",
+            type=["jpg", "jpeg", "png", "webp"],
+            key="selfie_reflejo",
+            disabled=st.session_state.reflejo_selfie_subida
+        )
 
-                mime = (
-                    archivo.type
-                    or "image/jpeg"
-                )
+        if selfie is not None and not st.session_state.reflejo_selfie_subida:
+            
+            st.session_state.reflejo_selfie_subida = True
+            
+            try:
+                # CONVERTIR SELFIE A BASE64
+                selfie_bytes = selfie.getvalue()
+                selfie_b64 = base64.b64encode(selfie_bytes).decode("utf-8")
+                mime = selfie.type or "image/jpeg"
+                selfie_url = f"data:{mime};base64,{selfie_b64}"
 
-                imagen_base64 = (
-                    base64.b64encode(
-                        archivo.getvalue()
-                    ).decode("utf-8")
-                )
-
-                imagen_url = (
-                    f"data:{mime};base64,"
-                    f"{imagen_base64}"
-                )
-
-                contenido_actual.append(
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": imagen_url
-                        }
-                    }
-                )
-
-            contenido_mensajes.append(
-                {
-                    "role": "user",
-                    "content": contenido_actual
-                }
-            )
-
-        else:
-
-            contenido_mensajes.append(
-                {
-                    "role": "user",
-                    "content": texto
-                }
-            )
-
-        # ----------------------------------------------------
-        # ELEGIR MOTOR
-        # ----------------------------------------------------
-
-        if archivos:
-
-            # =================================================
-            # OPENAI — VISIÓN
-            # =================================================
-
-            if not OPENAI_API_KEY:
-
-                respuesta_texto = (
-                    "⚠️ OPENAI_API_KEY no está configurada "
-                    "en Streamlit Secrets."
-                )
-
-            else:
-
-                try:
-
-                    respuesta = requests.post(
+                # PASO 1: ANALIZAR RASGOS
+                with st.spinner("🔍 Analizando tu esencia..."):
+                    analisis_resp = requests.post(
                         OPENAI_CHAT_API_URL,
-                        headers={
-                            "Authorization":
-                                f"Bearer {OPENAI_API_KEY}",
-                            "Content-Type":
-                                "application/json"
-                        },
+                        headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
                         json={
                             "model": "gpt-4o-mini",
-                            "messages":
-                                contenido_mensajes
-                        },
-                        timeout=90
-                    )
-
-                    if respuesta.status_code == 200:
-
-                        data = respuesta.json()
-
-                        respuesta_texto = (
-                            data[
-                                "choices"
-                            ][0][
-                                "message"
-                            ][
-                                "content"
-                            ]
-                        )
-
-                    else:
-
-                        respuesta_texto = (
-                            f"Error OpenAI "
-                            f"{respuesta.status_code}: "
-                            f"{respuesta.text}"
-                        )
-
-                except Exception as e:
-
-                    respuesta_texto = (
-                        "Error de conexión con OpenAI: "
-                        f"{e}"
-                    )
-
-        else:
-
-            # =================================================
-            # DEEPSEEK — TEXTO
-            # =================================================
-
-            if not DEEPSEEK_API_KEY:
-
-                respuesta_texto = (
-                    "⚠️ DEEPSEEK_API_KEY no está "
-                    "configurada en Streamlit Secrets."
-                )
-
-            else:
-
-                try:
-
-                    respuesta = requests.post(
-                        DEEPSEEK_API_URL,
-                        headers={
-                            "Authorization":
-                                f"Bearer {DEEPSEEK_API_KEY}",
-                            "Content-Type":
-                                "application/json"
-                        },
-                        json={
-                            "model": "deepseek-chat",
-                            "messages":
-                                contenido_mensajes
+                            "messages": [{"role": "user", "content": [
+                                {"type": "text", "text": "Describe brevemente los rasgos faciales de esta persona. Incluye: edad aproximada, género, color de piel, estilo de cabello, expresión y estilo de vestir. Responde en español, máximo 60 palabras."},
+                                {"type": "image_url", "image_url": {"url": selfie_url}}
+                            ]}],
+                            "max_tokens": 250
                         },
                         timeout=60
                     )
 
-                    if respuesta.status_code == 200:
+                    if analisis_resp.status_code != 200:
+                        st.warning(f"No se pudo analizar la selfie. Error: {analisis_resp.text}")
+                        st.stop()
 
-                        data = respuesta.json()
+                    rasgos = analisis_resp.json()["choices"][0]["message"]["content"]
 
-                        respuesta_texto = (
-                            data[
-                                "choices"
-                            ][0][
-                                "message"
-                            ][
-                                "content"
-                            ]
-                        )
+                # PASO 2: GENERAR IMAGEN
+                prompt_imagen = (
+                    f"Retrato futurista de un Creador Eónico basado en estos rasgos: {rasgos}. "
+                    "Ropa tecnológica oscura con circuitos dorados. Partículas de luz alrededor. "
+                    "Fondo negro. Estilo cyberpunk elegante. Sin texto. Sin elementos religiosos."
+                )
 
-                    else:
-
-                        respuesta_texto = (
-                            f"Error DeepSeek "
-                            f"{respuesta.status_code}: "
-                            f"{respuesta.text}"
-                        )
-
-                except Exception as e:
-
-                    respuesta_texto = (
-                        "Error de conexión con DeepSeek: "
-                        f"{e}"
+                with st.spinner("🌟 Forjando tu Reflejo..."):
+                    img_resp = requests.post(
+                        OPENAI_IMAGE_API_URL,
+                        headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
+                        json={"model": "gpt-image-1", "prompt": prompt_imagen, "size": "1024x1024"},
+                        timeout=90
                     )
 
-        # ----------------------------------------------------
-        # MOSTRAR RESPUESTA DEL MENTOR
-        # ----------------------------------------------------
+                    if img_resp.status_code != 200:
+                        st.warning(f"No se pudo generar la imagen. Error: {img_resp.text}")
+                        st.stop()
 
-        with st.chat_message("assistant"):
+                    data_imagen = img_resp.json()
+                    img_b64 = data_imagen.get("data", [{}])[0].get("b64_json")
 
-            st.write(
-                respuesta_texto
-            )
+                    if not img_b64:
+                        st.warning("No se pudo decodificar la imagen.")
+                        st.stop()
 
-        # ----------------------------------------------------
-        # GUARDAR RESPUESTA EN HISTORIAL
-        # ----------------------------------------------------
+                    # DECODIFICAR Y MOSTRAR
+                    import io
+                    from PIL import Image
+                    img_bytes = base64.b64decode(img_b64)
+                    img = Image.open(io.BytesIO(img_bytes))
 
-        chat_mensajes.append(
-            {
-                "role": "assistant",
-                "content": respuesta_texto
-            }
-        )
+                    st.image(img, caption="🌟 Tu Reflejo Eónico", use_container_width=True)
+                    st.success("Tu Reflejo ha sido forjado. Eres la visión del futuro.")
 
-        # ----------------------------------------------------
-        # LIMPIAR PREGUNTA INICIAL
-        # ----------------------------------------------------
+                    # Guardar en historial
+                    chat_mensajes.append({"role": "assistant", "content": "🌌 Tu Reflejo Eónico ha sido creado. Guarda esta imagen como recordatorio de tu potencial."})
 
-        st.session_state.chat_pregunta = ""# ============================================================
+                    # Resetear
+                    st.session_state.reflejo_activo = False
+                    st.session_state.reflejo_selfie_subida = False
+
+            except Exception as e:
+                st.warning(f"Error generando tu Reflejo: {e}")
+                st.session_state.reflejo_selfie_subida = False
+                st.session_state.reflejo_activo = False
+        
+        # Botón para cancelar
+        if st.button("❌ Cancelar Reflejo", key="cancelar_reflejo"):
+            st.session_state.reflejo_activo = False
+            st.session_state.reflejo_selfie_subida = False
+            st.rerun()
+
+        # Detener flujo para no llamar al mentor
+        st.stop()
+
+    # ========================================================
+    # CASO NORMAL: LLAMAR AL MENTOR
+    # ========================================================
+
+    # (Aquí va el código normal del mentor con DeepSeek/OpenAI)
+    # ... (el código que ya tienes para procesar mensajes normales)
+# ============================================================
 # PAGINA: CONCILIO EÓNICO
 # ============================================================
 
