@@ -1,7 +1,10 @@
 import os
 import requests
 import streamlit as st
+from textwrap import dedent
 
+def html(content):
+    st.html(dedent(content))
 
 # ============================================================
 # EONIA UNIVERSITY — CRM
