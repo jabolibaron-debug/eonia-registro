@@ -1402,6 +1402,10 @@ elif st.session_state.pagina == "Chat Eónico":
     st.title("CHAT EÓNICO")
     st.caption("Un solo portal. Múltiples inteligencias.")
 
+    # DEBUG TEMPORAL
+    st.write(f"🔍 OPENAI_API_KEY configurada: {bool(OPENAI_API_KEY)}")
+    st.write(f"🔍 Longitud: {len(OPENAI_API_KEY) if OPENAI_API_KEY else 0}")
+
     # ========================================================
     # FUNCION PARA CARGAR PRUEBAS
     # ========================================================
