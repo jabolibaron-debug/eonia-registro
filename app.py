@@ -1209,10 +1209,7 @@ elif st.session_state.pagina == "Chat Eónico":
     st.title("CHAT EÓNICO")
     st.caption("Un solo portal. Múltiples inteligencias.")
 
-    # ========================================================
     # INICIALIZACIÓN DE VARIABLES DE REFLEJO
-    # ========================================================
-
     if "reflejo_ya_generado" not in st.session_state:
         st.session_state.reflejo_ya_generado = False
 
@@ -1237,22 +1234,14 @@ elif st.session_state.pagina == "Chat Eónico":
     if "reflejo_prompt_final" not in st.session_state:
         st.session_state.reflejo_prompt_final = ""
 
-    # ========================================================
-    # VERIFICAR REFLEJO EXISTENTE (AUTOMÁTICO PARA TODOS)
-    # ========================================================
-
+    # VERIFICAR REFLEJO EXISTENTE
     if user_id and not st.session_state.reflejo_ya_generado:
         resultado = verificar_reflejo_existente(user_id)
-        
         if resultado and resultado.get("existe"):
             st.session_state.reflejo_ya_generado = True
 
-    # ========================================================
     # CARGAR DOCUMENTACIÓN EONIA
-    # ========================================================
-
     def cargar_documentacion_eonia():
-        """Carga la documentación de EONIA desde un archivo"""
         try:
             with open("documentos_EONIA.txt", "r", encoding="utf-8") as f:
                 return f.read()
@@ -1279,10 +1268,7 @@ elif st.session_state.pagina == "Chat Eónico":
 
     DOCUMENTACION_EONIA = cargar_documentacion_eonia()
 
-    # ========================================================
     # SI ES NUEVO INSCRITO → SOLICITAR REFLEJO AUTOMÁTICAMENTE
-    # ========================================================
-
     if not st.session_state.reflejo_ya_generado and not st.session_state.reflejo_activo:
         st.session_state.reflejo_activo = True
         st.session_state.reflejo_paso = "bienvenida"
@@ -1297,10 +1283,7 @@ elif st.session_state.pagina == "Chat Eónico":
             st.write("")
             st.write("*Este proceso solo se realiza **una vez** por Creador.*")
 
-    # ========================================================
     # FUNCIONES AUXILIARES
-    # ========================================================
-
     def cargar_prueba(url):
         try:
             with urllib.request.urlopen(url, timeout=20) as f:
@@ -1308,10 +1291,7 @@ elif st.session_state.pagina == "Chat Eónico":
         except Exception:
             return "Prueba no disponible."
 
-    # ========================================================
     # PROMPTS PARA REFLEJOS POR BIOMA
-    # ========================================================
-
     PROMPTS_REFLEJO = {
         1: """A photorealistic portrait of a future self with [rasgos]. 
         The person now has a clear, defined silhouette emerging from golden mist. 
@@ -1377,10 +1357,7 @@ elif st.session_state.pagina == "Chat Eónico":
         EONIA style, black and luminous gold, 16:9."""
     }
 
-    # ========================================================
     # DESAFÍOS DE LA PRUEBA DE FUEGO
-    # ========================================================
-
     DESAFIOS_REFLEJO = [
         {
             "titulo": "Desafío 1: Lógica Creativa",
@@ -1432,12 +1409,8 @@ elif st.session_state.pagina == "Chat Eónico":
         }
     ]
 
-    # ========================================================
     # FUNCIÓN PARA GENERAR IMAGEN CON OPENAI
-    # ========================================================
-
     def generar_imagen_openai(prompt):
-        """Genera una imagen con OpenAI gpt-image-1"""
         try:
             if not OPENAI_API_KEY:
                 return None, "No hay OPENAI_API_KEY configurada"
@@ -1470,10 +1443,7 @@ elif st.session_state.pagina == "Chat Eónico":
         except Exception as e:
             return None, f"Error: {e}"
 
-    # ========================================================
     # MENTORES Y BIOMAS
-    # ========================================================
-
     MENTORES = {
         1: {
             "nombre": "Sabio Sereno",
@@ -1533,10 +1503,7 @@ elif st.session_state.pagina == "Chat Eónico":
         with st.chat_message(mensaje_historial["role"]):
             st.write(mensaje_historial["content"])
 
-    # ========================================================
     # FLUJO DEL REFLEJO
-    # ========================================================
-
     if st.session_state.reflejo_activo:
 
         if st.session_state.reflejo_paso == "bienvenida":
@@ -1704,10 +1671,7 @@ elif st.session_state.pagina == "Chat Eónico":
 
         st.stop()
 
-    # ========================================================
-    # INPUT DEL CHAT (PARA MENSAJES NORMALES)
-    # ========================================================
-
+    # INPUT DEL CHAT
     mensaje = st.chat_input(
         "Habla con tu mentor...",
         accept_file=True,
@@ -1715,10 +1679,7 @@ elif st.session_state.pagina == "Chat Eónico":
         max_upload_size=10
     )
 
-    # ========================================================
     # PROCESAR MENSAJE DEL USUARIO
-    # ========================================================
-
     if mensaje and not st.session_state.reflejo_activo:
 
         texto = mensaje.text or ""
@@ -1763,10 +1724,7 @@ elif st.session_state.pagina == "Chat Eónico":
                     st.write("Para crear tu **Reflejo Eónico**, necesito una fotografía tuya. Sube una selfie abajo y la IA transformará tu esencia en una visión de tu potencial.")
                 st.rerun()
 
-    # ========================================================
-    # CASO NORMAL: LLAMAR AL MENTOR (DeepSeek/OpenAI)
-    # ========================================================
-
+    # CASO NORMAL: LLAMAR AL MENTOR
     if mensaje and not st.session_state.reflejo_activo:
 
         texto = mensaje.text or ""
