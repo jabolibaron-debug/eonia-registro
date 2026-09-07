@@ -2111,10 +2111,6 @@ tu personalidad depende de quién eres como mentor,
 pero la verdad sobre el Creador procede del CRM.
 """
 
-==============================
-MEMORIA REAL DEL CREADOR
-==============================
-
 Estos datos proceden del CRM Eónico.
 Son la fuente de verdad sobre el Creador.
 
