@@ -1,16 +1,40 @@
 import streamlit as st
 import requests
 import os
+import base64
 from textwrap import dedent
+import urllib.request
+
+
+# ============================================================
+# CONFIGURACIÓN DE STREAMLIT
+# ============================================================
+
+st.set_page_config(
+    page_title="EONIA University — Era de los Metales",
+    page_icon="⚒️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 
 # ============================================================
 # CONFIGURACIÓN DE APIS
 # ============================================================
+
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
-OPENAI_IMAGE_API_URL = "https://api.openai.com/v1/images/generations"
-OPENAI_CHAT_API_URL = "https://api.openai.com/v1/chat/completions"
+
+OPENAI_IMAGE_API_URL = (
+    "https://api.openai.com/v1/images/generations"
+)
+
+OPENAI_CHAT_API_URL = (
+    "https://api.openai.com/v1/chat/completions"
+)
+
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
 
 # ============================================================
 # RENDERIZADOR HTML EÓNICO
@@ -25,8 +49,6 @@ def html(content):
 
 def _eonia_markdown(body, *args, **kwargs):
 
-    # Si el contenido permite HTML y realmente contiene HTML,
-    # lo enviamos al motor HTML de Streamlit.
     if (
         kwargs.get("unsafe_allow_html", False)
         and isinstance(body, str)
@@ -47,8 +69,6 @@ def _eonia_markdown(body, *args, **kwargs):
             dedent(body)
         )
 
-    # Todo Markdown normal continúa funcionando
-    # exactamente como antes.
     return _original_markdown(
         body,
         *args,
@@ -57,18 +77,6 @@ def _eonia_markdown(body, *args, **kwargs):
 
 
 st.markdown = _eonia_markdown
-
-# ============================================================
-# EONIA UNIVERSITY — CRM
-# ERA DE LOS METALES
-# ============================================================
-
-st.set_page_config(
-    page_title="EONIA University — Era de los Metales",
-    page_icon="⚒️",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 
 # ============================================================
@@ -101,6 +109,17 @@ if "user_id" not in st.session_state:
 
 if "mentor_activo" not in st.session_state:
     st.session_state.mentor_activo = "AION"
+
+if "chat_mensajes_por_bioma" not in st.session_state:
+    st.session_state.chat_mensajes_por_bioma = {
+        1: [],
+        2: [],
+        3: [],
+        4: []
+    }
+
+if "chat_pregunta" not in st.session_state:
+    st.session_state.chat_pregunta = ""
 
 
 # ============================================================
@@ -255,21 +274,15 @@ st.markdown(
 
     .hero h1 {
         font-size: 46px;
-
         line-height: 1.05;
-
         max-width: 700px;
-
         margin-top: 12px;
     }
 
     .hero p {
         max-width: 650px;
-
         color: #ddd3bb;
-
         font-size: 16px;
-
         line-height: 1.7;
     }
 
@@ -279,13 +292,9 @@ st.markdown(
 
     .progress-container {
         background: #172431;
-
         border-radius: 20px;
-
         height: 10px;
-
         overflow: hidden;
-
         margin-top: 15px;
     }
 
@@ -332,19 +341,14 @@ st.markdown(
 
     .mentor-name {
         font-family: 'Cinzel', serif;
-
         color: #e4bd5c;
-
         font-size: 14px;
-
         margin-top: 5px;
     }
 
     .mentor-role {
         color: #9ba8b5;
-
         font-size: 11px;
-
         margin-top: 4px;
     }
 
@@ -358,19 +362,14 @@ st.markdown(
 
     .metric-number {
         font-size: 30px;
-
         color: #e4bd5c;
-
         font-family: 'Cinzel', serif;
     }
 
     .metric-label {
         font-size: 11px;
-
         color: #8f9aa5;
-
         text-transform: uppercase;
-
         letter-spacing: .12em;
     }
 
@@ -438,19 +437,14 @@ st.markdown(
 
     .eonia-footer {
         text-align: center;
-
         padding: 60px 10px 30px;
-
         color: #7f8a95;
     }
 
     .eonia-footer-title {
         font-family: 'Cinzel', serif;
-
         font-size: 22px;
-
         color: #e4bd5c;
-
         letter-spacing: .08em;
     }
 
@@ -498,6 +492,12 @@ def asignar_fragmento(
     bioma,
     fragmento
 ):
+
+    if not user_id:
+        return {
+            "success": False,
+            "error": "No hay Creador conectado."
+        }
 
     try:
 
@@ -687,7 +687,6 @@ st.divider()
 estado = None
 
 if user_id:
-
     estado = obtener_estado(user_id)
 
 
@@ -730,9 +729,7 @@ if st.session_state.pagina == "Inicio":
     # PROGRESO + ERA
     # ========================================================
 
-    col1, col2 = st.columns(
-        [2, 1]
-    )
+    col1, col2 = st.columns([2, 1])
 
     with col1:
 
@@ -916,9 +913,7 @@ if st.session_state.pagina == "Inicio":
 
     st.markdown("## INTELIGENCIA EÓNICA")
 
-    chat_col, council_col = st.columns(
-        [2, 1]
-    )
+    chat_col, council_col = st.columns([2, 1])
 
     with chat_col:
 
@@ -959,7 +954,7 @@ if st.session_state.pagina == "Inicio":
         mentor_cols = st.columns(6)
 
         for col, (
-            mentor,
+            mentor_nombre,
             role
         ) in zip(
             mentor_cols,
@@ -980,7 +975,7 @@ if st.session_state.pagina == "Inicio":
                         </div>
 
                         <div class="mentor-name">
-                            {mentor}
+                            {mentor_nombre}
                         </div>
 
                         <div class="mentor-role">
@@ -1007,11 +1002,10 @@ if st.session_state.pagina == "Inicio":
             use_container_width=True
         ):
 
-            if pregunta:
-
-                st.session_state.pagina = "Chat Eónico"
+            if pregunta.strip():
 
                 st.session_state.chat_pregunta = pregunta
+                st.session_state.pagina = "Chat Eónico"
 
                 st.rerun()
 
@@ -1400,7 +1394,7 @@ elif st.session_state.pagina == "Biomas":
 
 
 # ============================================================
-# PAGINA: CHAT EONICO
+# PAGINA: CHAT EÓNICO
 # ============================================================
 
 elif st.session_state.pagina == "Chat Eónico":
@@ -1408,283 +1402,739 @@ elif st.session_state.pagina == "Chat Eónico":
     st.title("CHAT EÓNICO")
     st.caption("Un solo portal. Múltiples inteligencias.")
 
-    import urllib.request
+    # ========================================================
+    # FUNCION PARA CARGAR PRUEBAS
+    # ========================================================
 
     def cargar_prueba(url):
-        try:
-            with urllib.request.urlopen(url) as f:
-                return f.read().decode("utf-8")
-        except:
-            return "Prueba no disponible"
 
+        try:
+
+            with urllib.request.urlopen(
+                url,
+                timeout=20
+            ) as f:
+
+                return f.read().decode("utf-8")
+
+        except Exception:
+
+            return "Prueba no disponible."
+
+
+    # ========================================================
     # MENTORES Y BIOMAS
+    # ========================================================
+
     MENTORES = {
+
         1: {
             "nombre": "Sabio Sereno",
-            "identidad": "Eres el Sabio Sereno, mentor de EONIA. Hablas con calma y metáforas. Nunca juzgas.",
-            "principios": ["Calma", "Integridad", "Espiritualidad"],
-            "metodo": "Evalúa con preguntas introspectivas y metáforas.",
-            "sombra": "A veces demasiado contemplativo.",
-            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma1.txt",
+            "identidad": (
+                "Eres el Sabio Sereno, mentor de EONIA. "
+                "Hablas con calma y metáforas. Nunca juzgas."
+            ),
+            "principios": [
+                "Calma",
+                "Integridad",
+                "Espiritualidad"
+            ],
+            "metodo": (
+                "Evalúa con preguntas introspectivas "
+                "y metáforas."
+            ),
+            "sombra": (
+                "A veces demasiado contemplativo."
+            ),
+            "prueba": (
+                "https://pmshpvjtiauhbuexdjev.supabase.co/"
+                "storage/v1/object/public/pruebas/"
+                "Prueba_Bioma1.txt"
+            ),
             "fragmento": "Serenidad"
         },
+
         2: {
             "nombre": "Kael",
-            "identidad": "Eres Kael, el Guardián del Método. Hablas con disciplina y paciencia.",
-            "principios": ["Disciplina", "Constancia", "Método"],
-            "metodo": "Evalúa con pasos concretos y celebra pequeños logros.",
-            "sombra": "Puede ser rígido si el Creador no avanza.",
-            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma2.txt",
+            "identidad": (
+                "Eres Kael, el Guardián del Método. "
+                "Hablas con disciplina y paciencia."
+            ),
+            "principios": [
+                "Disciplina",
+                "Constancia",
+                "Método"
+            ],
+            "metodo": (
+                "Evalúa con pasos concretos "
+                "y celebra pequeños logros."
+            ),
+            "sombra": (
+                "Puede ser rígido si el Creador no avanza."
+            ),
+            "prueba": (
+                "https://pmshpvjtiauhbuexdjev.supabase.co/"
+                "storage/v1/object/public/pruebas/"
+                "Prueba_Bioma2.txt"
+            ),
             "fragmento": "Método"
         },
+
         3: {
             "nombre": "Némesis",
-            "identidad": "Eres Némesis, la Estratega Astuta. Hablas directo y sin rodeos.",
-            "principios": ["Efectividad", "Astucia", "Resultados"],
-            "metodo": "Evalúa con retos prácticos y feedback directo.",
-            "sombra": "Puede ser implacable si el Creador no entrega.",
-            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma3.txt",
+            "identidad": (
+                "Eres Némesis, la Estratega Astuta. "
+                "Hablas directo y sin rodeos."
+            ),
+            "principios": [
+                "Efectividad",
+                "Astucia",
+                "Resultados"
+            ],
+            "metodo": (
+                "Evalúa con retos prácticos "
+                "y feedback directo."
+            ),
+            "sombra": (
+                "Puede ser implacable si el Creador no entrega."
+            ),
+            "prueba": (
+                "https://pmshpvjtiauhbuexdjev.supabase.co/"
+                "storage/v1/object/public/pruebas/"
+                "Prueba_Bioma3.txt"
+            ),
             "fragmento": "Efectividad"
         },
+
         4: {
             "nombre": "Vórtice",
-            "identidad": "Eres Vórtice, el Artista Caótico. Hablas con energía explosiva y creativa.",
-            "principios": ["Creatividad", "Caos", "Rebeldía"],
-            "metodo": "Evalúa con desafíos absurdos y creaciones originales.",
-            "sombra": "A veces se pierde en el caos.",
-            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma4.txt",
+            "identidad": (
+                "Eres Vórtice, el Artista Caótico. "
+                "Hablas con energía explosiva y creativa."
+            ),
+            "principios": [
+                "Creatividad",
+                "Caos",
+                "Rebeldía"
+            ],
+            "metodo": (
+                "Evalúa con desafíos absurdos "
+                "y creaciones originales."
+            ),
+            "sombra": (
+                "A veces se pierde en el caos."
+            ),
+            "prueba": (
+                "https://pmshpvjtiauhbuexdjev.supabase.co/"
+                "storage/v1/object/public/pruebas/"
+                "Prueba_Bioma4.txt"
+            ),
             "fragmento": "Creación"
         }
     }
 
+
+    # ========================================================
+    # SELECCIONAR BIOMA
+    # ========================================================
+
     bioma_seleccionado = st.selectbox(
         "Selecciona tu Bioma",
         options=list(MENTORES.keys()),
-        format_func=lambda x: f"Bioma {x}: {MENTORES[x]['nombre']}"
+        format_func=lambda x: (
+            f"Bioma {x}: {MENTORES[x]['nombre']}"
+        )
     )
 
     mentor = MENTORES[bioma_seleccionado]
 
-    # Historial
-    if "chat_mensajes" not in st.session_state:
-        st.session_state.chat_mensajes = []
 
-    # Saludo inicial
-    if not st.session_state.chat_mensajes:
-        st.session_state.chat_mensajes.append({
-            "role": "assistant",
-            "content": f"Soy **{mentor['nombre']}**. ¿Qué deseas aprender hoy?"
-        })
+    # ========================================================
+    # HISTORIAL DEL BIOMA
+    # ========================================================
 
-    # Mostrar historial
-    for mensaje in st.session_state.chat_mensajes:
-        with st.chat_message(mensaje["role"]):
-            st.write(mensaje["content"])
+    if bioma_seleccionado not in st.session_state.chat_mensajes_por_bioma:
 
-        # Entrada con soporte de imágenes
+        st.session_state.chat_mensajes_por_bioma[
+            bioma_seleccionado
+        ] = []
+
+
+    chat_mensajes = (
+        st.session_state.chat_mensajes_por_bioma[
+            bioma_seleccionado
+        ]
+    )
+
+
+    # ========================================================
+    # SALUDO INICIAL
+    # ========================================================
+
+    if not chat_mensajes:
+
+        chat_mensajes.append(
+            {
+                "role": "assistant",
+                "content": (
+                    f"Soy **{mentor['nombre']}**. "
+                    "¿Qué deseas aprender hoy?"
+                )
+            }
+        )
+
+
+    # ========================================================
+    # MOSTRAR HISTORIAL
+    # ========================================================
+
+    for mensaje_historial in chat_mensajes:
+
+        with st.chat_message(
+            mensaje_historial["role"]
+        ):
+
+            st.write(
+                mensaje_historial["content"]
+            )
+
+
+    # ========================================================
+    # PREGUNTA RECIBIDA DESDE INICIO
+    # ========================================================
+
+    pregunta_inicial = (
+        st.session_state.get(
+            "chat_pregunta",
+            ""
+        )
+    )
+
+
+    # ========================================================
+    # INPUT DEL CHAT
+    #
+    # IMPORTANTE:
+    # st.chat_input con archivos NO devuelve un string.
+    # Devuelve un objeto con:
+    #
+    # mensaje.text
+    # mensaje.files
+    # ========================================================
+
     mensaje = st.chat_input(
         "Habla con tu mentor...",
         accept_file=True,
-        file_type=["jpg", "jpeg", "png", "webp"],
+        file_type=[
+            "jpg",
+            "jpeg",
+            "png",
+            "webp"
+        ],
         max_upload_size=10
     )
 
+
+    # ========================================================
+    # PROCESAR MENSAJE
+    # ========================================================
+
     if mensaje:
-        texto = mensaje.text
+
+        # ----------------------------------------------------
+        # 1. EXTRAER TEXTO Y ARCHIVOS
+        # ----------------------------------------------------
+
+        texto = mensaje.text or ""
         archivos = mensaje.files
 
-        # Agregar texto al historial
-        if texto:
-            st.session_state.chat_mensajes.append({
-                "role": "user",
-                "content": texto
-            })
+        # ----------------------------------------------------
+        # 2. DATOS AUXILIARES
+        # ----------------------------------------------------
 
-        # Mostrar mensaje del usuario
+        hay_imagen = bool(archivos)
+        texto_lower = texto.lower()
+
+        # ----------------------------------------------------
+        # 3. MOSTRAR MENSAJE DEL USUARIO
+        # ----------------------------------------------------
+
         with st.chat_message("user"):
+
             if texto:
+
                 st.write(texto)
 
             for archivo in archivos:
+
                 st.image(
                     archivo,
                     caption=f"🖼️ {archivo.name}",
                     use_container_width=True
                 )
 
-        # Si hay archivos, registrarlos
-        if archivos:
+
+        # ----------------------------------------------------
+        # 4. CARGAR PRUEBA DEL MENTOR
+        # ----------------------------------------------------
+
+        contenido_prueba = cargar_prueba(
+            mentor["prueba"]
+        )
+
+
+        # ----------------------------------------------------
+        # 5. PREPARAR SYSTEM PROMPT
+        # ----------------------------------------------------
+
+        system_prompt = (
+            mentor["identidad"]
+            + "\n"
+            + "Principios: "
+            + ", ".join(
+                mentor["principios"]
+            )
+            + "\n"
+            + "Método: "
+            + mentor["metodo"]
+            + "\n"
+            + "Sombra: "
+            + mentor["sombra"]
+            + "\n"
+            + "Prueba: "
+            + contenido_prueba
+            + "\n"
+            + "Fragmento a otorgar: "
+            + mentor["fragmento"]
+        )
+
+
+        # ----------------------------------------------------
+        # 6. HISTORIAL ANTERIOR
+        #
+        # El mensaje actual todavía NO está aquí.
+        # ----------------------------------------------------
+
+        contenido_mensajes = [
+            {
+                "role": "system",
+                "content": system_prompt
+            }
+        ]
+
+        contenido_mensajes.extend(
+            [
+                {
+                    "role": mensaje_anterior["role"],
+                    "content": mensaje_anterior["content"]
+                }
+                for mensaje_anterior in chat_mensajes
+            ]
+        )
+
+
+        # ----------------------------------------------------
+        # 7. CONSTRUIR MENSAJE ACTUAL
+        #
+        # SI HAY IMAGEN:
+        #
+        # USER
+        # ├── texto
+        # └── imagen
+        #
+        # UN SOLO MENSAJE MULTIMODAL
+        # ----------------------------------------------------
+
+        if hay_imagen:
+
+            contenido_actual = []
+
+            contenido_actual.append(
+                {
+                    "type": "text",
+                    "text": (
+                        texto
+                        if texto
+                        else "Analiza esta creación."
+                    )
+                }
+            )
+
+
             for archivo in archivos:
-                st.session_state.chat_mensajes.append({
+
+                # --------------------------------------------
+                # MIME REAL DEL ARCHIVO
+                # --------------------------------------------
+
+                mime = (
+                    archivo.type
+                    or "image/jpeg"
+                )
+
+
+                # --------------------------------------------
+                # CONVERTIR IMAGEN A BASE64
+                # --------------------------------------------
+
+                imagen_base64 = (
+                    base64.b64encode(
+                        archivo.getvalue()
+                    ).decode("utf-8")
+                )
+
+
+                # --------------------------------------------
+                # DATA URL
+                # --------------------------------------------
+
+                imagen_url = (
+                    f"data:{mime};base64,"
+                    f"{imagen_base64}"
+                )
+
+
+                contenido_actual.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": imagen_url
+                        }
+                    }
+                )
+
+
+            # ----------------------------------------------
+            # UN SOLO MENSAJE MULTIMODAL
+            # ----------------------------------------------
+
+            contenido_mensajes.append(
+                {
                     "role": "user",
-                    "content": f"[Imagen enviada: {archivo.name}]"
-                })
-        # ============================================
-        # LÓGICA DEL REFLEJO
-        # ============================================
-        if "reflejo" in mensaje.lower():
-            with st.spinner("Generando tu Reflejo..."):
+                    "content": contenido_actual
+                }
+            )
+
+
+        else:
+
+            # ------------------------------------------------
+            # MENSAJE NORMAL DE TEXTO
+            # ------------------------------------------------
+
+            contenido_mensajes.append(
+                {
+                    "role": "user",
+                    "content": texto
+                }
+            )
+
+
+        # ----------------------------------------------------
+        # 8. GUARDAR MENSAJE EN HISTORIAL
+        #
+        # NO guardamos Base64.
+        # ----------------------------------------------------
+
+        if texto:
+
+            chat_mensajes.append(
+                {
+                    "role": "user",
+                    "content": texto
+                }
+            )
+
+        elif hay_imagen:
+
+            nombres_archivos = ", ".join(
+                archivo.name
+                for archivo in archivos
+            )
+
+            chat_mensajes.append(
+                {
+                    "role": "user",
+                    "content": (
+                        f"[🖼️ Imagen enviada: "
+                        f"{nombres_archivos}]"
+                    )
+                }
+            )
+
+
+        # ----------------------------------------------------
+        # 9. ELEGIR MOTOR
+        #
+        # IMAGEN → OPENAI
+        # TEXTO  → DEEPSEEK
+        # ----------------------------------------------------
+
+        if hay_imagen:
+
+            # =================================================
+            # OPENAI — VISIÓN
+            # =================================================
+
+            if not OPENAI_API_KEY:
+
+                respuesta_texto = (
+                    "⚠️ OPENAI_API_KEY no está configurada "
+                    "en Streamlit Secrets."
+                )
+
+            else:
+
                 try:
+
+                    respuesta = requests.post(
+                        OPENAI_CHAT_API_URL,
+                        headers={
+                            "Authorization":
+                                f"Bearer {OPENAI_API_KEY}",
+                            "Content-Type":
+                                "application/json"
+                        },
+                        json={
+                            "model": "gpt-4o-mini",
+                            "messages":
+                                contenido_mensajes
+                        },
+                        timeout=90
+                    )
+
+
+                    if respuesta.status_code == 200:
+
+                        data = respuesta.json()
+
+                        respuesta_texto = (
+                            data[
+                                "choices"
+                            ][0][
+                                "message"
+                            ][
+                                "content"
+                            ]
+                        )
+
+                    else:
+
+                        respuesta_texto = (
+                            f"Error OpenAI "
+                            f"{respuesta.status_code}: "
+                            f"{respuesta.text}"
+                        )
+
+
+                except Exception as e:
+
+                    respuesta_texto = (
+                        "Error de conexión con OpenAI: "
+                        f"{e}"
+                    )
+
+
+        else:
+
+            # =================================================
+            # DEEPSEEK — TEXTO
+            # =================================================
+
+            if not DEEPSEEK_API_KEY:
+
+                respuesta_texto = (
+                    "⚠️ DEEPSEEK_API_KEY no está "
+                    "configurada en Streamlit Secrets."
+                )
+
+            else:
+
+                try:
+
+                    respuesta = requests.post(
+                        DEEPSEEK_API_URL,
+                        headers={
+                            "Authorization":
+                                f"Bearer {DEEPSEEK_API_KEY}",
+                            "Content-Type":
+                                "application/json"
+                        },
+                        json={
+                            "model": "deepseek-chat",
+                            "messages":
+                                contenido_mensajes
+                        },
+                        timeout=60
+                    )
+
+
+                    if respuesta.status_code == 200:
+
+                        data = respuesta.json()
+
+                        respuesta_texto = (
+                            data[
+                                "choices"
+                            ][0][
+                                "message"
+                            ][
+                                "content"
+                            ]
+                        )
+
+                    else:
+
+                        respuesta_texto = (
+                            f"Error DeepSeek "
+                            f"{respuesta.status_code}: "
+                            f"{respuesta.text}"
+                        )
+
+
+                except Exception as e:
+
+                    respuesta_texto = (
+                        "Error de conexión con DeepSeek: "
+                        f"{e}"
+                    )
+
+
+        # ----------------------------------------------------
+        # 10. GUARDAR RESPUESTA
+        # ----------------------------------------------------
+
+        chat_mensajes.append(
+            {
+                "role": "assistant",
+                "content": respuesta_texto
+            }
+        )
+
+
+        # ----------------------------------------------------
+        # 11. MOSTRAR RESPUESTA
+        # ----------------------------------------------------
+
+        with st.chat_message("assistant"):
+
+            st.write(
+                respuesta_texto
+            )
+
+
+        # ----------------------------------------------------
+        # 12. GENERAR REFLEJO
+        #
+        # IMPORTANTE:
+        # usamos texto_lower.
+        # Nunca mensaje.lower().
+        # ----------------------------------------------------
+
+        if (
+            "reflejo" in texto_lower
+            and OPENAI_API_KEY
+        ):
+
+            with st.spinner(
+                "Generando tu Reflejo..."
+            ):
+
+                try:
+
                     img_resp = requests.post(
                         OPENAI_IMAGE_API_URL,
                         headers={
-                            "Authorization": f"Bearer {OPENAI_API_KEY}",
-                            "Content-Type": "application/json"
+                            "Authorization":
+                                f"Bearer {OPENAI_API_KEY}",
+                            "Content-Type":
+                                "application/json"
                         },
                         json={
                             "model": "dall-e-3",
                             "prompt": (
-                                "Un reflejo dorado de un Creador Eónico, "
-                                "estilo EONIA, negro y dorado."
+                                "Un reflejo dorado de un "
+                                "Creador Eónico, "
+                                "estilo EONIA, "
+                                "negro y dorado."
                             ),
                             "size": "1024x1024"
                         },
                         timeout=60
                     )
+
+
                     if img_resp.status_code == 200:
-                        img_url = img_resp.json()["data"][0]["url"]
-                        st.image(img_url, caption="Tu Reflejo Eónico")
-                except:
-                    st.warning("No se pudo generar el Reflejo.")
 
-        # ============================================
-        # CARGA DE PRUEBA
-        # ============================================
-        contenido_prueba = cargar_prueba(mentor["prueba"])
-
-        # ============================================
-        # DETECCIÓN DE IMÁGENES
-        # ============================================
-        hay_imagen = "imagen" in mensaje.lower() or bool(archivos)
-
-        if hay_imagen:
-            try:
-                contenido_mensajes = [
-                    {
-                        "role": "system",
-                        "content": (
-                            mentor["identidad"] + "\n"
-                            "Principios: " + ", ".join(mentor["principios"]) + "\n"
-                            "Método: " + mentor["metodo"] + "\n"
-                            "Sombra: " + mentor["sombra"] + "\n"
-                            "Prueba: " + contenido_prueba + "\n"
-                            "Fragmento a otorgar: " + mentor["fragmento"]
+                        data_imagen = (
+                            img_resp.json()
                         )
-                    },
-                    *[
-                        {"role": m["role"], "content": m["content"]}
-                        for m in st.session_state.chat_mensajes
-                    ]
-                ]
 
-                if archivos:
-                    contenido_mensajes.append({
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": mensaje.text or "Analiza esta imagen"},
-                            *[
-                                {
-                                    "type": "image_url",
-                                    "image_url": {"url": "data:image/jpeg;base64," + __import__("base64").b64encode(archivo.read()).decode()}
-                                }
-                                for archivo in archivos
-                            ]
-                        ]
-                    })
+                        img_url = (
+                            data_imagen[
+                                "data"
+                            ][0]["url"]
+                        )
 
-                respuesta = requests.post(
-                    OPENAI_CHAT_API_URL,
-                    headers={
-                        "Authorization": f"Bearer {OPENAI_API_KEY}",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "model": "gpt-4o-mini",
-                        "messages": contenido_mensajes
-                    },
-                    timeout=90
-                )
+                        st.image(
+                            img_url,
+                            caption="Tu Reflejo Eónico"
+                        )
 
-                if respuesta.status_code == 200:
-                    data = respuesta.json()
-                    respuesta_texto = data["choices"][0]["message"]["content"]
-                else:
-                    respuesta_texto = f"Error OpenAI {respuesta.status_code}: {respuesta.text}"
+                    else:
 
-            except Exception as e:
-                respuesta_texto = f"Error de conexión con OpenAI: {e}"
+                        st.warning(
+                            "No se pudo generar "
+                            "el Reflejo."
+                        )
 
-        else:
-            try:
-                respuesta = requests.post(
-                    DEEPSEEK_API_URL,
-                    headers={
-                        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "model": "deepseek-chat",
-                        "messages": [
-                            {
-                                "role": "system",
-                                "content": (
-                                    mentor["identidad"] + "\n"
-                                    "Principios: " + ", ".join(mentor["principios"]) + "\n"
-                                    "Método: " + mentor["metodo"] + "\n"
-                                    "Sombra: " + mentor["sombra"] + "\n"
-                                    "Prueba: " + contenido_prueba + "\n"
-                                    "Fragmento a otorgar: " + mentor["fragmento"]
-                                )
-                            },
-                            *[
-                                {"role": m["role"], "content": m["content"]}
-                                for m in st.session_state.chat_mensajes
-                            ]
-                        ]
-                    },
-                    timeout=60
-                )
 
-                if respuesta.status_code == 200:
-                    data = respuesta.json()
-                    respuesta_texto = data["choices"][0]["message"]["content"]
-                else:
-                    respuesta_texto = f"Error DeepSeek {respuesta.status_code}: {respuesta.text}"
+                except Exception as e:
 
-            except Exception as e:
-                respuesta_texto = f"Error de conexión con DeepSeek: {e}"
-
-        st.session_state.chat_mensajes.append({
-            "role": "assistant",
-            "content": respuesta_texto
-        })
-
-        with st.chat_message("assistant"):
-            st.write(respuesta_texto)
-
-        if "imagen" in mensaje.lower() and OPENAI_API_KEY:
-            with st.spinner("Generando imagen..."):
-                try:
-                    img_resp = requests.post(
-                        OPENAI_IMAGE_API_URL,
-                        headers={
-                            "Authorization": f"Bearer {OPENAI_API_KEY}",
-                            "Content-Type": "application/json"
-                        },
-                        json={
-                            "model": "dall-e-3",
-                            "prompt": mensaje,
-                            "size": "1024x1024"
-                        },
-                        timeout=60
+                    st.warning(
+                        "No se pudo generar "
+                        f"el Reflejo: {e}"
                     )
-                    if img_resp.status_code == 200:
-                        img_url = img_resp.json()["data"][0]["url"]
-                        st.image(img_url, caption="Reflejo de EONIA")
-                except:
-                    pass
+
+
+        # ----------------------------------------------------
+        # 13. LIMPIAR PREGUNTA INICIAL
+        # ----------------------------------------------------
+
+        st.session_state.chat_pregunta = ""
+
+
+    # ========================================================
+    # MOSTRAR PREGUNTA INICIAL SI VIENE DEL HOME
+    #
+    # La dejamos como sugerencia visual.
+    # ========================================================
+
+    if pregunta_inicial:
+
+        st.info(
+            f"Pregunta enviada desde Inicio: "
+            f"{pregunta_inicial}"
+        )
+
+        if st.button(
+            "Usar esta pregunta",
+            key="usar_pregunta_inicial"
+        ):
+
+            st.session_state.chat_pregunta = ""
+            chat_mensajes.append(
+                {
+                    "role": "user",
+                    "content": pregunta_inicial
+                }
+            )
+
+            st.rerun()
+
+
 # ============================================================
-# PAGINA: CONCILIO EONICO
+# PAGINA: CONCILIO EÓNICO
 # ============================================================
 
 elif st.session_state.pagina == "Concilio Eónico":
@@ -1724,7 +2174,9 @@ elif st.session_state.pagina == "Concilio Eónico":
         )
     )
 
-    st.markdown("### CONSEJO DEL CONCILIO")
+    st.markdown(
+        "### CONSEJO DEL CONCILIO"
+    )
 
     c1, c2, c3, c4, c5 = st.columns(5)
 
@@ -2293,28 +2745,26 @@ elif st.session_state.pagina == "Mi Progreso":
 
     st.title("MI PROGRESO")
 
-    # --------------------------------------------------------
-    # CABECERA
-    # --------------------------------------------------------
+    st.html(
+        """
+        <div class="eonia-card">
 
-    st.html("""
-    <div class="eonia-card">
+            <div class="small-gold">
+                VIAJE DEL CREADOR
+            </div>
 
-        <div class="small-gold">
-            VIAJE DEL CREADOR
+            <h1>
+                ERA DE LOS METALES
+            </h1>
+
+            <p>
+                Cada Fragmento obtenido queda integrado
+                en tu historia de creación.
+            </p>
+
         </div>
-
-        <h1>
-            ERA DE LOS METALES
-        </h1>
-
-        <p>
-            Cada Fragmento obtenido queda integrado
-            en tu historia de creación.
-        </p>
-
-    </div>
-    """)
+        """
+    )
 
     if estado:
 
@@ -2345,17 +2795,28 @@ elif st.session_state.pagina == "Mi Progreso":
 
         for registro in fragmentos:
 
-            numero_bioma = registro.get("bioma")
-            nombre_fragmento = registro.get("fragmento")
+            numero_bioma = registro.get(
+                "bioma"
+            )
+
+            nombre_fragmento = registro.get(
+                "fragmento"
+            )
 
             if numero_bioma is None:
                 continue
 
             if numero_bioma not in fragmentos_por_bioma:
-                fragmentos_por_bioma[numero_bioma] = []
+
+                fragmentos_por_bioma[
+                    numero_bioma
+                ] = []
 
             if nombre_fragmento:
-                fragmentos_por_bioma[numero_bioma].append(
+
+                fragmentos_por_bioma[
+                    numero_bioma
+                ].append(
                     nombre_fragmento
                 )
 
@@ -2368,10 +2829,14 @@ elif st.session_state.pagina == "Mi Progreso":
         for numero in range(1, 11):
 
             cantidad = len(
-                fragmentos_por_bioma.get(numero, [])
+                fragmentos_por_bioma.get(
+                    numero,
+                    []
+                )
             )
 
             if cantidad >= 5:
+
                 biomas_completados += 1
 
         biomas_registrados = max(
@@ -2387,54 +2852,60 @@ elif st.session_state.pagina == "Mi Progreso":
 
         with col1:
 
-            st.html(f"""
-            <div class="eonia-card"
-                 style="text-align:center;">
+            st.html(
+                f"""
+                <div class="eonia-card"
+                     style="text-align:center;">
 
-                <div class="metric-number">
-                    {len(fragmentos)}
+                    <div class="metric-number">
+                        {len(fragmentos)}
+                    </div>
+
+                    <div class="metric-label">
+                        FRAGMENTOS OBTENIDOS
+                    </div>
+
                 </div>
-
-                <div class="metric-label">
-                    FRAGMENTOS OBTENIDOS
-                </div>
-
-            </div>
-            """)
+                """
+            )
 
         with col2:
 
-            st.html(f"""
-            <div class="eonia-card"
-                 style="text-align:center;">
+            st.html(
+                f"""
+                <div class="eonia-card"
+                     style="text-align:center;">
 
-                <div class="metric-number">
-                    {biomas_registrados}
+                    <div class="metric-number">
+                        {biomas_registrados}
+                    </div>
+
+                    <div class="metric-label">
+                        BIOMAS COMPLETADOS
+                    </div>
+
                 </div>
-
-                <div class="metric-label">
-                    BIOMAS COMPLETADOS
-                </div>
-
-            </div>
-            """)
+                """
+            )
 
         with col3:
 
-            st.html(f"""
-            <div class="eonia-card"
-                 style="text-align:center;">
+            st.html(
+                f"""
+                <div class="eonia-card"
+                     style="text-align:center;">
 
-                <div class="metric-number">
-                    {len(certificados)}
+                    <div class="metric-number">
+                        {len(certificados)}
+                    </div>
+
+                    <div class="metric-label">
+                        CERTIFICADOS
+                    </div>
+
                 </div>
-
-                <div class="metric-label">
-                    CERTIFICADOS
-                </div>
-
-            </div>
-            """)
+                """
+            )
 
         # ----------------------------------------------------
         # TITULO
@@ -2498,172 +2969,183 @@ elif st.session_state.pagina == "Mi Progreso":
                 estado_bioma = "AÚN NO DESPERTADO"
                 color_estado = "#66727d"
 
-            # ----------------------------------------------
-            # CONTENEDOR DEL BIOMA
-            # ----------------------------------------------
+            # ------------------------------------------------
+            # CONTENEDOR BIOMA
+            # ------------------------------------------------
 
-            st.html(f"""
-            <div class="eonia-card"
-                 style="margin-bottom:18px;">
+            st.html(
+                f"""
+                <div class="eonia-card"
+                     style="margin-bottom:18px;">
 
-                <div style="
-                    display:flex;
-                    justify-content:space-between;
-                    align-items:center;
-                    gap:20px;
-                    flex-wrap:wrap;
-                ">
-
-                    <div>
-
-                        <div class="small-gold">
-                            {eras[numero]}
-                        </div>
-
-                        <h2 style="
-                            margin-top:8px;
-                            margin-bottom:5px;
-                        ">
-                            BIOMA {numero}
-                        </h2>
-
-                    </div>
-
-                    <div style="
-                        color:{color_estado};
-                        font-size:12px;
-                        letter-spacing:2px;
-                        font-weight:600;
-                    ">
-                        {estado_bioma}
-                    </div>
-
-                </div>
-
-                <div style="
-                    margin-top:18px;
-                    height:7px;
-                    background:#172635;
-                    border-radius:10px;
-                    overflow:hidden;
-                ">
-
-                    <div style="
-                        width:{porcentaje}%;
-                        height:100%;
-                        background:linear-gradient(
-                            90deg,
-                            #b8872f,
-                            #e4bd5c
-                        );
-                        border-radius:10px;
-                    "></div>
-
-                </div>
-
-                <div style="
-                    display:flex;
-                    justify-content:space-between;
-                    margin-top:9px;
-                    color:#8e9aa7;
-                    font-size:12px;
-                ">
-
-                    <span>
-                        {cantidad} / 5 Fragmentos
-                    </span>
-
-                    <span>
-                        {porcentaje}%
-                    </span>
-
-                </div>
-
-            </div>
-            """)
-
-            # ----------------------------------------------
-            # FRAGMENTOS DEL BIOMA
-            # ----------------------------------------------
-
-            if nombres:
-
-                st.html("""
-                <div style="
-                    margin:-8px 0 22px 20px;
-                    padding-left:20px;
-                    border-left:1px solid rgba(228,189,92,.25);
-                ">
-                """)
-
-                for nombre in nombres:
-
-                    st.html(f"""
                     <div style="
                         display:flex;
+                        justify-content:space-between;
                         align-items:center;
-                        gap:12px;
-                        padding:9px 0;
-                        color:#f4ead0;
+                        gap:20px;
+                        flex-wrap:wrap;
                     ">
 
-                        <span style="
-                            color:#e4bd5c;
-                            font-size:18px;
+                        <div>
+
+                            <div class="small-gold">
+                                {eras[numero]}
+                            </div>
+
+                            <h2 style="
+                                margin-top:8px;
+                                margin-bottom:5px;
+                            ">
+                                BIOMA {numero}
+                            </h2>
+
+                        </div>
+
+                        <div style="
+                            color:{color_estado};
+                            font-size:12px;
+                            letter-spacing:2px;
+                            font-weight:600;
                         ">
-                            ◆
+                            {estado_bioma}
+                        </div>
+
+                    </div>
+
+                    <div style="
+                        margin-top:18px;
+                        height:7px;
+                        background:#172635;
+                        border-radius:10px;
+                        overflow:hidden;
+                    ">
+
+                        <div style="
+                            width:{porcentaje}%;
+                            height:100%;
+                            background:linear-gradient(
+                                90deg,
+                                #b8872f,
+                                #e4bd5c
+                            );
+                            border-radius:10px;
+                        "></div>
+
+                    </div>
+
+                    <div style="
+                        display:flex;
+                        justify-content:space-between;
+                        margin-top:9px;
+                        color:#8e9aa7;
+                        font-size:12px;
+                    ">
+
+                        <span>
+                            {cantidad} / 5 Fragmentos
                         </span>
 
                         <span>
-                            {nombre}
-                        </span>
-
-                        <span style="
-                            margin-left:auto;
-                            color:#e4bd5c;
-                            font-size:11px;
-                            letter-spacing:1px;
-                        ">
-                            OBTENIDO
+                            {porcentaje}%
                         </span>
 
                     </div>
-                    """)
 
-                st.html("""
                 </div>
-                """)
+                """
+            )
+
+            # ------------------------------------------------
+            # FRAGMENTOS
+            # ------------------------------------------------
+
+            if nombres:
+
+                st.html(
+                    """
+                    <div style="
+                        margin:-8px 0 22px 20px;
+                        padding-left:20px;
+                        border-left:1px solid
+                            rgba(228,189,92,.25);
+                    ">
+                    """
+                )
+
+                for nombre in nombres:
+
+                    st.html(
+                        f"""
+                        <div style="
+                            display:flex;
+                            align-items:center;
+                            gap:12px;
+                            padding:9px 0;
+                            color:#f4ead0;
+                        ">
+
+                            <span style="
+                                color:#e4bd5c;
+                                font-size:18px;
+                            ">
+                                ◆
+                            </span>
+
+                            <span>
+                                {nombre}
+                            </span>
+
+                            <span style="
+                                margin-left:auto;
+                                color:#e4bd5c;
+                                font-size:11px;
+                                letter-spacing:1px;
+                            ">
+                                OBTENIDO
+                            </span>
+
+                        </div>
+                        """
+                    )
+
+                st.html(
+                    """
+                    </div>
+                    """
+                )
 
         # ----------------------------------------------------
         # FRASE FINAL
         # ----------------------------------------------------
 
-        st.html("""
-        <div style="
-            text-align:center;
-            padding:50px 10px 30px 10px;
-        ">
-
+        st.html(
+            """
             <div style="
-                font-family:Cinzel;
-                font-size:21px;
-                color:#e4bd5c;
-                letter-spacing:1px;
+                text-align:center;
+                padding:50px 10px 30px 10px;
             ">
-                TODA CREACIÓN DEJA UN FRAGMENTO.
-            </div>
 
-            <div style="
-                margin-top:12px;
-                color:#7f8a95;
-                letter-spacing:3px;
-                font-size:11px;
-            ">
-                EONIA UNIVERSITY
-            </div>
+                <div style="
+                    font-family:Cinzel;
+                    font-size:21px;
+                    color:#e4bd5c;
+                    letter-spacing:1px;
+                ">
+                    TODA CREACIÓN DEJA UN FRAGMENTO.
+                </div>
 
-        </div>
-        """)
+                <div style="
+                    margin-top:12px;
+                    color:#7f8a95;
+                    letter-spacing:3px;
+                    font-size:11px;
+                ">
+                    EONIA UNIVERSITY
+                </div>
+
+            </div>
+            """
+        )
 
     else:
 
@@ -2671,6 +3153,8 @@ elif st.session_state.pagina == "Mi Progreso":
             "Introduce el UUID del Creador "
             "para consultar su evolución."
         )
+
+
 # ============================================================
 # PAGINA: CONFIGURACION
 # ============================================================
@@ -2702,14 +3186,18 @@ elif st.session_state.pagina == "Configuración":
         unsafe_allow_html=True
     )
 
-    st.markdown("### CONEXIÓN CRM")
+    st.markdown(
+        "### CONEXIÓN CRM"
+    )
 
     st.code(
         SUPABASE_FUNCTIONS_URL,
         language="text"
     )
 
-    st.markdown("### ESTADO")
+    st.markdown(
+        "### ESTADO"
+    )
 
     if user_id:
 
