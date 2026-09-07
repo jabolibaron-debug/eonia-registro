@@ -2062,32 +2062,40 @@ elif st.session_state.pagina == "Chat Eónico":
                         timeout=60
                     )
 
-                    st.write(f"🔍 Status: {img_resp.status_code}")
-                    st.write(f"🔍 Respuesta: {img_resp.text[:300]}")
-
                     if img_resp.status_code == 200:
 
-                        img_url = (
-                            img_resp.json()
-                            ["data"][0]["url"]
+                        data_imagen = img_resp.json()
+
+                        img_b64 = (
+                            data_imagen
+                            .get("data", [{}])[0]
+                            .get("b64_json")
                         )
 
-                        st.image(
-                            img_url,
-                            caption="Tu Reflejo Eónico"
-                        )
+                        if img_b64:
+
+                            import io
+                            from PIL import Image
+
+                            img_bytes = base64.b64decode(img_b64)
+                            img = Image.open(io.BytesIO(img_bytes))
+
+                            st.image(
+                                img,
+                                caption="Tu Reflejo Eónico"
+                            )
+
+                        else:
+
+                            st.warning(
+                                "No se pudo decodificar el Reflejo."
+                            )
 
                     else:
 
                         st.warning(
                             "No se pudo generar el Reflejo."
                         )
-
-                except Exception as e:
-
-                    st.warning(
-                        f"Error: {e}"
-                    )
 
         # ----------------------------------------------------
         # 13. LIMPIAR PREGUNTA INICIAL
