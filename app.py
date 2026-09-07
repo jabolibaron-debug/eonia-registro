@@ -1434,7 +1434,7 @@ elif st.session_state.pagina == "Chat Eónico":
     if "reflejo_prompt_final" not in st.session_state:
         st.session_state.reflejo_prompt_final = ""
 
-    # ========================================================
+# ========================================================
 # VERIFICAR REFLEJO EXISTENTE (AUTOMÁTICO PARA TODOS)
 # ========================================================
 
