@@ -1,13 +1,7 @@
 import os
 import requests
 import streamlit as st
-from textwrap import dedent
 
-def html(content):
-    st.markdown(
-        dedent(content),
-        unsafe_allow_html=True
-    )
 
 # ============================================================
 # EONIA UNIVERSITY — CRM
@@ -21,8 +15,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+
 # ============================================================
-# CONFIGURACIÓN
+# CONFIGURACIÓN SUPABASE
 # ============================================================
 
 SUPABASE_FUNCTIONS_URL = os.getenv(
@@ -30,196 +25,13 @@ SUPABASE_FUNCTIONS_URL = os.getenv(
     "https://pmshpvjtiauhbuexdjev.supabase.co/functions/v1"
 )
 
-OBTENER_ESTADO_URL = f"{SUPABASE_FUNCTIONS_URL}/obtener_estado"
-ASIGNAR_FRAGMENTO_URL = f"{SUPABASE_FUNCTIONS_URL}/asignar_fragmento"
+OBTENER_ESTADO_URL = (
+    f"{SUPABASE_FUNCTIONS_URL}/obtener_estado"
+)
 
-# ============================================================
-# ESTILO EONIA
-# ============================================================
-
-st.markdown("""
-<style>
-
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
-
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
-}
-
-.stApp {
-    background:
-        radial-gradient(circle at 50% 0%, #17283a 0%, #07111d 35%, #02060b 100%);
-    color: #f4ead0;
-}
-
-/* SIDEBAR */
-
-[data-testid="stSidebar"] {
-    background:
-        linear-gradient(180deg, #07121e 0%, #03070c 100%);
-    border-right: 1px solid rgba(212,170,74,.35);
-}
-
-[data-testid="stSidebar"] * {
-    color: #eee5ce;
-}
-
-/* TITULOS */
-
-h1, h2, h3 {
-    font-family: 'Cinzel', serif !important;
-    letter-spacing: .04em;
-}
-
-.gold {
-    color: #e4bd5c;
-}
-
-.small-gold {
-    color: #c9a94c;
-    font-size: 12px;
-    letter-spacing: .15em;
-}
-
-/* TARJETAS */
-
-.eonia-card {
-    background:
-        linear-gradient(
-            145deg,
-            rgba(20,38,54,.96),
-            rgba(5,12,20,.96)
-        );
-
-    border: 1px solid rgba(190,150,65,.38);
-    border-radius: 14px;
-    padding: 22px;
-    margin-bottom: 18px;
-
-    box-shadow:
-        0 10px 30px rgba(0,0,0,.35),
-        inset 0 0 25px rgba(212,170,74,.025);
-}
-
-.hero {
-    min-height: 360px;
-
-    background:
-        linear-gradient(
-            90deg,
-            rgba(2,7,13,.95),
-            rgba(2,7,13,.45),
-            rgba(2,7,13,.25)
-        ),
-        url("https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1800&q=80");
-
-    background-size: cover;
-    background-position: center;
-
-    border-radius: 18px;
-    border: 1px solid rgba(212,170,74,.4);
-
-    padding: 50px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.hero h1 {
-    font-size: 42px;
-    line-height: 1.05;
-    max-width: 650px;
-}
-
-.hero p {
-    max-width: 620px;
-    color: #ddd3bb;
-    font-size: 16px;
-}
-
-/* MENTORES */
-
-.mentor-card {
-    text-align: center;
-    padding: 15px 8px;
-    border: 1px solid rgba(200,160,70,.25);
-    border-radius: 12px;
-    background: rgba(5,12,20,.7);
-}
-
-.mentor-name {
-    font-family: 'Cinzel', serif;
-    color: #e4bd5c;
-    font-size: 14px;
-}
-
-.mentor-role {
-    color: #9ba8b5;
-    font-size: 11px;
-}
-
-/* PROGRESO */
-
-.progress-container {
-    background: #172431;
-    border-radius: 20px;
-    height: 10px;
-    overflow: hidden;
-}
-
-.progress-bar {
-    height: 100%;
-    background:
-        linear-gradient(90deg, #a87924, #f1d178);
-}
-
-/* BOTONES */
-
-.stButton > button {
-    background:
-        linear-gradient(135deg, #c89d42, #8b6725);
-
-    color: #080b0e;
-    border: 0;
-    border-radius: 8px;
-
-    font-weight: 700;
-
-    padding: 10px 20px;
-}
-
-.stButton > button:hover {
-    background:
-        linear-gradient(135deg, #f0cf73, #bd8c2e);
-
-    color: #000;
-}
-
-/* MÉTRICAS */
-
-.metric {
-    text-align: center;
-}
-
-.metric-number {
-    font-size: 30px;
-    color: #e4bd5c;
-    font-family: 'Cinzel', serif;
-}
-
-.metric-label {
-    font-size: 11px;
-    color: #8f9aa5;
-    text-transform: uppercase;
-    letter-spacing: .12em;
-}
-
-hr {
-    border-color: rgba(212,170,74,.15);
-}
-
-</style>
-""", unsafe_allow_html=True)
+ASIGNAR_FRAGMENTO_URL = (
+    f"{SUPABASE_FUNCTIONS_URL}/asignar_fragmento"
+)
 
 
 # ============================================================
@@ -232,6 +44,366 @@ if "pagina" not in st.session_state:
 if "user_id" not in st.session_state:
     st.session_state.user_id = ""
 
+if "mentor_activo" not in st.session_state:
+    st.session_state.mentor_activo = "AION"
+
+
+# ============================================================
+# ESTILO EONIA
+# ============================================================
+
+st.markdown(
+    """
+    <style>
+
+    @import url(
+        'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap'
+    );
+
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+
+    .stApp {
+        background:
+            radial-gradient(
+                circle at 50% 0%,
+                #17283a 0%,
+                #07111d 35%,
+                #02060b 100%
+            );
+
+        color: #f4ead0;
+    }
+
+    /* ========================================================
+       SIDEBAR
+       ======================================================== */
+
+    [data-testid="stSidebar"] {
+        background:
+            linear-gradient(
+                180deg,
+                #07121e 0%,
+                #03070c 100%
+            );
+
+        border-right:
+            1px solid rgba(212,170,74,.35);
+    }
+
+    [data-testid="stSidebar"] * {
+        color: #eee5ce;
+    }
+
+    /* ========================================================
+       TITULOS
+       ======================================================== */
+
+    h1, h2, h3 {
+        font-family: 'Cinzel', serif !important;
+        letter-spacing: .04em;
+    }
+
+    h1 {
+        color: #f4ead0;
+    }
+
+    h2 {
+        color: #eee4ce;
+    }
+
+    h3 {
+        color: #e4bd5c;
+    }
+
+    .gold {
+        color: #e4bd5c;
+    }
+
+    .small-gold {
+        color: #c9a94c;
+        font-size: 12px;
+        letter-spacing: .15em;
+        text-transform: uppercase;
+    }
+
+    /* ========================================================
+       TARJETAS
+       ======================================================== */
+
+    .eonia-card {
+        background:
+            linear-gradient(
+                145deg,
+                rgba(20,38,54,.96),
+                rgba(5,12,20,.96)
+            );
+
+        border:
+            1px solid rgba(190,150,65,.38);
+
+        border-radius: 14px;
+
+        padding: 22px;
+
+        margin-bottom: 18px;
+
+        box-shadow:
+            0 10px 30px rgba(0,0,0,.35),
+            inset 0 0 25px rgba(212,170,74,.025);
+    }
+
+    .eonia-card:hover {
+        border-color:
+            rgba(228,189,92,.60);
+    }
+
+    /* ========================================================
+       HERO
+       ======================================================== */
+
+    .hero {
+        min-height: 380px;
+
+        background:
+            linear-gradient(
+                90deg,
+                rgba(2,7,13,.94),
+                rgba(2,7,13,.60),
+                rgba(2,7,13,.30)
+            ),
+            url(
+                "https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1800&q=85"
+            );
+
+        background-size: cover;
+
+        background-position: center;
+
+        border-radius: 18px;
+
+        border:
+            1px solid rgba(212,170,74,.45);
+
+        padding: 50px;
+
+        display: flex;
+
+        flex-direction: column;
+
+        justify-content: center;
+
+        box-shadow:
+            0 20px 50px rgba(0,0,0,.35);
+    }
+
+    .hero h1 {
+        font-size: 46px;
+
+        line-height: 1.05;
+
+        max-width: 700px;
+
+        margin-top: 12px;
+    }
+
+    .hero p {
+        max-width: 650px;
+
+        color: #ddd3bb;
+
+        font-size: 16px;
+
+        line-height: 1.7;
+    }
+
+    /* ========================================================
+       PROGRESO
+       ======================================================== */
+
+    .progress-container {
+        background: #172431;
+
+        border-radius: 20px;
+
+        height: 10px;
+
+        overflow: hidden;
+
+        margin-top: 15px;
+    }
+
+    .progress-bar {
+        height: 100%;
+
+        background:
+            linear-gradient(
+                90deg,
+                #a87924,
+                #f1d178
+            );
+
+        border-radius: 20px;
+    }
+
+    /* ========================================================
+       MENTORES
+       ======================================================== */
+
+    .mentor-card {
+        text-align: center;
+
+        padding: 15px 8px;
+
+        border:
+            1px solid rgba(200,160,70,.25);
+
+        border-radius: 12px;
+
+        background:
+            rgba(5,12,20,.72);
+
+        min-height: 105px;
+    }
+
+    .mentor-card:hover {
+        border-color:
+            rgba(228,189,92,.60);
+
+        background:
+            rgba(18,31,44,.90);
+    }
+
+    .mentor-name {
+        font-family: 'Cinzel', serif;
+
+        color: #e4bd5c;
+
+        font-size: 14px;
+
+        margin-top: 5px;
+    }
+
+    .mentor-role {
+        color: #9ba8b5;
+
+        font-size: 11px;
+
+        margin-top: 4px;
+    }
+
+    /* ========================================================
+       METRICAS
+       ======================================================== */
+
+    .metric {
+        text-align: center;
+    }
+
+    .metric-number {
+        font-size: 30px;
+
+        color: #e4bd5c;
+
+        font-family: 'Cinzel', serif;
+    }
+
+    .metric-label {
+        font-size: 11px;
+
+        color: #8f9aa5;
+
+        text-transform: uppercase;
+
+        letter-spacing: .12em;
+    }
+
+    /* ========================================================
+       BOTONES
+       ======================================================== */
+
+    .stButton > button {
+        background:
+            linear-gradient(
+                135deg,
+                #c89d42,
+                #8b6725
+            );
+
+        color: #080b0e;
+
+        border: 0;
+
+        border-radius: 8px;
+
+        font-weight: 700;
+
+        padding: 10px 20px;
+
+        min-height: 42px;
+    }
+
+    .stButton > button:hover {
+        background:
+            linear-gradient(
+                135deg,
+                #f0cf73,
+                #bd8c2e
+            );
+
+        color: #000;
+    }
+
+    /* ========================================================
+       INPUTS
+       ======================================================== */
+
+    input, textarea {
+        color: #eee5ce !important;
+    }
+
+    [data-baseweb="input"],
+    [data-baseweb="textarea"] {
+        background-color: #0b141f !important;
+    }
+
+    /* ========================================================
+       SEPARADORES
+       ======================================================== */
+
+    hr {
+        border-color:
+            rgba(212,170,74,.15);
+    }
+
+    /* ========================================================
+       PIE
+       ======================================================== */
+
+    .eonia-footer {
+        text-align: center;
+
+        padding: 60px 10px 30px;
+
+        color: #7f8a95;
+    }
+
+    .eonia-footer-title {
+        font-family: 'Cinzel', serif;
+
+        font-size: 22px;
+
+        color: #e4bd5c;
+
+        letter-spacing: .08em;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # ============================================================
 # FUNCIONES CRM
@@ -239,11 +411,16 @@ if "user_id" not in st.session_state:
 
 def obtener_estado(user_id):
 
+    if not user_id:
+        return None
+
     try:
 
         response = requests.post(
             OBTENER_ESTADO_URL,
-            json={"user_id": user_id},
+            json={
+                "user_id": user_id
+            },
             timeout=20
         )
 
@@ -254,12 +431,18 @@ def obtener_estado(user_id):
 
     except Exception as e:
 
-        st.error(f"Error conectando con EONIA: {e}")
+        st.error(
+            f"Error conectando con EONIA: {e}"
+        )
 
         return None
 
 
-def asignar_fragmento(user_id, bioma, fragmento):
+def asignar_fragmento(
+    user_id,
+    bioma,
+    fragmento
+):
 
     try:
 
@@ -291,7 +474,11 @@ with st.sidebar:
 
     st.markdown(
         """
-        <div style="text-align:center;">
+        <div style="
+            text-align:center;
+            padding:10px 0 20px 0;
+        ">
+
             <div style="
                 font-family:Cinzel;
                 font-size:30px;
@@ -305,13 +492,16 @@ with st.sidebar:
                 font-size:11px;
                 letter-spacing:5px;
                 color:#8e9aa7;
+                margin-top:3px;
             ">
                 UNIVERSITY
             </div>
 
-            <div class="small-gold">
+            <div class="small-gold"
+                 style="margin-top:12px;">
                 EL PORTAL A UNA CIVILIZACIÓN
             </div>
+
         </div>
         """,
         unsafe_allow_html=True
@@ -333,39 +523,42 @@ with st.sidebar:
     st.divider()
 
     opciones = [
-        "⌂  Inicio",
-        "◉  Mi Perfil",
-        "◈  Biomas",
-        "◌  Chat Eónico",
-        "♜  Concilio Eónico",
-        "◆  Mis Proyectos",
-        "◇  Mis Becas",
-        "▣  Museo de EONIA",
-        "✦  Metaverso",
-        "♧  Comunidad",
-        "◷  Eventos",
-        "⌁  Rutas Personalizadas",
-        "◒  Mi Progreso",
-        "⚙  Configuración"
+        ("⌂", "Inicio"),
+        ("◉", "Mi Perfil"),
+        ("◈", "Biomas"),
+        ("◌", "Chat Eónico"),
+        ("♜", "Concilio Eónico"),
+        ("◆", "Mis Proyectos"),
+        ("◇", "Mis Becas"),
+        ("▣", "Museo de EONIA"),
+        ("✦", "Metaverso"),
+        ("♧", "Comunidad"),
+        ("◷", "Eventos"),
+        ("⌁", "Rutas Personalizadas"),
+        ("◒", "Mi Progreso"),
+        ("⚙", "Configuración")
     ]
 
-    for opcion in opciones:
-
-        nombre = opcion.split("  ")[-1]
+    for icono, nombre in opciones:
 
         if st.button(
-            opcion,
+            f"{icono}  {nombre}",
             key=f"nav_{nombre}",
             use_container_width=True
         ):
+
             st.session_state.pagina = nombre
+
+            st.rerun()
 
 
 # ============================================================
 # HEADER
 # ============================================================
 
-col_logo, col_search, col_user = st.columns([2, 5, 2])
+col_logo, col_search, col_user = st.columns(
+    [2, 5, 2]
+)
 
 with col_logo:
 
@@ -376,6 +569,7 @@ with col_logo:
             font-size:22px;
             letter-spacing:5px;
             color:#e5c46b;
+            padding-top:7px;
         ">
             EONIA
         </div>
@@ -383,27 +577,45 @@ with col_logo:
         unsafe_allow_html=True
     )
 
+
 with col_search:
 
     st.text_input(
-        "",
+        "Buscar",
         placeholder="Buscar en EONIA...",
         label_visibility="collapsed"
     )
+
 
 with col_user:
 
     st.markdown(
         """
-        <div style="text-align:right;">
-            <span style="color:#e5c46b;">
-            ◉
+        <div style="
+            text-align:right;
+            padding-top:5px;
+        ">
+
+            <span style="
+                color:#e5c46b;
+            ">
+                ◉
             </span>
+
             &nbsp;
-            <b>Creador Eónico</b><br>
-            <small style="color:#8c98a5;">
-            Nivel 4 · Era de los Metales
+
+            <b>
+                Creador Eónico
+            </b>
+
+            <br>
+
+            <small style="
+                color:#8c98a5;
+            ">
+                Nivel 4 · Era de los Metales
             </small>
+
         </div>
         """,
         unsafe_allow_html=True
@@ -414,7 +626,7 @@ st.divider()
 
 
 # ============================================================
-# CARGAR ESTADO
+# CARGAR ESTADO DEL CRM
 # ============================================================
 
 estado = None
@@ -425,14 +637,14 @@ if user_id:
 
 
 # ============================================================
-# PÁGINA INICIO
+# PAGINA: INICIO
 # ============================================================
 
 if st.session_state.pagina == "Inicio":
 
-    # ---------------------------------------------------------
+    # ========================================================
     # HERO
-    # ---------------------------------------------------------
+    # ========================================================
 
     st.markdown(
         """
@@ -459,10 +671,13 @@ if st.session_state.pagina == "Inicio":
 
     st.write("")
 
-    # ---------------------------------------------------------
-    # PROGRESO + FRASE
-    # ---------------------------------------------------------
-    col1, col2 = st.columns([2, 1])
+    # ========================================================
+    # PROGRESO + ERA
+    # ========================================================
+
+    col1, col2 = st.columns(
+        [2, 1]
+    )
 
     with col1:
 
@@ -470,29 +685,41 @@ if st.session_state.pagina == "Inicio":
             """
             <div class="eonia-card">
 
-            <div class="small-gold">
-            MI PROGRESO
-            </div>
-
-            <h2>Nivel 4</h2>
-
-            <div class="progress-container">
-                <div class="progress-bar"
-                     style="width:65%;">
+                <div class="small-gold">
+                    MI PROGRESO
                 </div>
-            </div>
 
-            <p style="color:#b9c0c8;">
-            Era de los Metales
-            </p>
+                <h2>
+                    NIVEL 4
+                </h2>
 
-            <hr>
+                <div class="progress-container">
 
-            <b>Siguiente objetivo</b>
+                    <div
+                        class="progress-bar"
+                        style="width:65%;">
+                    </div>
 
-            <p style="color:#9da8b2;">
-            Completa tu proyecto de Bioma 4.
-            </p>
+                </div>
+
+                <p style="
+                    color:#b9c0c8;
+                    margin-top:8px;
+                ">
+                    Era de los Metales
+                </p>
+
+                <hr>
+
+                <b>
+                    Siguiente objetivo
+                </b>
+
+                <p style="
+                    color:#9da8b2;
+                ">
+                    Completa tu proyecto de Bioma 4.
+                </p>
 
             </div>
             """,
@@ -504,27 +731,30 @@ if st.session_state.pagina == "Inicio":
         st.markdown(
             """
             <div class="eonia-card"
-                 style="text-align:center;">
+                 style="
+                    text-align:center;
+                    min-height:205px;
+                 ">
 
-            <div style="
-                font-size:48px;
-                color:#e6c568;
-            ">
-            ⚒️
-            </div>
+                <div style="
+                    font-size:48px;
+                    color:#e6c568;
+                ">
+                    ⚒️
+                </div>
 
-            <div class="small-gold">
-            ERA DE LOS METALES
-            </div>
+                <div class="small-gold">
+                    ERA DE LOS METALES
+                </div>
 
-            <p>
-            La creación deja de ser
-            solamente aprendizaje.
-            </p>
+                <p>
+                    La creación deja de ser
+                    solamente aprendizaje.
+                </p>
 
-            <b>
-            Ahora construyes.
-            </b>
+                <b>
+                    Ahora construyes.
+                </b>
 
             </div>
             """,
@@ -545,6 +775,7 @@ if st.session_state.pagina == "Inicio":
     b1, b2, b3, b4 = st.columns(4)
 
     biomas = [
+
         (
             b1,
             "ERA DE PIEDRA",
@@ -552,6 +783,7 @@ if st.session_state.pagina == "Inicio":
             "Todos desbloqueados",
             "🌿"
         ),
+
         (
             b2,
             "ERA DE LOS METALES",
@@ -559,6 +791,7 @@ if st.session_state.pagina == "Inicio":
             "Crisol Eónico",
             "⚒️"
         ),
+
         (
             b3,
             "ERA ESTELAR",
@@ -566,6 +799,7 @@ if st.session_state.pagina == "Inicio":
             "Especialización",
             "✦"
         ),
+
         (
             b4,
             "ERA TRASCENDENTE",
@@ -573,35 +807,46 @@ if st.session_state.pagina == "Inicio":
             "Maestría y Legado",
             "∞"
         )
+
     ]
 
-    for col, titulo, niveles, estado_bioma, icono in biomas:
+    for (
+        col,
+        titulo,
+        niveles,
+        estado_bioma,
+        icono
+    ) in biomas:
 
         with col:
 
             st.markdown(
                 f"""
                 <div class="eonia-card"
-                     style="text-align:center;
-                            min-height:190px;">
+                     style="
+                        text-align:center;
+                        min-height:190px;
+                     ">
 
                     <div style="
                         font-size:40px;
                         color:#e4bd5c;
                     ">
-                    {icono}
+                        {icono}
                     </div>
 
                     <div class="small-gold">
-                    {titulo}
+                        {titulo}
                     </div>
 
                     <h3>
-                    {niveles}
+                        {niveles}
                     </h3>
 
-                    <p style="color:#a5afb9;">
-                    {estado_bioma}
+                    <p style="
+                        color:#a5afb9;
+                    ">
+                        {estado_bioma}
                     </p>
 
                 </div>
@@ -611,12 +856,14 @@ if st.session_state.pagina == "Inicio":
 
 
     # ========================================================
-    # CHAT + CONCILIO
+    # INTELIGENCIA EONICA
     # ========================================================
 
     st.markdown("## INTELIGENCIA EÓNICA")
 
-    chat_col, council_col = st.columns([2, 1])
+    chat_col, council_col = st.columns(
+        [2, 1]
+    )
 
     with chat_col:
 
@@ -624,13 +871,21 @@ if st.session_state.pagina == "Inicio":
             """
             <div class="eonia-card">
 
-            <div class="small-gold">
-            CHAT EÓNICO
-            </div>
+                <div class="small-gold">
+                    CHAT EÓNICO
+                </div>
 
-            <h2>
-            La IA omnisciente de mentores siempre contigo.
-            </h2>
+                <h2>
+                    La IA omnisciente de mentores
+                    siempre contigo.
+                </h2>
+
+                <p style="
+                    color:#a5afb9;
+                ">
+                    Un solo portal.
+                    Múltiples inteligencias.
+                </p>
 
             </div>
             """,
@@ -648,7 +903,10 @@ if st.session_state.pagina == "Inicio":
 
         mentor_cols = st.columns(6)
 
-        for col, (mentor, role) in zip(
+        for col, (
+            mentor,
+            role
+        ) in zip(
             mentor_cols,
             mentors
         ):
@@ -663,15 +921,15 @@ if st.session_state.pagina == "Inicio":
                             font-size:25px;
                             color:#dcb75b;
                         ">
-                        ◉
+                            ◉
                         </div>
 
                         <div class="mentor-name">
-                        {mentor}
+                            {mentor}
                         </div>
 
                         <div class="mentor-role">
-                        {role}
+                            {role}
                         </div>
 
                     </div>
@@ -682,8 +940,10 @@ if st.session_state.pagina == "Inicio":
         st.write("")
 
         pregunta = st.text_input(
-            "",
-            placeholder="¿En qué podemos ayudarte hoy, Creador?",
+            "Pregunta",
+            placeholder=(
+                "¿En qué podemos ayudarte hoy, Creador?"
+            ),
             label_visibility="collapsed"
         )
 
@@ -694,10 +954,18 @@ if st.session_state.pagina == "Inicio":
 
             if pregunta:
 
-                st.info(
-                    "El motor del Chat Eónico se conectará aquí "
-                    "con el Mentor Engine."
+                st.session_state.pagina = "Chat Eónico"
+
+                st.session_state.chat_pregunta = pregunta
+
+                st.rerun()
+
+            else:
+
+                st.warning(
+                    "Escribe una pregunta antes de entrar al Chat Eónico."
                 )
+
 
     with council_col:
 
@@ -705,24 +973,25 @@ if st.session_state.pagina == "Inicio":
             """
             <div class="eonia-card">
 
-            <div class="small-gold">
-            CONCILIO EÓNICO
-            </div>
+                <div class="small-gold">
+                    CONCILIO EÓNICO
+                </div>
 
-            <h2>
-            Grandes ideas merecen ser deliberadas.
-            </h2>
+                <h2>
+                    Grandes ideas merecen
+                    ser deliberadas.
+                </h2>
 
-            <div style="
-                height:150px;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                font-size:70px;
-                color:#d9b65b;
-            ">
-            ◉
-            </div>
+                <div style="
+                    height:150px;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    font-size:70px;
+                    color:#d9b65b;
+                ">
+                    ◉
+                </div>
 
             </div>
             """,
@@ -734,11 +1003,15 @@ if st.session_state.pagina == "Inicio":
             use_container_width=True
         ):
 
-            st.session_state.pagina = "Concilio Eónico"
+            st.session_state.pagina = (
+                "Concilio Eónico"
+            )
+
+            st.rerun()
 
 
     # ========================================================
-    # PROYECTOS / BECAS / MUSEO / METAVERSO
+    # MI UNIVERSO
     # ========================================================
 
     st.markdown("## MI UNIVERSO")
@@ -751,26 +1024,29 @@ if st.session_state.pagina == "Inicio":
             """
             <div class="eonia-card">
 
-            <div class="small-gold">
-            MIS PROYECTOS
-            </div>
+                <div class="small-gold">
+                    MIS PROYECTOS
+                </div>
 
-            <h3>
-            3
-            </h3>
+                <h3>
+                    3
+                </h3>
 
-            <p>
-            Asistente de Aprendizaje Eónico
-            </p>
+                <p>
+                    Asistente de Aprendizaje Eónico
+                </p>
 
-            <p style="color:#8e9aa7;">
-            Bioma 4 · En desarrollo
-            </p>
+                <p style="
+                    color:#8e9aa7;
+                ">
+                    Bioma 4 · En desarrollo
+                </p>
 
             </div>
             """,
             unsafe_allow_html=True
         )
+
 
     with p2:
 
@@ -778,22 +1054,23 @@ if st.session_state.pagina == "Inicio":
             """
             <div class="eonia-card">
 
-            <div class="small-gold">
-            MIS BECAS
-            </div>
+                <div class="small-gold">
+                    MIS BECAS
+                </div>
 
-            <h3>
-            🏆
-            </h3>
+                <h3>
+                    🏆
+                </h3>
 
-            <p>
-            Becas otorgadas por mérito.
-            </p>
+                <p>
+                    Becas otorgadas por mérito.
+                </p>
 
             </div>
             """,
             unsafe_allow_html=True
         )
+
 
     with p3:
 
@@ -801,23 +1078,24 @@ if st.session_state.pagina == "Inicio":
             """
             <div class="eonia-card">
 
-            <div class="small-gold">
-            MUSEO DE EONIA
-            </div>
+                <div class="small-gold">
+                    MUSEO DE EONIA
+                </div>
 
-            <h3>
-            🏛️
-            </h3>
+                <h3>
+                    🏛️
+                </h3>
 
-            <p>
-            La memoria de quienes
-            construyen el mañana.
-            </p>
+                <p>
+                    La memoria de quienes
+                    construyen el mañana.
+                </p>
 
             </div>
             """,
             unsafe_allow_html=True
         )
+
 
     with p4:
 
@@ -825,17 +1103,17 @@ if st.session_state.pagina == "Inicio":
             """
             <div class="eonia-card">
 
-            <div class="small-gold">
-            METAVERSO
-            </div>
+                <div class="small-gold">
+                    METAVERSO
+                </div>
 
-            <h3>
-            ✦
-            </h3>
+                <h3>
+                    ✦
+                </h3>
 
-            <p>
-            Un campus sin límites.
-            </p>
+                <p>
+                    Un campus sin límites.
+                </p>
 
             </div>
             """,
@@ -849,27 +1127,18 @@ if st.session_state.pagina == "Inicio":
 
     st.markdown(
         """
-        <div style="
-            text-align:center;
-            padding:50px 10px;
-            margin-top:20px;
-        ">
+        <div class="eonia-footer">
 
-            <div style="
-                font-family:Cinzel;
-                font-size:22px;
-                color:#e4bd5c;
-            ">
-            “DEL PRIMER PROMPT
-            AL IMPACTO ETERNO.”
+            <div class="eonia-footer-title">
+                “DEL PRIMER PROMPT
+                AL IMPACTO ETERNO.”
             </div>
 
             <div style="
                 margin-top:15px;
-                color:#7f8a95;
                 letter-spacing:3px;
             ">
-            EONIA UNIVERSITY
+                EONIA UNIVERSITY
             </div>
 
         </div>
@@ -879,48 +1148,63 @@ if st.session_state.pagina == "Inicio":
 
 
 # ============================================================
-# PÁGINA MI PROGRESO
+# PAGINA: MI PERFIL
 # ============================================================
 
-elif st.session_state.pagina == "Mi Progreso":
+elif st.session_state.pagina == "Mi Perfil":
 
-    st.title("MI PROGRESO")
+    st.title("MI PERFIL")
 
     st.markdown(
         """
         <div class="eonia-card">
 
-        <div class="small-gold">
-        VIAJE DEL CREADOR
-        </div>
+            <div class="small-gold">
+                IDENTIDAD
+            </div>
 
-        <h1>
-        Era de los Metales
-        </h1>
+            <h1>
+                CREADOR EÓNICO
+            </h1>
 
-        <p>
-        Tu evolución queda registrada en el CRM Eónico.
-        </p>
+            <p>
+                Nivel 4 · Era de los Metales
+            </p>
+
+            <hr>
+
+            <p>
+                Tu identidad eónica se construye
+                mediante aprendizaje, creación
+                y evolución.
+            </p>
 
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    if estado:
+    if user_id:
 
-        st.json(estado)
+        st.success(
+            "Creador conectado al CRM."
+        )
+
+        st.code(
+            user_id,
+            language="text"
+        )
 
     else:
 
         st.info(
-            "Introduce el UUID del Creador para consultar "
-            "el estado real del CRM."
+            "Introduce tu UUID en el panel lateral "
+            "para conectar tu perfil."
         )
 
 
 # ============================================================
-# PÁGINA BIOMAS
+# PAGINA: BIOMAS
 # ============================================================
 
 elif st.session_state.pagina == "Biomas":
@@ -931,53 +1215,128 @@ elif st.session_state.pagina == "Biomas":
         """
         <div class="eonia-card">
 
-        <h2>
-        El camino de la creación
-        </h2>
+            <div class="small-gold">
+                VIAJE EÓNICO
+            </div>
 
-        <p>
-        Cada Bioma representa una transformación
-        del Creador.
-        </p>
+            <h2>
+                El camino de la creación
+            </h2>
+
+            <p>
+                Cada Bioma representa una transformación
+                del Creador.
+            </p>
 
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    for numero in range(1, 11):
-
-        era = (
+    nombres_biomas = [
+        (
+            1,
+            "Fundamentos IA I",
+            "Creación de Prompt",
             "Era de Piedra"
-            if numero <= 3
-            else
+        ),
+        (
+            2,
+            "Fundamentos IA II",
+            "Entrenamiento IA",
+            "Era de Piedra"
+        ),
+        (
+            3,
+            "Fundamentos IA III",
+            "Creación de appIA",
+            "Era de Piedra"
+        ),
+        (
+            4,
+            "IA Generativa I",
+            "Código IA I · Producto IA",
             "Era de los Metales"
-            if numero == 4
-            else
+        ),
+        (
+            5,
+            "IA Generativa II",
+            "Código IA II · Software IA",
             "Era Estelar"
-            if numero <= 7
-            else
+        ),
+        (
+            6,
+            "IA Generativa III",
+            "Código IA III · Avatar IA",
+            "Era Estelar"
+        ),
+        (
+            7,
+            "Fundamentos Metaverso I",
+            "Historia · Herramientas IA",
+            "Era Estelar"
+        ),
+        (
+            8,
+            "Fundamentos Metaverso II",
+            "Creación Metaverso",
+            "Era Trascendente"
+        ),
+        (
+            9,
+            "Fundamentos Metaverso III",
+            "Avatar Metaverso · Avatar IA",
+            "Era Trascendente"
+        ),
+        (
+            10,
+            "Creación de Metaverso",
+            "Integración Comercial · Producto",
             "Era Trascendente"
         )
+    ]
+
+    for (
+        numero,
+        titulo,
+        descripcion,
+        era
+    ) in nombres_biomas:
 
         st.markdown(
             f"""
             <div class="eonia-card">
 
-            <div style="
-                display:flex;
-                justify-content:space-between;
-            ">
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    gap:20px;
+                ">
 
-            <b>
-            BIOMA {numero}
-            </b>
+                    <div>
 
-            <span class="gold">
-            {era}
-            </span>
+                        <div class="small-gold">
+                            BIOMA {numero}
+                        </div>
 
-            </div>
+                        <h3>
+                            {titulo}
+                        </h3>
+
+                        <p style="
+                            color:#9da8b2;
+                        ">
+                            {descripcion}
+                        </p>
+
+                    </div>
+
+                    <div class="gold">
+                        {era}
+                    </div>
+
+                </div>
 
             </div>
             """,
@@ -986,7 +1345,7 @@ elif st.session_state.pagina == "Biomas":
 
 
 # ============================================================
-# CHAT EÓNICO
+# PAGINA: CHAT EONICO
 # ============================================================
 
 elif st.session_state.pagina == "Chat Eónico":
@@ -997,58 +1356,222 @@ elif st.session_state.pagina == "Chat Eónico":
         "Un solo portal. Múltiples inteligencias."
     )
 
-    mentor = st.selectbox(
-        "Selecciona tu perspectiva",
-        [
-            "AION — Núcleo",
-            "LUMINA — Visión",
-            "DATAC — Análisis",
-            "SYNTIA — Creatividad",
-            "CODEX — Construcción",
-            "VÓRTICE — Evaluación"
-        ]
+    mentors = [
+        (
+            "AION",
+            "Núcleo",
+            "Síntesis y equilibrio"
+        ),
+        (
+            "LUMINA",
+            "Visión",
+            "Propósito e integridad"
+        ),
+        (
+            "DATAC",
+            "Análisis",
+            "Datos y evidencia"
+        ),
+        (
+            "SYNTIA",
+            "Creatividad",
+            "Lenguaje y formulación"
+        ),
+        (
+            "CODEX",
+            "Construcción",
+            "Código y método"
+        ),
+        (
+            "VÓRTICE",
+            "Evaluación",
+            "Contradicción y desafío"
+        )
+    ]
+
+    mentor_names = [
+        mentor[0]
+        for mentor in mentors
+    ]
+
+    seleccionado = st.selectbox(
+        "Mentor activo",
+        mentor_names,
+        index=mentor_names.index(
+            st.session_state.mentor_activo
+        )
+        if st.session_state.mentor_activo
+        in mentor_names
+        else 0
     )
 
-    st.markdown(
-        f"""
-        <div class="eonia-card">
+    st.session_state.mentor_activo = seleccionado
 
-        <div class="small-gold">
-        MENTOR ACTIVO
-        </div>
-
-        <h1>
-        {mentor}
-        </h1>
-
-        <p>
-        Esta interfaz queda preparada para conectarse
-        posteriormente con el Mentor Engine.
-        </p>
-
-        </div>
-        """,
-        unsafe_allow_html=True
+    mentor_info = next(
+        (
+            item
+            for item in mentors
+            if item[0] == seleccionado
+        ),
+        mentors[0]
     )
 
-    mensaje = st.chat_input(
-        "Habla con tu mentor..."
+    col1, col2 = st.columns(
+        [3, 1]
     )
 
-    if mensaje:
+    with col1:
 
-        with st.chat_message("user"):
-            st.write(mensaje)
+        st.markdown(
+            f"""
+            <div class="eonia-card">
 
-        with st.chat_message("assistant"):
-            st.write(
-                "El Mentor Engine recibirá este mensaje "
-                "en la siguiente integración."
+                <div class="small-gold">
+                    MENTOR ACTIVO
+                </div>
+
+                <h1>
+                    {mentor_info[0]}
+                </h1>
+
+                <h3>
+                    {mentor_info[1]}
+                </h3>
+
+                <p>
+                    {mentor_info[2]}
+                </p>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        if (
+            "chat_mensajes"
+            not in st.session_state
+        ):
+
+            st.session_state.chat_mensajes = []
+
+        for mensaje in st.session_state.chat_mensajes:
+
+            with st.chat_message(
+                mensaje["role"]
+            ):
+
+                st.write(
+                    mensaje["content"]
+                )
+
+        mensaje = st.chat_input(
+            "Habla con tu mentor..."
+        )
+
+        if mensaje:
+
+            st.session_state.chat_mensajes.append(
+                {
+                    "role": "user",
+                    "content": mensaje
+                }
+            )
+
+            with st.chat_message("user"):
+                st.write(mensaje)
+
+            respuesta = (
+                f"{seleccionado} ha recibido tu mensaje. "
+                "El Mentor Engine será conectado "
+                "en la siguiente fase."
+            )
+
+            st.session_state.chat_mensajes.append(
+                {
+                    "role": "assistant",
+                    "content": respuesta
+                }
+            )
+
+            with st.chat_message("assistant"):
+                st.write(respuesta)
+
+
+    with col2:
+
+        st.markdown(
+            f"""
+            <div class="eonia-card">
+
+                <div class="small-gold">
+                    PERSPECTIVA
+                </div>
+
+                <h2>
+                    {mentor_info[0]}
+                </h2>
+
+                <p>
+                    {mentor_info[1]}
+                </p>
+
+                <hr>
+
+                <p style="
+                    color:#9da8b2;
+                ">
+                    La identidad del mentor
+                    permanecerá separada del
+                    modelo de IA que lo impulse.
+                </p>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    st.markdown("### MENTORES EÓNICOS")
+
+    mentor_cols = st.columns(6)
+
+    for col, (
+        nombre,
+        rol,
+        descripcion
+    ) in zip(
+        mentor_cols,
+        mentors
+    ):
+
+        with col:
+
+            st.markdown(
+                f"""
+                <div class="mentor-card">
+
+                    <div style="
+                        font-size:24px;
+                        color:#dcb75b;
+                    ">
+                        ◉
+                    </div>
+
+                    <div class="mentor-name">
+                        {nombre}
+                    </div>
+
+                    <div class="mentor-role">
+                        {rol}
+                    </div>
+
+                </div>
+                """,
+                unsafe_allow_html=True
             )
 
 
 # ============================================================
-# CONCILIO
+# PAGINA: CONCILIO EONICO
 # ============================================================
 
 elif st.session_state.pagina == "Concilio Eónico":
@@ -1059,18 +1582,19 @@ elif st.session_state.pagina == "Concilio Eónico":
         """
         <div class="eonia-card">
 
-        <div class="small-gold">
-        DELIBERACIÓN
-        </div>
+            <div class="small-gold">
+                DELIBERACIÓN
+            </div>
 
-        <h1>
-        Grandes ideas merecen ser deliberadas.
-        </h1>
+            <h1>
+                Grandes ideas merecen ser deliberadas.
+            </h1>
 
-        <p>
-        Presenta una creación para que las distintas
-        perspectivas de EONIA puedan analizarla.
-        </p>
+            <p>
+                Presenta una creación para que las
+                distintas perspectivas de EONIA
+                puedan analizarla.
+            </p>
 
         </div>
         """,
@@ -1078,27 +1602,96 @@ elif st.session_state.pagina == "Concilio Eónico":
     )
 
     proyecto = st.text_area(
-        "Describe tu proyecto"
+        "Describe tu proyecto",
+        height=220,
+        placeholder=(
+            "¿Qué estás creando?\n\n"
+            "¿Qué problema resuelve?\n\n"
+            "¿Por qué debería existir?"
+        )
     )
+
+    st.markdown("### CONSEJO DEL CONCILIO")
+
+    c1, c2, c3, c4, c5 = st.columns(5)
+
+    consejeros = [
+        (
+            c1,
+            "LUMINA",
+            "Propósito"
+        ),
+        (
+            c2,
+            "DATAC",
+            "Evidencia"
+        ),
+        (
+            c3,
+            "SYNTIA",
+            "Concepto"
+        ),
+        (
+            c4,
+            "CODEX",
+            "Construcción"
+        ),
+        (
+            c5,
+            "VÓRTICE",
+            "Contradicción"
+        )
+    ]
+
+    for col, nombre, rol in consejeros:
+
+        with col:
+
+            st.markdown(
+                f"""
+                <div class="mentor-card">
+
+                    <div class="mentor-name">
+                        {nombre}
+                    </div>
+
+                    <div class="mentor-role">
+                        {rol}
+                    </div>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    st.write("")
 
     if st.button(
         "Presentar al Concilio ⚖️",
         use_container_width=True
     ):
 
-        if proyecto:
+        if proyecto.strip():
 
             st.success(
                 "Proyecto registrado para deliberación."
             )
 
-            st.write(
-                "LUMINA · DATAC · SYNTIA · CODEX · VÓRTICE · AION"
+            st.info(
+                "El Concilio analizará la creación "
+                "desde múltiples perspectivas. "
+                "AION podrá intervenir en caso de empate."
+            )
+
+        else:
+
+            st.warning(
+                "Describe primero el proyecto."
             )
 
 
 # ============================================================
-# PROYECTOS
+# PAGINA: MIS PROYECTOS
 # ============================================================
 
 elif st.session_state.pagina == "Mis Proyectos":
@@ -1123,23 +1716,33 @@ elif st.session_state.pagina == "Mis Proyectos":
         )
     ]
 
-    for nombre, bioma, estado_proyecto in proyectos:
+    for (
+        nombre,
+        bioma,
+        estado_proyecto
+    ) in proyectos:
 
         st.markdown(
             f"""
             <div class="eonia-card">
 
-            <h3>
-            {nombre}
-            </h3>
+                <div class="small-gold">
+                    PROYECTO
+                </div>
 
-            <span class="gold">
-            {bioma}
-            </span>
+                <h2>
+                    {nombre}
+                </h2>
 
-            <p style="color:#8f9aa5;">
-            {estado_proyecto}
-            </p>
+                <span class="gold">
+                    {bioma}
+                </span>
+
+                <p style="
+                    color:#8f9aa5;
+                ">
+                    {estado_proyecto}
+                </p>
 
             </div>
             """,
@@ -1148,7 +1751,7 @@ elif st.session_state.pagina == "Mis Proyectos":
 
 
 # ============================================================
-# BECAS
+# PAGINA: MIS BECAS
 # ============================================================
 
 elif st.session_state.pagina == "Mis Becas":
@@ -1159,23 +1762,80 @@ elif st.session_state.pagina == "Mis Becas":
         """
         <div class="eonia-card">
 
-        <h2>
-        El mérito abre caminos.
-        </h2>
+            <div class="small-gold">
+                BECAS EÓNICAS
+            </div>
 
-        <p>
-        Las becas no se compran.
-        Se obtienen mediante mérito, creación y deliberación.
-        </p>
+            <h1>
+                El mérito abre caminos.
+            </h1>
+
+            <p>
+                Las becas no se compran.
+                Se obtienen mediante mérito,
+                creación y deliberación.
+            </p>
 
         </div>
         """,
         unsafe_allow_html=True
     )
 
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.markdown(
+            """
+            <div class="eonia-card">
+
+                <h2>
+                    🏆
+                </h2>
+
+                <div class="small-gold">
+                    BATTLE ROYALE
+                </div>
+
+                <p>
+                    Competencia basada en creación,
+                    estrategia y administración
+                    de recursos de IA.
+                </p>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col2:
+
+        st.markdown(
+            """
+            <div class="eonia-card">
+
+                <h2>
+                    ⚖️
+                </h2>
+
+                <div class="small-gold">
+                    CONCILIO
+                </div>
+
+                <p>
+                    El talento extraordinario puede
+                    ser recomendado para una beca
+                    aunque no exista capacidad de pago.
+                </p>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
 
 # ============================================================
-# MUSEO
+# PAGINA: MUSEO
 # ============================================================
 
 elif st.session_state.pagina == "Museo de EONIA":
@@ -1184,29 +1844,106 @@ elif st.session_state.pagina == "Museo de EONIA":
 
     st.markdown(
         """
-        <div class="eonia-card">
+        <div class="hero">
 
-        <div class="small-gold">
-        MUSEO DE LOS ORÍGENES
-        </div>
+            <div class="small-gold">
+                MUSEO DE LOS ORÍGENES
+            </div>
 
-        <h1>
-        Aquí comenzó todo.
-        </h1>
+            <h1>
+                AQUÍ COMENZÓ TODO.
+            </h1>
 
-        <p>
-        Primer prompt · Primer fuego · Era de Piedra ·
-        Era de los Metales · Futuras eras.
-        </p>
+            <p>
+                Primer prompt · Primer fuego ·
+                Era de Piedra · Era de los Metales ·
+                Futuras eras.
+            </p>
 
         </div>
         """,
         unsafe_allow_html=True
     )
 
+    st.write("")
+
+    m1, m2, m3 = st.columns(3)
+
+    with m1:
+
+        st.markdown(
+            """
+            <div class="eonia-card">
+
+                <div class="small-gold">
+                    GENESIS
+                </div>
+
+                <h2>
+                    Primer Prompt
+                </h2>
+
+                <p>
+                    El documento fundacional
+                    de EONIA.
+                </p>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with m2:
+
+        st.markdown(
+            """
+            <div class="eonia-card">
+
+                <div class="small-gold">
+                    ERA DE PIEDRA
+                </div>
+
+                <h2>
+                    Primer CRM
+                </h2>
+
+                <p>
+                    El comienzo de la memoria
+                    digital del Creador.
+                </p>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with m3:
+
+        st.markdown(
+            """
+            <div class="eonia-card">
+
+                <div class="small-gold">
+                    ERA DE LOS METALES
+                </div>
+
+                <h2>
+                    Chat Eónico
+                </h2>
+
+                <p>
+                    El nacimiento de una
+                    nueva arquitectura.
+                </p>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
 
 # ============================================================
-# METAVERSO
+# PAGINA: METAVERSO
 # ============================================================
 
 elif st.session_state.pagina == "Metaverso":
@@ -1217,91 +1954,404 @@ elif st.session_state.pagina == "Metaverso":
         """
         <div class="hero">
 
-        <div class="small-gold">
-        EONIA METAVERSE
-        </div>
+            <div class="small-gold">
+                FUTURA REALIDAD EÓNICA
+            </div>
 
-        <h1>
-        UN CAMPUS SIN LÍMITES
-        </h1>
+            <h1>
+                UN CAMPUS<br>
+                SIN LÍMITES
+            </h1>
 
-        <p>
-        La universidad deja de ser solamente una interfaz.
-        El espacio se convierte en realidad habitable.
-        </p>
+            <p>
+                La universidad deja de ser solamente
+                una plataforma y comienza a convertirse
+                en un espacio habitable.
+            </p>
 
         </div>
         """,
         unsafe_allow_html=True
     )
 
+    st.write("")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        st.markdown(
+            """
+            <div class="eonia-card">
+
+                <h2>
+                    🌌
+                </h2>
+
+                <div class="small-gold">
+                    ESPACIOS
+                </div>
+
+                <p>
+                    Mundos digitales construidos
+                    por los propios creadores.
+                </p>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col2:
+
+        st.markdown(
+            """
+            <div class="eonia-card">
+
+                <h2>
+                    🤖
+                </h2>
+
+                <div class="small-gold">
+                    IA
+                </div>
+
+                <p>
+                    Inteligencias que ayudan a
+                    construir y transformar el mundo.
+                </p>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col3:
+
+        st.markdown(
+            """
+            <div class="eonia-card">
+
+                <h2>
+                    ✦
+                </h2>
+
+                <div class="small-gold">
+                    CREACIÓN
+                </div>
+
+                <p>
+                    El conocimiento se convierte
+                    en experiencia.
+                </p>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
 
 # ============================================================
-# PERFIL
+# PAGINA: COMUNIDAD
 # ============================================================
 
-elif st.session_state.pagina == "Mi Perfil":
+elif st.session_state.pagina == "Comunidad":
 
-    st.title("MI PERFIL")
+    st.title("COMUNIDAD")
 
     st.markdown(
         """
         <div class="eonia-card">
 
-        <div class="small-gold">
-        IDENTIDAD EÓNICA
-        </div>
+            <div class="small-gold">
+                TRIBU EÓNICA
+            </div>
 
-        <h1>
-        Creador Eónico
-        </h1>
+            <h1>
+                CREADORES CONSTRUYENDO JUNTOS
+            </h1>
 
-        <p>
-        Nivel 4 · Era de los Metales
-        </p>
+            <p>
+                EONIA no se construye solamente
+                con tecnología.
+                Se construye con personas.
+            </p>
 
         </div>
         """,
         unsafe_allow_html=True
     )
 
+    st.info(
+        "La comunidad eónica será ampliada "
+        "en la siguiente etapa."
+    )
+
 
 # ============================================================
-# CONFIGURACIÓN
+# PAGINA: EVENTOS
+# ============================================================
+
+elif st.session_state.pagina == "Eventos":
+
+    st.title("EVENTOS")
+
+    eventos = [
+        (
+            "Battle Royale Eónico",
+            "Competencia de creación y estrategia"
+        ),
+        (
+            "Concilio de Creadores",
+            "Deliberación de proyectos"
+        ),
+        (
+            "Forja Eónica",
+            "Creación colectiva"
+        )
+    ]
+
+    for nombre, descripcion in eventos:
+
+        st.markdown(
+            f"""
+            <div class="eonia-card">
+
+                <div class="small-gold">
+                    EVENTO EÓNICO
+                </div>
+
+                <h2>
+                    {nombre}
+                </h2>
+
+                <p>
+                    {descripcion}
+                </p>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+# ============================================================
+# PAGINA: RUTAS PERSONALIZADAS
+# ============================================================
+
+elif st.session_state.pagina == "Rutas Personalizadas":
+
+    st.title("RUTAS PERSONALIZADAS")
+
+    st.markdown(
+        """
+        <div class="eonia-card">
+
+            <div class="small-gold">
+                TU RUTA
+            </div>
+
+            <h1>
+                EL CAMINO NO ES IGUAL PARA TODOS.
+            </h1>
+
+            <p>
+                El Reflejo podrá utilizar tu evolución,
+                tus resultados y tus necesidades para
+                construir una ruta personalizada.
+            </p>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.info(
+        "La personalización avanzada se conectará "
+        "al Mentor Engine."
+    )
+
+
+# ============================================================
+# PAGINA: MI PROGRESO
+# ============================================================
+
+elif st.session_state.pagina == "Mi Progreso":
+
+    st.title("MI PROGRESO")
+
+    st.markdown(
+        """
+        <div class="eonia-card">
+
+            <div class="small-gold">
+                VIAJE DEL CREADOR
+            </div>
+
+            <h1>
+                ERA DE LOS METALES
+            </h1>
+
+            <p>
+                Tu evolución queda registrada
+                en el CRM Eónico.
+            </p>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if estado:
+
+        fragmentos = estado.get(
+            "fragmentos",
+            []
+        )
+
+        progreso = estado.get(
+            "progreso_biomas",
+            []
+        )
+
+        certificados = estado.get(
+            "certificados",
+            []
+        )
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+
+            st.markdown(
+                f"""
+                <div class="eonia-card"
+                     style="text-align:center;">
+
+                    <div class="metric-number">
+                        {len(fragmentos)}
+                    </div>
+
+                    <div class="metric-label">
+                        Fragmentos
+                    </div>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with col2:
+
+            st.markdown(
+                f"""
+                <div class="eonia-card"
+                     style="text-align:center;">
+
+                    <div class="metric-number">
+                        {len(progreso)}
+                    </div>
+
+                    <div class="metric-label">
+                        Biomas registrados
+                    </div>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with col3:
+
+            st.markdown(
+                f"""
+                <div class="eonia-card"
+                     style="text-align:center;">
+
+                    <div class="metric-number">
+                        {len(certificados)}
+                    </div>
+
+                    <div class="metric-label">
+                        Certificados
+                    </div>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        st.markdown("### ESTADO DEL CRM")
+
+        st.json(estado)
+
+    else:
+
+        st.info(
+            "Introduce el UUID del Creador "
+            "para consultar el estado real del CRM."
+        )
+
+
+# ============================================================
+# PAGINA: CONFIGURACION
 # ============================================================
 
 elif st.session_state.pagina == "Configuración":
 
     st.title("CONFIGURACIÓN")
 
-    st.info(
-        "Configuración del Creador, privacidad, "
-        "preferencias de mentores y seguridad."
-    )
-
-
-# ============================================================
-# COMUNIDAD / EVENTOS / RUTAS
-# ============================================================
-
-else:
-
-    st.title(st.session_state.pagina)
-
     st.markdown(
         """
         <div class="eonia-card">
 
-        <h2>
-        Próximamente
-        </h2>
+            <div class="small-gold">
+                SISTEMA
+            </div>
 
-        <p>
-        Este módulo forma parte de la arquitectura
-        de la Era de los Metales.
-        </p>
+            <h2>
+                Configuración Eónica
+            </h2>
+
+            <p>
+                Esta sección permitirá configurar
+                la experiencia del Creador,
+                preferencias y futuras conexiones.
+            </p>
 
         </div>
         """,
         unsafe_allow_html=True
     )
+
+    st.markdown("### CONEXIÓN CRM")
+
+    st.code(
+        SUPABASE_FUNCTIONS_URL,
+        language="text"
+    )
+
+    st.markdown("### ESTADO")
+
+    if user_id:
+
+        st.success(
+            "UUID del Creador configurado."
+        )
+
+    else:
+
+        st.warning(
+            "No hay Creador conectado."
+        )
+
+
+# ============================================================
+# FALLBACK
+# ============================================================
+
+else:
+
+    st.session_state.pagina = "Inicio"
+
+    st.rerun()
