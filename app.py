@@ -1,8 +1,158 @@
-import os
 import requests
 import streamlit as st
+import os
 from textwrap import dedent
 
+# ============================================================
+# CONFIGURACIÓN DE APIS
+# ============================================================
+DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
+OPENAI_IMAGE_API_URL = "https://api.openai.com/v1/images/generations"
+
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# ============================================================
+# ARQUETIPOS DE MENTORES (RESUMEN CONCISO)
+# ============================================================
+MENTORES = {
+
+    "sabio_sereno": {
+        "nombre": "Sabio Sereno",
+        "biomas": [1],
+        "modelo_analisis": "deepseek-v4-flash",
+
+        "identidad": "...",
+
+        "principios": [
+            "...",
+            "...",
+            "..."
+        ],
+
+        "metodo": "...",
+
+        "sombra": "...",
+
+        "prueba": "...",
+
+        "fragmento": "..."
+    },
+
+    "kael": {
+        "nombre": "Kael",
+        "biomas": [2],
+        "modelo_analisis": "deepseek-v4-flash",
+        ...
+    },
+
+    "nemesis": {
+        "nombre": "Némesis",
+        "biomas": [3],
+        ...
+    },
+
+    "vortice": {
+        "nombre": "Vórtice",
+        "biomas": [4],
+        ...
+    }
+}
+
+def hablar_con_mentor(bioma, mensaje, historia):
+    """Envía el mensaje a DeepSeek con el arquetipo del mentor."""
+    mentor = ARQUETIPOS[bioma]
+    system_prompt = mentor["system"] + "\n" + "Historial de la conversación:\n" + "\n".join(historia)
+    
+    headers = {
+        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "deepseek-chat",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": mensaje}
+        ]
+    }
+
+    try:
+        respuesta = requests.post(DEEPSEEK_API_URL, headers=headers, json=payload, timeout=30)
+        respuesta.raise_for_status()
+        data = respuesta.json()
+        return data["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"Error de conexión con el mentor: {e}"
+
+def generar_imagen(prompt):
+    """Genera una imagen con OpenAI DALL·E."""
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "dall-e-3",
+        "prompt": prompt,
+        "size": "1024x1024"
+    }
+    try:
+        respuesta = requests.post(OPENAI_IMAGE_API_URL, headers=headers, json=payload, timeout=60)
+        respuesta.raise_for_status()
+        data = respuesta.json()
+        return data["data"][0]["url"]
+    except Exception as e:
+        return None
+
+# ============================================================
+# INTERFAZ DE CHAT
+# ============================================================
+st.subheader("🜂 CHAT EÓNICO")
+
+# Inicializar historial en session_state
+if "historial_chat" not in st.session_state:
+    st.session_state.historial_chat = []
+
+# Selector de Bioma
+bioma_seleccionado = st.selectbox(
+    "Selecciona tu Bioma",
+    options=list(ARQUETIPOS.keys()),
+    format_func=lambda x: f"Bioma {x}: {ARQUETIPOS[x]['nombre']}"
+)
+
+# Área de chat
+with st.chat_message("assistant"):
+    st.write(f"Soy **{ARQUETIPOS[bioma_seleccionado]['nombre']}**. ¿Qué deseas aprender hoy?")
+
+# Mostrar historial
+for mensaje in st.session_state.historial_chat:
+    with st.chat_message(mensaje["role"]):
+        st.write(mensaje["content"])
+
+# Entrada del usuario
+prompt = st.chat_input("Escribe tu mensaje...")
+if prompt:
+    # Añadir mensaje del usuario al historial
+    st.session_state.historial_chat.append({"role": "user", "content": prompt})
+
+    # Obtener respuesta del mentor
+    respuesta = hablar_con_mentor(
+        bioma_seleccionado,
+        prompt,
+        [m["content"] for m in st.session_state.historial_chat]
+    )
+
+    # Añadir respuesta del mentor al historial
+    st.session_state.historial_chat.append({"role": "assistant", "content": respuesta})
+
+    # Mostrar la respuesta
+    with st.chat_message("assistant"):
+        st.write(respuesta)
+
+    # Lógica para imágenes (si el mentor decide que es necesario)
+    if "imagen" in respuesta.lower() and OPENAI_API_KEY:
+        imagen_url = generar_imagen(prompt)
+        if imagen_url:
+            st.image(imagen_url, caption="Reflejo de EONIA")
 
 # ============================================================
 # RENDERIZADOR HTML EÓNICO
