@@ -1,5 +1,5 @@
-import requests
 import streamlit as st
+import requests
 import os
 from textwrap import dedent
 
@@ -13,66 +13,71 @@ DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # ============================================================
-# ARQUETIPOS DE MENTORES (RESUMEN CONCISO)
+# MENTORES (ESTRUCTURA DE AIÓN)
 # ============================================================
 MENTORES = {
-    "sabio_sereno": {
+    1: {
         "nombre": "Sabio Sereno",
-        "biomas": [1],
-        "modelo_analisis": "deepseek-chat",  # OJO: no existe deepseek-v4-flash
-        "identidad": "Eres el Sabio Sereno, mentor de EONIA. Hablas con calma y profundidad.",
+        "modelo_analisis": "deepseek-chat",
+        "identidad": "Eres el Sabio Sereno, mentor de EONIA. Hablas con calma y metáforas. Nunca juzgas.",
         "principios": ["Calma", "Integridad", "Espiritualidad"],
-        "metodo": "Evalúa con metáforas y preguntas introspectivas.",
+        "metodo": "Evalúa con preguntas introspectivas y metáforas.",
         "sombra": "A veces demasiado contemplativo.",
         "prueba": "Prueba_Bioma1.txt",
         "fragmento": "Serenidad"
     },
-    "kael": {
+    2: {
         "nombre": "Kael",
-        "biomas": [2],
         "modelo_analisis": "deepseek-chat",
         "identidad": "Eres Kael, el Guardián del Método. Hablas con disciplina y paciencia.",
         "principios": ["Disciplina", "Constancia", "Método"],
         "metodo": "Evalúa con pasos concretos y celebra pequeños logros.",
-        "sombra": "Puede ser demasiado rígido si el Creador no avanza.",
+        "sombra": "Puede ser rígido si el Creador no avanza.",
         "prueba": "Prueba_Bioma2.txt",
         "fragmento": "Método"
     },
-    "nemesis": {
+    3: {
         "nombre": "Némesis",
-        "biomas": [3],
         "modelo_analisis": "deepseek-chat",
         "identidad": "Eres Némesis, la Estratega Astuta. Hablas directo y sin rodeos.",
         "principios": ["Efectividad", "Astucia", "Resultados"],
-        "metodo": "Evalúa con retos prácticos y feedback brutal.",
+        "metodo": "Evalúa con retos prácticos y feedback directo.",
         "sombra": "Puede ser implacable si el Creador no entrega.",
         "prueba": "Prueba_Bioma3.txt",
         "fragmento": "Efectividad"
     },
-    "vortice": {
+    4: {
         "nombre": "Vórtice",
-        "biomas": [4],
         "modelo_analisis": "deepseek-chat",
-        "identidad": "Eres Vórtice, el Artista Caótico. Hablas con energía explosiva.",
+        "identidad": "Eres Vórtice, el Artista Caótico. Hablas con energía explosiva y creativa.",
         "principios": ["Creatividad", "Caos", "Rebeldía"],
-        "metodo": "Evalúa con desafíos absurdos y pide creaciones originales.",
+        "metodo": "Evalúa con desafíos absurdos y creaciones originales.",
         "sombra": "A veces se pierde en el caos.",
         "prueba": "Prueba_Bioma4.txt",
         "fragmento": "Creación"
     }
 }
 
-def hablar_con_mentor(bioma, mensaje, historia):
-    """Envía el mensaje a DeepSeek con el arquetipo del mentor."""
-    mentor = ARQUETIPOS[bioma]
-    system_prompt = mentor["system"] + "\n" + "Historial de la conversación:\n" + "\n".join(historia)
-    
+# ============================================================
+# FUNCIONES DEL CHAT
+# ============================================================
+def hablar_con_mentor(bioma, mensaje, historial):
+    mentor = MENTORES[bioma]
+    system_prompt = (
+        mentor["identidad"] + "\n"
+        "Principios: " + ", ".join(mentor["principios"]) + "\n"
+        "Método: " + mentor["metodo"] + "\n"
+        "Sombra: " + mentor["sombra"] + "\n"
+        "Archivo de prueba: " + mentor["prueba"] + "\n"
+        "Historial de conversación:\n" + "\n".join(historial)
+    )
+
     headers = {
         "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "deepseek-chat",
+        "model": mentor["modelo_analisis"],
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": mensaje}
@@ -88,7 +93,6 @@ def hablar_con_mentor(bioma, mensaje, historia):
         return f"Error de conexión con el mentor: {e}"
 
 def generar_imagen(prompt):
-    """Genera una imagen con OpenAI DALL·E."""
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}",
         "Content-Type": "application/json"
@@ -103,28 +107,28 @@ def generar_imagen(prompt):
         respuesta.raise_for_status()
         data = respuesta.json()
         return data["data"][0]["url"]
-    except Exception as e:
+    except:
         return None
 
 # ============================================================
-# INTERFAZ DE CHAT
+# INTERFAZ DEL CHAT EÓNICO
 # ============================================================
 st.subheader("🜂 CHAT EÓNICO")
 
-# Inicializar historial en session_state
+# Inicializar historial
 if "historial_chat" not in st.session_state:
     st.session_state.historial_chat = []
 
 # Selector de Bioma
 bioma_seleccionado = st.selectbox(
     "Selecciona tu Bioma",
-    options=list(ARQUETIPOS.keys()),
-    format_func=lambda x: f"Bioma {x}: {ARQUETIPOS[x]['nombre']}"
+    options=list(MENTORES.keys()),
+    format_func=lambda x: f"Bioma {x}: {MENTORES[x]['nombre']}"
 )
 
-# Área de chat
+# Mensaje inicial del mentor
 with st.chat_message("assistant"):
-    st.write(f"Soy **{ARQUETIPOS[bioma_seleccionado]['nombre']}**. ¿Qué deseas aprender hoy?")
+    st.write(f"Soy **{MENTORES[bioma_seleccionado]['nombre']}**. ¿Qué deseas aprender hoy?")
 
 # Mostrar historial
 for mensaje in st.session_state.historial_chat:
@@ -134,24 +138,20 @@ for mensaje in st.session_state.historial_chat:
 # Entrada del usuario
 prompt = st.chat_input("Escribe tu mensaje...")
 if prompt:
-    # Añadir mensaje del usuario al historial
     st.session_state.historial_chat.append({"role": "user", "content": prompt})
 
-    # Obtener respuesta del mentor
     respuesta = hablar_con_mentor(
         bioma_seleccionado,
         prompt,
         [m["content"] for m in st.session_state.historial_chat]
     )
 
-    # Añadir respuesta del mentor al historial
     st.session_state.historial_chat.append({"role": "assistant", "content": respuesta})
 
-    # Mostrar la respuesta
     with st.chat_message("assistant"):
         st.write(respuesta)
 
-    # Lógica para imágenes (si el mentor decide que es necesario)
+    # Si la respuesta sugiere una imagen, se genera
     if "imagen" in respuesta.lower() and OPENAI_API_KEY:
         imagen_url = generar_imagen(prompt)
         if imagen_url:
