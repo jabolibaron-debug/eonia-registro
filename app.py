@@ -2021,23 +2021,16 @@ elif st.session_state.pagina == "Chat Eónico":
             st.write(
                 respuesta_texto
             )
-
         # ----------------------------------------------------
         # 12. GENERAR REFLEJO PERSONALIZADO
         # ----------------------------------------------------
 
-        if (
-            "reflejo" in texto_lower
-            and OPENAI_API_KEY
-        ):
+        # 🔥 CAMBIO 1: Frase exacta para activar
+        if texto_lower.strip() == "muéstrame mi reflejo" and OPENAI_API_KEY:
 
-            with st.spinner(
-                "Preparando tu Reflejo..."
-            ):
+            with st.spinner("Preparando tu Reflejo..."):
 
-                st.info(
-                    "📸 Sube una selfie para crear tu Yo Futuro."
-                )
+                st.info("📸 Sube una selfie para crear tu Yo Futuro.")
 
                 selfie = st.file_uploader(
                     "Sube tu selfie",
@@ -2066,9 +2059,7 @@ elif st.session_state.pagina == "Chat Eónico":
                         )
 
                         # Paso 1: Analizar rasgos con GPT-4o-mini
-                        with st.spinner(
-                            "Analizando tu esencia..."
-                        ):
+                        with st.spinner("Analizando tu esencia..."):
 
                             analisis_resp = requests.post(
                                 OPENAI_CHAT_API_URL,
@@ -2113,9 +2104,7 @@ elif st.session_state.pagina == "Chat Eónico":
                             )
 
                             if analisis_resp.status_code != 200:
-                                st.warning(
-                                    "No se pudo analizar la selfie."
-                                )
+                                st.warning("No se pudo analizar la selfie.")
                                 st.stop()
 
                             rasgos = (
@@ -2135,9 +2124,7 @@ elif st.session_state.pagina == "Chat Eónico":
                         )
 
                         # Paso 3: Generar imagen con gpt-image-1
-                        with st.spinner(
-                            "Forjando tu Reflejo..."
-                        ):
+                        with st.spinner("Forjando tu Reflejo..."):
 
                             img_resp = requests.post(
                                 OPENAI_IMAGE_API_URL,
@@ -2156,9 +2143,7 @@ elif st.session_state.pagina == "Chat Eónico":
                             )
 
                             if img_resp.status_code != 200:
-                                st.warning(
-                                    "No se pudo generar la imagen."
-                                )
+                                st.warning("No se pudo generar la imagen.")
                                 st.stop()
 
                             data_imagen = img_resp.json()
@@ -2167,9 +2152,7 @@ elif st.session_state.pagina == "Chat Eónico":
                             )[0].get("b64_json")
 
                             if not img_b64:
-                                st.warning(
-                                    "No se pudo decodificar la imagen."
-                                )
+                                st.warning("No se pudo decodificar la imagen.")
                                 st.stop()
 
                             import io
@@ -2190,11 +2173,23 @@ elif st.session_state.pagina == "Chat Eónico":
 
                     except Exception as e:
 
-                        st.warning(
-                            f"Error: {e}"
-                        )      
+                        st.warning(f"Error: {e}")
+                    
+                    # 🔥 CAMBIO 2: Detener ejecución para que NO llame al mentor
+                    st.stop()
+
         # ----------------------------------------------------
-        # 13. LIMPIAR PREGUNTA INICIAL
+        # 13. MENTOR (DeepSeek) - SOLO si NO es Reflejo
+        # ----------------------------------------------------
+        else:
+            
+            # Aquí va todo el código de tu mentor DeepSeek
+            # (tu código existente para llamar a DeepSeek)
+            
+            pass  # <--- Reemplaza esto con tu código del mentor 
+            
+        # ----------------------------------------------------
+        # 134 LIMPIAR PREGUNTA INICIAL
         # ----------------------------------------------------
 
         st.session_state.chat_pregunta = ""
