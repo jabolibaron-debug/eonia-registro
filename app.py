@@ -1470,6 +1470,22 @@ elif st.session_state.pagina == "Chat Eónico":
         st.session_state.reflejo_prompt_final = ""
 
     # ========================================================
+    # VERIFICAR REFLEJO EXISTENTE (AUTOMÁTICO PARA TODOS)
+    # ========================================================
+
+    if user_id and not st.session_state.reflejo_ya_generado:
+        resultado = verificar_reflejo_existente(user_id)
+        
+        # 🔥 DIAGNÓSTICO TEMPORAL
+        if resultado:
+            st.write(f"🔍 Debug: resultado = {resultado}")
+        else:
+            st.write(f"🔍 Debug: resultado = None (no se encontró)")
+        
+        if resultado and resultado.get("existe"):
+            st.session_state.reflejo_ya_generado = True
+
+    # ========================================================
     # CARGAR DOCUMENTACIÓN EONIA
     # ========================================================
 
@@ -1503,15 +1519,6 @@ elif st.session_state.pagina == "Chat Eónico":
     DOCUMENTACION_EONIA = cargar_documentacion_eonia()
 
     # ========================================================
-    # VERIFICAR REFLEJO EXISTENTE (AUTOMÁTICO PARA TODOS)
-    # ========================================================
-
-    if user_id and not st.session_state.reflejo_ya_generado:
-        resultado = verificar_reflejo_existente(user_id)
-        if resultado and resultado.get("existe"):
-            st.session_state.reflejo_ya_generado = True
-
-    # ========================================================
     # SI ES NUEVO INSCRITO → SOLICITAR REFLEJO AUTOMÁTICAMENTE
     # ========================================================
 
@@ -1528,7 +1535,7 @@ elif st.session_state.pagina == "Chat Eónico":
             st.write("📸 **Paso 1:** Sube una selfie para que la Gran Examinadora conozca tu esencia.")
             st.write("")
             st.write("*Este proceso solo se realiza **una vez** por Creador.*")
-    
+            
     # ========================================================
     # FUNCIONES AUXILIARES
     # ========================================================
