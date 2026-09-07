@@ -8,7 +8,6 @@ from textwrap import dedent
 # ============================================================
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 OPENAI_IMAGE_API_URL = "https://api.openai.com/v1/images/generations"
-
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
