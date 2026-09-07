@@ -1402,10 +1402,6 @@ elif st.session_state.pagina == "Chat Eónico":
     st.title("CHAT EÓNICO")
     st.caption("Un solo portal. Múltiples inteligencias.")
 
-    # DEBUG TEMPORAL
-    st.write(f"🔍 OPENAI_API_KEY configurada: {bool(OPENAI_API_KEY)}")
-    st.write(f"🔍 Longitud: {len(OPENAI_API_KEY) if OPENAI_API_KEY else 0}")
-
     # ========================================================
     # FUNCION PARA CARGAR PRUEBAS
     # ========================================================
@@ -2043,63 +2039,54 @@ elif st.session_state.pagina == "Chat Eónico":
             with st.spinner(
                 "Generando tu Reflejo..."
             ):
+            try:
 
-                try:
+                img_resp = requests.post(
+                    OPENAI_IMAGE_API_URL,
+                    headers={
+                        "Authorization":
+                            f"Bearer {OPENAI_API_KEY}",
+                        "Content-Type":
+                            "application/json"
+                    },
+                    json={
+                        "model": "dall-e-3",
+                        "prompt": (
+                            "Un reflejo dorado de un "
+                            "Creador Eónico, estilo EONIA, "
+                            "negro y dorado."
+                        ),
+                        "size": "1024x1024"
+                    },
+                    timeout=60
+                )
 
-                    img_resp = requests.post(
-                        OPENAI_IMAGE_API_URL,
-                        headers={
-                            "Authorization":
-                                f"Bearer {OPENAI_API_KEY}",
-                            "Content-Type":
-                                "application/json"
-                        },
-                        json={
-                            "model": "dall-e-3",
-                            "prompt": (
-                                "Un reflejo dorado de un "
-                                "Creador Eónico, "
-                                "estilo EONIA, "
-                                "negro y dorado."
-                            ),
-                            "size": "1024x1024"
-                        },
-                        timeout=60
+                st.write(f"🔍 Status: {img_resp.status_code}")
+                st.write(f"🔍 Respuesta: {img_resp.text[:300]}")
+
+                if img_resp.status_code == 200:
+
+                    img_url = (
+                        img_resp.json()
+                        ["data"][0]["url"]
                     )
 
+                    st.image(
+                        img_url,
+                        caption="Tu Reflejo Eónico"
+                    )
 
-                    if img_resp.status_code == 200:
-
-                        data_imagen = (
-                            img_resp.json()
-                        )
-
-                        img_url = (
-                            data_imagen[
-                                "data"
-                            ][0]["url"]
-                        )
-
-                        st.image(
-                            img_url,
-                            caption="Tu Reflejo Eónico"
-                        )
-
-                    else:
-
-                        st.warning(
-                            "No se pudo generar "
-                            "el Reflejo."
-                        )
-
-
-                except Exception as e:
+                else:
 
                     st.warning(
-                        "No se pudo generar "
-                        f"el Reflejo: {e}"
+                        "No se pudo generar el Reflejo."
                     )
 
+            except Exception as e:
+
+                st.warning(
+                    f"Error: {e}"
+                )
 
         # ----------------------------------------------------
         # 13. LIMPIAR PREGUNTA INICIAL
