@@ -2052,6 +2052,11 @@ elif st.session_state.pagina == "Chat Eónico":
 # ============================================================
 
 elif st.session_state.pagina == "Concilio Eónico":
+    # ... código del Concilio# ============================================================
+# PAGINA: CONCILIO EÓNICO
+# ============================================================
+
+elif st.session_state.pagina == "Concilio Eónico":
     
     st.title("CONCILIO EÓNICO")
     
