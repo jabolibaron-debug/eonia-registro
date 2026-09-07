@@ -1448,25 +1448,25 @@ elif st.session_state.pagina == "Chat Eónico":
     if "reflejo_ya_generado" not in st.session_state:
         st.session_state.reflejo_ya_generado = False
 
-    if "reflejo_activo" not in st.session_state:  # 🔥 ESTA LÍNEA FALTA
+    if "reflejo_activo" not in st.session_state:
         st.session_state.reflejo_activo = False
 
-    if "reflejo_paso" not in st.session_state:  # 🔥 ESTA LÍNEA TAMBIÉN
+    if "reflejo_paso" not in st.session_state:
         st.session_state.reflejo_paso = "bienvenida"
 
-    if "reflejo_selfie_subida" not in st.session_state:  # 🔥 Y ESTA
+    if "reflejo_selfie_subida" not in st.session_state:
         st.session_state.reflejo_selfie_subida = False
 
-    if "reflejo_rasgos" not in st.session_state:  # 🔥 Y ESTA
+    if "reflejo_rasgos" not in st.session_state:
         st.session_state.reflejo_rasgos = ""
 
-    if "reflejo_respuestas" not in st.session_state:  # 🔥 Y ESTA
+    if "reflejo_respuestas" not in st.session_state:
         st.session_state.reflejo_respuestas = {}
 
-    if "reflejo_desafio_actual" not in st.session_state:  # 🔥 Y ESTA
+    if "reflejo_desafio_actual" not in st.session_state:
         st.session_state.reflejo_desafio_actual = 0
 
-    if "reflejo_prompt_final" not in st.session_state:  # 🔥 Y ESTA
+    if "reflejo_prompt_final" not in st.session_state:
         st.session_state.reflejo_prompt_final = ""
 
     # ========================================================
@@ -1476,11 +1476,9 @@ elif st.session_state.pagina == "Chat Eónico":
     def cargar_documentacion_eonia():
         """Carga la documentación de EONIA desde un archivo"""
         try:
-            # Intentar cargar desde archivo local
             with open("documentos_EONIA.txt", "r", encoding="utf-8") as f:
                 return f.read()
         except:
-            # Si no existe, usar documentación embebida
             return """
             EONIA: Universidad digital de IA y Metaverso.
             
@@ -1505,7 +1503,7 @@ elif st.session_state.pagina == "Chat Eónico":
     DOCUMENTACION_EONIA = cargar_documentacion_eonia()
 
     # ========================================================
-    # VERIFICAR REFLEJO EXISTENTE (UNA VEZ POR USUARIO)
+    # VERIFICAR REFLEJO EXISTENTE (AUTOMÁTICO PARA TODOS)
     # ========================================================
 
     if user_id and not st.session_state.reflejo_ya_generado:
@@ -1530,6 +1528,7 @@ elif st.session_state.pagina == "Chat Eónico":
             st.write("📸 **Paso 1:** Sube una selfie para que la Gran Examinadora conozca tu esencia.")
             st.write("")
             st.write("*Este proceso solo se realiza **una vez** por Creador.*")
+    
     # ========================================================
     # FUNCIONES AUXILIARES
     # ========================================================
