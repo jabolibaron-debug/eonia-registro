@@ -2227,29 +2227,34 @@ elif st.session_state.pagina == "Mi Progreso":
 
     st.title("MI PROGRESO")
 
-    st.markdown(
-        """
-        <div class="eonia-card">
+    # --------------------------------------------------------
+    # CABECERA
+    # --------------------------------------------------------
 
-            <div class="small-gold">
-                VIAJE DEL CREADOR
-            </div>
+    st.html("""
+    <div class="eonia-card">
 
-            <h1>
-                ERA DE LOS METALES
-            </h1>
-
-            <p>
-                Tu evolución queda registrada
-                en el CRM Eónico.
-            </p>
-
+        <div class="small-gold">
+            VIAJE DEL CREADOR
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+
+        <h1>
+            ERA DE LOS METALES
+        </h1>
+
+        <p>
+            Cada Fragmento obtenido queda integrado
+            en tu historia de creación.
+        </p>
+
+    </div>
+    """)
 
     if estado:
+
+        # ----------------------------------------------------
+        # DATOS DEL CRM
+        # ----------------------------------------------------
 
         fragmentos = estado.get(
             "fragmentos",
@@ -2266,111 +2271,340 @@ elif st.session_state.pagina == "Mi Progreso":
             []
         )
 
-        # ====================================================
-        # RECONSTRUIR BIOMAS A PARTIR DE LOS FRAGMENTOS
-        # ====================================================
+        # ----------------------------------------------------
+        # AGRUPAR FRAGMENTOS POR BIOMA
+        # ----------------------------------------------------
 
-        biomas_por_fragmentos = {}
+        fragmentos_por_bioma = {}
 
-        for fragmento in fragmentos:
+        for registro in fragmentos:
 
-            bioma_numero = fragmento.get("bioma")
+            numero_bioma = registro.get("bioma")
+            nombre_fragmento = registro.get("fragmento")
 
-            if bioma_numero is not None:
+            if numero_bioma is None:
+                continue
 
-                if bioma_numero not in biomas_por_fragmentos:
-                    biomas_por_fragmentos[bioma_numero] = 0
+            if numero_bioma not in fragmentos_por_bioma:
+                fragmentos_por_bioma[numero_bioma] = []
 
-                biomas_por_fragmentos[bioma_numero] += 1
+            if nombre_fragmento:
+                fragmentos_por_bioma[numero_bioma].append(
+                    nombre_fragmento
+                )
 
-        biomas_completados = sum(
-            1
-            for cantidad in biomas_por_fragmentos.values()
-            if cantidad >= 5
-        )
+        # ----------------------------------------------------
+        # BIOMAS COMPLETADOS
+        # ----------------------------------------------------
+
+        biomas_completados = 0
+
+        for numero in range(1, 11):
+
+            cantidad = len(
+                fragmentos_por_bioma.get(numero, [])
+            )
+
+            if cantidad >= 5:
+                biomas_completados += 1
 
         biomas_registrados = max(
             len(progreso),
             biomas_completados
         )
 
-        # ====================================================
-        # METRICAS
-        # ====================================================
+        # ----------------------------------------------------
+        # METRICAS SUPERIORES
+        # ----------------------------------------------------
 
         col1, col2, col3 = st.columns(3)
 
         with col1:
 
-            st.markdown(
-                f"""
-                <div class="eonia-card"
-                     style="text-align:center;">
+            st.html(f"""
+            <div class="eonia-card"
+                 style="text-align:center;">
 
-                    <div class="metric-number">
-                        {len(fragmentos)}
-                    </div>
-
-                    <div class="metric-label">
-                        Fragmentos
-                    </div>
-
+                <div class="metric-number">
+                    {len(fragmentos)}
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
+
+                <div class="metric-label">
+                    FRAGMENTOS OBTENIDOS
+                </div>
+
+            </div>
+            """)
 
         with col2:
 
-            st.markdown(
-                f"""
-                <div class="eonia-card"
-                     style="text-align:center;">
+            st.html(f"""
+            <div class="eonia-card"
+                 style="text-align:center;">
 
-                    <div class="metric-number">
-                        {biomas_registrados}
-                    </div>
-
-                    <div class="metric-label">
-                        Biomas registrados
-                    </div>
-
+                <div class="metric-number">
+                    {biomas_registrados}
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
+
+                <div class="metric-label">
+                    BIOMAS COMPLETADOS
+                </div>
+
+            </div>
+            """)
 
         with col3:
 
-            st.markdown(
-                f"""
-                <div class="eonia-card"
-                     style="text-align:center;">
+            st.html(f"""
+            <div class="eonia-card"
+                 style="text-align:center;">
 
-                    <div class="metric-number">
-                        {len(certificados)}
+                <div class="metric-number">
+                    {len(certificados)}
+                </div>
+
+                <div class="metric-label">
+                    CERTIFICADOS
+                </div>
+
+            </div>
+            """)
+
+        # ----------------------------------------------------
+        # TITULO
+        # ----------------------------------------------------
+
+        st.markdown(
+            "## LA FORJA DEL CREADOR"
+        )
+
+        st.caption(
+            "Cada Bioma se construye reuniendo sus Fragmentos."
+        )
+
+        # ----------------------------------------------------
+        # ERAS
+        # ----------------------------------------------------
+
+        eras = {
+            1: "ERA DE PIEDRA",
+            2: "ERA DE PIEDRA",
+            3: "ERA DE PIEDRA",
+            4: "ERA DE LOS METALES",
+            5: "ERA ESTELAR",
+            6: "ERA ESTELAR",
+            7: "ERA ESTELAR",
+            8: "ERA TRASCENDENTE",
+            9: "ERA TRASCENDENTE",
+            10: "ERA TRASCENDENTE"
+        }
+
+        # ----------------------------------------------------
+        # MOSTRAR CADA BIOMA
+        # ----------------------------------------------------
+
+        for numero in range(1, 11):
+
+            nombres = fragmentos_por_bioma.get(
+                numero,
+                []
+            )
+
+            cantidad = len(nombres)
+
+            porcentaje = min(
+                100,
+                int((cantidad / 5) * 100)
+            )
+
+            if cantidad >= 5:
+
+                estado_bioma = "COMPLETADO"
+                color_estado = "#e4bd5c"
+
+            elif cantidad > 0:
+
+                estado_bioma = "EN FORJA"
+                color_estado = "#8ea8bd"
+
+            else:
+
+                estado_bioma = "AÚN NO DESPERTADO"
+                color_estado = "#66727d"
+
+            # ----------------------------------------------
+            # CONTENEDOR DEL BIOMA
+            # ----------------------------------------------
+
+            st.html(f"""
+            <div class="eonia-card"
+                 style="margin-bottom:18px;">
+
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    gap:20px;
+                    flex-wrap:wrap;
+                ">
+
+                    <div>
+
+                        <div class="small-gold">
+                            {eras[numero]}
+                        </div>
+
+                        <h2 style="
+                            margin-top:8px;
+                            margin-bottom:5px;
+                        ">
+                            BIOMA {numero}
+                        </h2>
+
                     </div>
 
-                    <div class="metric-label">
-                        Certificados
+                    <div style="
+                        color:{color_estado};
+                        font-size:12px;
+                        letter-spacing:2px;
+                        font-weight:600;
+                    ">
+                        {estado_bioma}
                     </div>
 
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
 
-        st.markdown("### ESTADO DEL CRM")
+                <div style="
+                    margin-top:18px;
+                    height:7px;
+                    background:#172635;
+                    border-radius:10px;
+                    overflow:hidden;
+                ">
 
-        st.json(estado)
+                    <div style="
+                        width:{porcentaje}%;
+                        height:100%;
+                        background:linear-gradient(
+                            90deg,
+                            #b8872f,
+                            #e4bd5c
+                        );
+                        border-radius:10px;
+                    "></div>
+
+                </div>
+
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    margin-top:9px;
+                    color:#8e9aa7;
+                    font-size:12px;
+                ">
+
+                    <span>
+                        {cantidad} / 5 Fragmentos
+                    </span>
+
+                    <span>
+                        {porcentaje}%
+                    </span>
+
+                </div>
+
+            </div>
+            """)
+
+            # ----------------------------------------------
+            # FRAGMENTOS DEL BIOMA
+            # ----------------------------------------------
+
+            if nombres:
+
+                st.html("""
+                <div style="
+                    margin:-8px 0 22px 20px;
+                    padding-left:20px;
+                    border-left:1px solid rgba(228,189,92,.25);
+                ">
+                """)
+
+                for nombre in nombres:
+
+                    st.html(f"""
+                    <div style="
+                        display:flex;
+                        align-items:center;
+                        gap:12px;
+                        padding:9px 0;
+                        color:#f4ead0;
+                    ">
+
+                        <span style="
+                            color:#e4bd5c;
+                            font-size:18px;
+                        ">
+                            ◆
+                        </span>
+
+                        <span>
+                            {nombre}
+                        </span>
+
+                        <span style="
+                            margin-left:auto;
+                            color:#e4bd5c;
+                            font-size:11px;
+                            letter-spacing:1px;
+                        ">
+                            OBTENIDO
+                        </span>
+
+                    </div>
+                    """)
+
+                st.html("""
+                </div>
+                """)
+
+        # ----------------------------------------------------
+        # FRASE FINAL
+        # ----------------------------------------------------
+
+        st.html("""
+        <div style="
+            text-align:center;
+            padding:50px 10px 30px 10px;
+        ">
+
+            <div style="
+                font-family:Cinzel;
+                font-size:21px;
+                color:#e4bd5c;
+                letter-spacing:1px;
+            ">
+                TODA CREACIÓN DEJA UN FRAGMENTO.
+            </div>
+
+            <div style="
+                margin-top:12px;
+                color:#7f8a95;
+                letter-spacing:3px;
+                font-size:11px;
+            ">
+                EONIA UNIVERSITY
+            </div>
+
+        </div>
+        """)
 
     else:
 
         st.info(
             "Introduce el UUID del Creador "
-            "para consultar el estado real del CRM."
+            "para consultar su evolución."
         )
-
 # ============================================================
 # PAGINA: CONFIGURACION
 # ============================================================
