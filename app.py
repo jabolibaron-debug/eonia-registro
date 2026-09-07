@@ -1470,20 +1470,24 @@ elif st.session_state.pagina == "Chat Eónico":
         st.session_state.reflejo_prompt_final = ""
 
     # ========================================================
-    # VERIFICAR REFLEJO EXISTENTE (AUTOMÁTICO PARA TODOS)
-    # ========================================================
+# VERIFICAR REFLEJO EXISTENTE (AUTOMÁTICO PARA TODOS)
+# ========================================================
 
-    if user_id and not st.session_state.reflejo_ya_generado:
-        resultado = verificar_reflejo_existente(user_id)
-        
-        # 🔥 DIAGNÓSTICO TEMPORAL
-        if resultado:
-            st.write(f"🔍 Debug: resultado = {resultado}")
-        else:
-            st.write(f"🔍 Debug: resultado = None (no se encontró)")
-        
-        if resultado and resultado.get("existe"):
-            st.session_state.reflejo_ya_generado = True
+if user_id and not st.session_state.reflejo_ya_generado:
+    
+    # 🔥 DIAGNÓSTICO: Mostrar qué user_id se está enviando
+    st.write(f"🔍 Debug: user_id = {user_id}")
+    
+    resultado = verificar_reflejo_existente(user_id)
+    
+    # 🔥 DIAGNÓSTICO: Mostrar resultado completo
+    st.write(f"🔍 Debug: resultado = {resultado}")
+    
+    if resultado and resultado.get("existe"):
+        st.session_state.reflejo_ya_generado = True
+        st.write(f"✅ Debug: reflejo_ya_generado = True")
+    else:
+        st.write(f"❌ Debug: reflejo_ya_generado = False (No se encontró registro)")
 
     # ========================================================
     # CARGAR DOCUMENTACIÓN EONIA
