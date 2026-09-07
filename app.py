@@ -8,6 +8,7 @@ from textwrap import dedent
 # ============================================================
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 OPENAI_IMAGE_API_URL = "https://api.openai.com/v1/images/generations"
+OPENAI_CHAT_API_URL = "https://api.openai.com/v1/chat/completions"
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
@@ -1552,46 +1553,106 @@ elif st.session_state.pagina == "Chat Eónico":
         contenido_prueba = cargar_prueba(mentor["prueba"])
 
         # ============================================
-        # LLAMADA A DEEPSEEK
+        # DETECCIÓN DE IMÁGENES
         # ============================================
-        try:
-            respuesta = requests.post(
-                DEEPSEEK_API_URL,
-                headers={
-                    "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "deepseek-chat",
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": (
-                                mentor["identidad"] + "\n"
-                                "Principios: " + ", ".join(mentor["principios"]) + "\n"
-                                "Método: " + mentor["metodo"] + "\n"
-                                "Sombra: " + mentor["sombra"] + "\n"
-                                "Prueba: " + contenido_prueba + "\n"
-                                "Fragmento a otorgar: " + mentor["fragmento"]
-                            )
-                        },
-                        *[
-                            {"role": m["role"], "content": m["content"]}
-                            for m in st.session_state.chat_mensajes
-                        ]
+        hay_imagen = "imagen" in mensaje.lower() or bool(archivos)
+
+        if hay_imagen:
+            try:
+                contenido_mensajes = [
+                    {
+                        "role": "system",
+                        "content": (
+                            mentor["identidad"] + "\n"
+                            "Principios: " + ", ".join(mentor["principios"]) + "\n"
+                            "Método: " + mentor["metodo"] + "\n"
+                            "Sombra: " + mentor["sombra"] + "\n"
+                            "Prueba: " + contenido_prueba + "\n"
+                            "Fragmento a otorgar: " + mentor["fragmento"]
+                        )
+                    },
+                    *[
+                        {"role": m["role"], "content": m["content"]}
+                        for m in st.session_state.chat_mensajes
                     ]
-                },
-                timeout=60
-            )
+                ]
 
-            if respuesta.status_code == 200:
-                data = respuesta.json()
-                respuesta_texto = data["choices"][0]["message"]["content"]
-            else:
-                respuesta_texto = f"Error {respuesta.status_code}: {respuesta.text}"
+                if archivos:
+                    contenido_mensajes.append({
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": mensaje.text or "Analiza esta imagen"},
+                            *[
+                                {
+                                    "type": "image_url",
+                                    "image_url": {"url": "data:image/jpeg;base64," + __import__("base64").b64encode(archivo.read()).decode()}
+                                }
+                                for archivo in archivos
+                            ]
+                        ]
+                    })
 
-        except Exception as e:
-            respuesta_texto = f"Error de conexión: {e}"
+                respuesta = requests.post(
+                    OPENAI_CHAT_API_URL,
+                    headers={
+                        "Authorization": f"Bearer {OPENAI_API_KEY}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "gpt-4o-mini",
+                        "messages": contenido_mensajes
+                    },
+                    timeout=90
+                )
+
+                if respuesta.status_code == 200:
+                    data = respuesta.json()
+                    respuesta_texto = data["choices"][0]["message"]["content"]
+                else:
+                    respuesta_texto = f"Error OpenAI {respuesta.status_code}: {respuesta.text}"
+
+            except Exception as e:
+                respuesta_texto = f"Error de conexión con OpenAI: {e}"
+
+        else:
+            try:
+                respuesta = requests.post(
+                    DEEPSEEK_API_URL,
+                    headers={
+                        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "deepseek-chat",
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": (
+                                    mentor["identidad"] + "\n"
+                                    "Principios: " + ", ".join(mentor["principios"]) + "\n"
+                                    "Método: " + mentor["metodo"] + "\n"
+                                    "Sombra: " + mentor["sombra"] + "\n"
+                                    "Prueba: " + contenido_prueba + "\n"
+                                    "Fragmento a otorgar: " + mentor["fragmento"]
+                                )
+                            },
+                            *[
+                                {"role": m["role"], "content": m["content"]}
+                                for m in st.session_state.chat_mensajes
+                            ]
+                        ]
+                    },
+                    timeout=60
+                )
+
+                if respuesta.status_code == 200:
+                    data = respuesta.json()
+                    respuesta_texto = data["choices"][0]["message"]["content"]
+                else:
+                    respuesta_texto = f"Error DeepSeek {respuesta.status_code}: {respuesta.text}"
+
+            except Exception as e:
+                respuesta_texto = f"Error de conexión con DeepSeek: {e}"
 
         st.session_state.chat_mensajes.append({
             "role": "assistant",
