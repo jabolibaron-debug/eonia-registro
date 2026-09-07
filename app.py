@@ -1442,36 +1442,11 @@ elif st.session_state.pagina == "Chat Eónico":
     st.caption("Un solo portal. Múltiples inteligencias.")
 
     # ========================================================
-    # INICIALIZACIÓN DE VARIABLES DE REFLEJO
+    # VERIFICAR REFLEJO EXISTENTE (UNA VEZ POR USUARIO)
     # ========================================================
 
     if "reflejo_ya_generado" not in st.session_state:
         st.session_state.reflejo_ya_generado = False
-
-    if "reflejo_activo" not in st.session_state:
-        st.session_state.reflejo_activo = False
-
-    if "reflejo_paso" not in st.session_state:
-        st.session_state.reflejo_paso = "bienvenida"
-
-    if "reflejo_selfie_subida" not in st.session_state:
-        st.session_state.reflejo_selfie_subida = False
-
-    if "reflejo_rasgos" not in st.session_state:
-        st.session_state.reflejo_rasgos = ""
-
-    if "reflejo_respuestas" not in st.session_state:
-        st.session_state.reflejo_respuestas = {}
-
-    if "reflejo_desafio_actual" not in st.session_state:
-        st.session_state.reflejo_desafio_actual = 0
-
-    if "reflejo_prompt_final" not in st.session_state:
-        st.session_state.reflejo_prompt_final = ""
-
-    # ========================================================
-    # VERIFICAR REFLEJO EXISTENTE (UNA VEZ POR USUARIO)
-    # ========================================================
 
     if user_id and not st.session_state.reflejo_ya_generado:
         resultado = verificar_reflejo_existente(user_id)
@@ -1761,6 +1736,31 @@ elif st.session_state.pagina == "Chat Eónico":
     # GESTIÓN DEL REFLEJO (PERSISTENTE)
     # ========================================================
 
+    if "reflejo_activo" not in st.session_state:
+        st.session_state.reflejo_activo = False
+
+    if "reflejo_paso" not in st.session_state:
+        st.session_state.reflejo_paso = "bienvenida"
+
+    if "reflejo_selfie_subida" not in st.session_state:
+        st.session_state.reflejo_selfie_subida = False
+
+    if "reflejo_rasgos" not in st.session_state:
+        st.session_state.reflejo_rasgos = ""
+
+    if "reflejo_respuestas" not in st.session_state:
+        st.session_state.reflejo_respuestas = {}
+
+    if "reflejo_desafio_actual" not in st.session_state:
+        st.session_state.reflejo_desafio_actual = 0
+
+    if "reflejo_prompt_final" not in st.session_state:
+        st.session_state.reflejo_prompt_final = ""
+
+    # ========================================================
+    # FLUJO DEL REFLEJO
+    # ========================================================
+
     if st.session_state.reflejo_activo:
 
         # ====================================================
@@ -2046,6 +2046,7 @@ elif st.session_state.pagina == "Chat Eónico":
             st.write(respuesta_mentor)
         
         chat_mensajes.append({"role": "assistant", "content": respuesta_mentor})
+
 
 # ============================================================
 # PAGINA: CONCILIO EÓNICO
