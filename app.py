@@ -1480,18 +1480,44 @@ elif st.session_state.pagina == "Chat Eónico":
         with st.chat_message(mensaje["role"]):
             st.write(mensaje["content"])
 
-    # Entrada
-    mensaje = st.chat_input("Habla con tu mentor...")
+        # Entrada con soporte de imágenes
+    mensaje = st.chat_input(
+        "Habla con tu mentor...",
+        accept_file=True,
+        file_type=["jpg", "jpeg", "png", "webp"],
+        max_upload_size=10
+    )
 
     if mensaje:
-        st.session_state.chat_mensajes.append({
-            "role": "user",
-            "content": mensaje
-        })
+        texto = mensaje.text
+        archivos = mensaje.files
 
+        # Agregar texto al historial
+        if texto:
+            st.session_state.chat_mensajes.append({
+                "role": "user",
+                "content": texto
+            })
+
+        # Mostrar mensaje del usuario
         with st.chat_message("user"):
-            st.write(mensaje)
+            if texto:
+                st.write(texto)
 
+            for archivo in archivos:
+                st.image(
+                    archivo,
+                    caption=f"🖼️ {archivo.name}",
+                    use_container_width=True
+                )
+
+        # Si hay archivos, registrarlos
+        if archivos:
+            for archivo in archivos:
+                st.session_state.chat_mensajes.append({
+                    "role": "user",
+                    "content": f"[Imagen enviada: {archivo.name}]"
+                })
         # ============================================
         # LÓGICA DEL REFLEJO
         # ============================================
