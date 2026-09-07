@@ -434,25 +434,28 @@ if st.session_state.pagina == "Inicio":
     # HERO
     # ---------------------------------------------------------
 
-    html("""
-    <div class="hero">
+    st.markdown(
+        """
+        <div class="hero">
 
-        <div class="small-gold">
-            ERA DE LOS METALES
+            <div class="small-gold">
+                ERA DE LOS METALES
+            </div>
+
+            <h1>
+                CREADORES<br>
+                DE UN MAÑANA REAL
+            </h1>
+
+            <p>
+                La Inteligencia, la Comunidad y la Tecnología
+                al servicio de la humanidad.
+            </p>
+
         </div>
-
-        <h1>
-            CREADORES<br>
-            DE UN MAÑANA REAL
-        </h1>
-
-        <p>
-            La Inteligencia, la Comunidad y la Tecnología
-            al servicio de la humanidad.
-        </p>
-
-    </div>
-    """)
+        """,
+        unsafe_allow_html=True
+    )
 
     st.write("")
 
