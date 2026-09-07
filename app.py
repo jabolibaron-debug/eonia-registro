@@ -2024,7 +2024,7 @@ elif st.session_state.pagina == "Chat Eónico":
 
 
         # ----------------------------------------------------
-        # 12. GENERAR REFLEJO
+        # 12. GENERAR REFLEJO PERSONALIZADO
         # ----------------------------------------------------
 
         if (
@@ -2033,77 +2033,107 @@ elif st.session_state.pagina == "Chat Eónico":
         ):
 
             with st.spinner(
-                "Generando tu Reflejo..."
+                "Preparando tu Reflejo..."
             ):
 
-                try:
+                st.info(
+                    "📸 Sube una selfie para crear tu Yo Futuro."
+                )
 
-                    img_resp = requests.post(
-                        OPENAI_IMAGE_API_URL,
-                        headers={
-                            "Authorization":
-                                f"Bearer {OPENAI_API_KEY}",
-                            "Content-Type":
-                                "application/json"
-                        },
-                        json={
-                            "model": "gpt-image-1",
-                            "prompt": (
-                                "Un reflejo dorado de un "
-                                "Creador Eónico, estilo EONIA, "
-                                "negro y dorado."
-                            ),
-                            "size": "1024x1024"
-                        },
-                        timeout=60
-                    )
+                selfie = st.file_uploader(
+                    "Sube tu selfie",
+                    type=["jpg", "jpeg", "png", "webp"],
+                    key="selfie_reflejo"
+                )
 
-                    if img_resp.status_code == 200:
+                if selfie is not None:
 
-                        data_imagen = img_resp.json()
+                    try:
 
-                        img_b64 = (
-                            data_imagen
-                            .get("data", [{}])[0]
-                            .get("b64_json")
+                        # Convertir selfie a base64
+                        selfie_bytes = selfie.getvalue()
+                        selfie_b64 = base64.b64encode(
+                            selfie_bytes
+                        ).decode("utf-8")
+
+                        mime = (
+                            selfie.type
+                            or "image/jpeg"
                         )
 
-                        if img_b64:
+                        selfie_url = (
+                            f"data:{mime};base64,"
+                            f"{selfie_b64}"
+                        )
 
-                            import io
-                            from PIL import Image
+                        # Prompt para el Reflejo
+                        prompt_reflejo = (
+                            "Usa la foto como referencia. "
+                            "Genera un retrato futurista de "
+                            "la misma persona como un "
+                            "Creador Eónico. "
+                            "Ropa tecnológica oscura, "
+                            "circuitos dorados, partículas de luz. "
+                            "Fondo negro. Sin texto. "
+                            "Estilo cyberpunk elegante."
+                        )
 
-                            img_bytes = base64.b64decode(
-                                img_b64
+                        # Llamar a OpenAI
+                        img_resp = requests.post(
+                            OPENAI_CHAT_API_URL,
+                            headers={
+                                "Authorization":
+                                    f"Bearer {OPENAI_API_KEY}",
+                                "Content-Type":
+                                    "application/json"
+                            },
+                            json={
+                                "model": "gpt-4o-mini",
+                                "messages": [
+                                    {
+                                        "role": "user",
+                                        "content": [
+                                            {
+                                                "type": "text",
+                                                "text": prompt_reflejo
+                                            },
+                                            {
+                                                "type": "image_url",
+                                                "image_url": {
+                                                    "url": selfie_url
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "max_tokens": 1000
+                            },
+                            timeout=90
+                        )
+
+                        if img_resp.status_code == 200:
+
+                            st.success(
+                                "✨ Tu Reflejo está listo."
                             )
 
-                            img = Image.open(
-                                io.BytesIO(img_bytes)
-                            )
-
-                            st.image(
-                                img,
-                                caption="Tu Reflejo Eónico"
+                            st.write(
+                                img_resp.json()
+                                ["choices"][0]
+                                ["message"]["content"]
                             )
 
                         else:
 
                             st.warning(
-                                "No se pudo decodificar el Reflejo."
+                                "No se pudo crear el Reflejo."
                             )
 
-                    else:
+                    except Exception as e:
 
                         st.warning(
-                            "No se pudo generar el Reflejo."
-                        )
-
-                except Exception as e:
-
-                    st.warning(
-                        f"Error: {e}"
-                    )
-        # ----------------------------------------------------
+                            f"Error: {e}"
+                        )        # ----------------------------------------------------
         # 13. LIMPIAR PREGUNTA INICIAL
         # ----------------------------------------------------
 
