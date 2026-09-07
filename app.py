@@ -1392,7 +1392,6 @@ elif st.session_state.pagina == "Biomas":
             unsafe_allow_html=True
         )
 
-
 # ============================================================
 # PAGINA: CHAT EÓNICO
 # ============================================================
@@ -1658,7 +1657,7 @@ elif st.session_state.pagina == "Chat Eónico":
                 """
 
                 # ================================================
-                # PASO 3: GENERAR IMAGEN CON MEJOR PROMPT
+                # PASO 3: GENERAR IMAGEN CON gpt-image-1
                 # ================================================
 
                 with st.spinner("🌟 Forjando tu Reflejo Eónico..."):
@@ -1669,7 +1668,7 @@ elif st.session_state.pagina == "Chat Eónico":
                             "model": "gpt-image-1",
                             "prompt": prompt_imagen,
                             "size": "1024x1024",
-                            "quality": "hd",  # <-- Alta calidad
+                            "quality": "high",  # <-- VALOR VÁLIDO
                             "n": 1
                         },
                         timeout=120
@@ -1677,22 +1676,7 @@ elif st.session_state.pagina == "Chat Eónico":
 
                     if img_resp.status_code != 200:
                         st.warning(f"No se pudo generar la imagen. Error: {img_resp.text}")
-                        # Intentar con DALL-E 3 como respaldo
-                        st.info("Intentando con DALL-E 3...")
-                        img_resp = requests.post(
-                            OPENAI_IMAGE_API_URL,
-                            headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
-                            json={
-                                "model": "dall-e-3",
-                                "prompt": prompt_imagen,
-                                "size": "1024x1024",
-                                "quality": "hd"
-                            },
-                            timeout=120
-                        )
-                        if img_resp.status_code != 200:
-                            st.warning(f"Error final: {img_resp.text}")
-                            st.stop()
+                        st.stop()
 
                     data_imagen = img_resp.json()
                     
@@ -1744,7 +1728,8 @@ elif st.session_state.pagina == "Chat Eónico":
     # CASO NORMAL: LLAMAR AL MENTOR
     # ========================================================
     
-    # ... (tu código normal del mentor aquí)# ============================================================
+    # ... (tu código normal del mentor aquí)
+# ============================================================
 # PAGINA: CONCILIO EÓNICO
 # ============================================================
 
