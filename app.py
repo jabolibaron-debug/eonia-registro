@@ -2021,8 +2021,41 @@ elif st.session_state.pagina == "Chat Eónico":
     # CASO NORMAL: LLAMAR AL MENTOR (DeepSeek/OpenAI)
     # ========================================================
 
-    # ... aquí va el código del mentor para procesar mensajes normales
+    if mensaje and not st.session_state.reflejo_activo:
 
+        # Procesar mensaje normal
+        texto = mensaje.text or ""
+        archivos = mensaje.files
+        
+        # Guardar en historial
+        if texto:
+            chat_mensajes.append({"role": "user", "content": texto})
+        
+        # Mostrar mensaje del usuario
+        with st.chat_message("user"):
+            if texto:
+                st.write(texto)
+        
+        # Aquí va tu lógica para llamar a DeepSeek
+        # (tu código existente del mentor)
+        
+        # Por ahora, respuesta de ejemplo
+        respuesta_mentor = f"{mentor['nombre']}: He recibido tu mensaje. ¿Cómo puedo ayudarte?"
+        
+        with st.chat_message("assistant"):
+            st.write(respuesta_mentor)
+        
+        chat_mensajes.append({"role": "assistant", "content": respuesta_mentor})
+
+# ============================================================
+# PAGINA: CONCILIO EÓNICO
+# ============================================================
+
+elif st.session_state.pagina == "Concilio Eónico":
+    
+    st.title("CONCILIO EÓNICO")
+    
+    # ... resto del código del Concilio
 # ============================================================
 # PAGINA: CONCILIO EÓNICO
 # ============================================================
