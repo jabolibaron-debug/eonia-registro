@@ -1421,7 +1421,6 @@ elif st.session_state.pagina == "Chat Eónico":
 
             return "Prueba no disponible."
 
-
     # ========================================================
     # MENTORES Y BIOMAS
     # ========================================================
@@ -1651,6 +1650,8 @@ elif st.session_state.pagina == "Chat Eónico":
             or texto_lower == "muestrame mi reflejo"
             or texto_lower == "reflejo"
             or texto_lower == "quiero ver mi reflejo"
+            or texto_lower == "crear mi reflejo"
+            or texto_lower == "generar mi reflejo"
         )
 
         # ----------------------------------------------------
@@ -1699,7 +1700,7 @@ elif st.session_state.pagina == "Chat Eónico":
                 )
 
             # ----------------------------------------------------
-            # SUBIR SELFIE
+            # SUBIR SELFIE (usar st.file_uploader directo)
             # ----------------------------------------------------
 
             selfie = st.file_uploader(
@@ -1708,7 +1709,15 @@ elif st.session_state.pagina == "Chat Eónico":
                 key=f"selfie_reflejo_{bioma_seleccionado}"
             )
 
-            if selfie is not None:
+            # Mostrar mensaje si no hay OPENAI_API_KEY
+            if not OPENAI_API_KEY:
+                st.warning(
+                    "⚠️ OPENAI_API_KEY no está configurada. "
+                    "El Reflejo NO funcionará. "
+                    "Configúrala en .streamlit/secrets.toml"
+                )
+
+            if selfie is not None and OPENAI_API_KEY:
 
                 try:
 
@@ -1732,7 +1741,7 @@ elif st.session_state.pagina == "Chat Eónico":
                     )
 
                     # ------------------------------------------------
-                    # ANALIZAR RASGOS CON GPT-4o-mini
+                    # PASO 1: ANALIZAR RASGOS CON GPT-4o-mini
                     # ------------------------------------------------
 
                     with st.spinner(
@@ -1783,8 +1792,8 @@ elif st.session_state.pagina == "Chat Eónico":
 
                         if analisis_resp.status_code != 200:
                             st.warning(
-                                "No se pudo analizar la selfie. "
-                                "Intenta con otra imagen."
+                                f"No se pudo analizar la selfie. "
+                                f"Error: {analisis_resp.text}"
                             )
                             st.stop()
 
@@ -1796,7 +1805,7 @@ elif st.session_state.pagina == "Chat Eónico":
                         )
 
                     # ------------------------------------------------
-                    # CREAR PROMPT PARA GENERACIÓN DE IMAGEN
+                    # PASO 2: CREAR PROMPT PARA GENERACIÓN DE IMAGEN
                     # ------------------------------------------------
 
                     prompt_imagen = (
@@ -1809,7 +1818,7 @@ elif st.session_state.pagina == "Chat Eónico":
                     )
 
                     # ------------------------------------------------
-                    # GENERAR IMAGEN CON gpt-image-1
+                    # PASO 3: GENERAR IMAGEN CON gpt-image-1
                     # ------------------------------------------------
 
                     with st.spinner(
@@ -1834,8 +1843,8 @@ elif st.session_state.pagina == "Chat Eónico":
 
                         if img_resp.status_code != 200:
                             st.warning(
-                                "No se pudo generar la imagen. "
-                                "Intenta de nuevo."
+                                f"No se pudo generar la imagen. "
+                                f"Error: {img_resp.text}"
                             )
                             st.stop()
 
