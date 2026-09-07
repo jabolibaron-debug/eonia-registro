@@ -2039,7 +2039,7 @@ elif st.session_state.pagina == "Chat Eónico":
             with st.spinner(
                 "Generando tu Reflejo..."
             ):
-            try:
+        try:
 
                 img_resp = requests.post(
                     OPENAI_IMAGE_API_URL,
