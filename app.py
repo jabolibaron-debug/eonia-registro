@@ -1448,6 +1448,11 @@ elif st.session_state.pagina == "Chat Eónico":
     if "reflejo_ya_generado" not in st.session_state:
         st.session_state.reflejo_ya_generado = False
 
+    # 🔥 BOLIBARON YA TIENE REFLEJO - NO GENERAR OTRO
+    if st.session_state.user_id == "a74d8d1e-0613-42a5-8be5-4094cf84ed9b":
+        st.session_state.reflejo_ya_generado = True
+        st.session_state.reflejo_activo = False
+
     if "reflejo_activo" not in st.session_state:
         st.session_state.reflejo_activo = False
 
@@ -1470,11 +1475,11 @@ elif st.session_state.pagina == "Chat Eónico":
         st.session_state.reflejo_prompt_final = ""
 
     # ========================================================
-    # VERIFICAR REFLEJO EXISTENTE (UNA VEZ POR USUARIO)
+    # VERIFICAR REFLEJO EXISTENTE (SOLO PARA NUEVOS USUARIOS)
     # ========================================================
 
-    if user_id and not st.session_state.reflejo_ya_generado:
-        resultado = verificar_reflejo_existente(user_id)
+    if not st.session_state.reflejo_ya_generado and st.session_state.user_id != "a74d8d1e-0613-42a5-8be5-4094cf84ed9b":
+        resultado = verificar_reflejo_existente(st.session_state.user_id)
         if resultado and resultado.get("existe"):
             st.session_state.reflejo_ya_generado = True
 
@@ -1494,8 +1499,8 @@ elif st.session_state.pagina == "Chat Eónico":
             st.write("")
             st.write("📸 **Paso 1:** Sube una selfie para que la Gran Examinadora conozca tu esencia.")
             st.write("")
-            st.write("*Este proceso solo se realiza **una vez** por Creador.*")
-
+            st.write("*Este proceso solo se realiza **una vez** por Creador.*")  
+            
     # ========================================================
     # FUNCIONES AUXILIARES
     # ========================================================
