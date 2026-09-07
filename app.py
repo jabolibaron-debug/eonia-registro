@@ -1,15 +1,3 @@
-# ============================================================
-# PAGINA: CHAT EÓNICO
-# ============================================================
-
-elif st.session_state.pagina == "Chat Eónico":
-
-    st.title("CHAT EÓNICO")
-    st.caption("Un solo portal. Múltiples inteligencias.")
-
-    # ========================================================
-    # FUNCIONES AUXILIARES
-    # ====================================================import streamlit as st
 import requests
 import os
 import base64
