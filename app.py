@@ -2051,7 +2051,7 @@ elif st.session_state.pagina == "Chat Eónico":
                                 "application/json"
                         },
                         json={
-                            "model": "dall-e-3",
+                            "model": "gpt-image-1",
                             "prompt": (
                                 "Un reflejo dorado de un "
                                 "Creador Eónico, estilo EONIA, "
