@@ -2047,54 +2047,21 @@ elif st.session_state.pagina == "Chat Eónico":
         
         chat_mensajes.append({"role": "assistant", "content": respuesta_mentor})
 
-# ============================================================
-# PAGINA: CONCILIO EÓNICO
-# ============================================================
-
-elif st.session_state.pagina == "Concilio Eónico":
-    # ... código del Concilio# ============================================================
-# PAGINA: CONCILIO EÓNICO
-# ============================================================
-
-elif st.session_state.pagina == "Concilio Eónico":
-    
-    st.title("CONCILIO EÓNICO")
-    
-    # ... resto del código del Concilio
-# ============================================================
-# PAGINA: CONCILIO EÓNICO
-# ============================================================
-
-elif st.session_state.pagina == "Concilio Eónico":
-    # ... código del Concilio
 
 # ============================================================
 # PAGINA: CONCILIO EÓNICO
 # ============================================================
 
 elif st.session_state.pagina == "Concilio Eónico":
-    # ... código del Concilio
 
     st.title("CONCILIO EÓNICO")
 
     st.markdown(
         """
         <div class="eonia-card">
-
-            <div class="small-gold">
-                DELIBERACIÓN
-            </div>
-
-            <h1>
-                Grandes ideas merecen ser deliberadas.
-            </h1>
-
-            <p>
-                Presenta una creación para que las
-                distintas perspectivas de EONIA
-                puedan analizarla.
-            </p>
-
+            <div class="small-gold">DELIBERACIÓN</div>
+            <h1>Grandes ideas merecen ser deliberadas.</h1>
+            <p>Presenta una creación para que las distintas perspectivas de EONIA puedan analizarla.</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -2103,63 +2070,28 @@ elif st.session_state.pagina == "Concilio Eónico":
     proyecto = st.text_area(
         "Describe tu proyecto",
         height=220,
-        placeholder=(
-            "¿Qué estás creando?\n\n"
-            "¿Qué problema resuelve?\n\n"
-            "¿Por qué debería existir?"
-        )
+        placeholder="¿Qué estás creando?\n\n¿Qué problema resuelve?\n\n¿Por qué debería existir?"
     )
 
-    st.markdown(
-        "### CONSEJO DEL CONCILIO"
-    )
+    st.markdown("### CONSEJO DEL CONCILIO")
 
     c1, c2, c3, c4, c5 = st.columns(5)
 
     consejeros = [
-        (
-            c1,
-            "LUMINA",
-            "Propósito"
-        ),
-        (
-            c2,
-            "DATAC",
-            "Evidencia"
-        ),
-        (
-            c3,
-            "SYNTIA",
-            "Concepto"
-        ),
-        (
-            c4,
-            "CODEX",
-            "Construcción"
-        ),
-        (
-            c5,
-            "VÓRTICE",
-            "Contradicción"
-        )
+        (c1, "LUMINA", "Propósito"),
+        (c2, "DATAC", "Evidencia"),
+        (c3, "SYNTIA", "Concepto"),
+        (c4, "CODEX", "Construcción"),
+        (c5, "VÓRTICE", "Contradicción")
     ]
 
     for col, nombre, rol in consejeros:
-
         with col:
-
             st.markdown(
                 f"""
                 <div class="mentor-card">
-
-                    <div class="mentor-name">
-                        {nombre}
-                    </div>
-
-                    <div class="mentor-role">
-                        {rol}
-                    </div>
-
+                    <div class="mentor-name">{nombre}</div>
+                    <div class="mentor-role">{rol}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -2167,30 +2099,14 @@ elif st.session_state.pagina == "Concilio Eónico":
 
     st.write("")
 
-    if st.button(
-        "Presentar al Concilio ⚖️",
-        use_container_width=True
-    ):
+    if st.button("Presentar al Concilio ⚖️", use_container_width=True):
 
         if proyecto.strip():
-
-            st.success(
-                "Proyecto registrado para deliberación."
-            )
-
-            st.info(
-                "El Concilio analizará la creación "
-                "desde múltiples perspectivas. "
-                "AION podrá intervenir en caso de empate."
-            )
-
+            st.success("Proyecto registrado para deliberación.")
+            st.info("El Concilio analizará la creación desde múltiples perspectivas. AION podrá intervenir en caso de empate.")
         else:
-
-            st.warning(
-                "Describe primero el proyecto."
-            )
-
-
+            st.warning("Describe primero el proyecto.")
+            
 # ============================================================
 # PAGINA: MIS PROYECTOS
 # ============================================================
