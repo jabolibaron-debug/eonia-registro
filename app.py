@@ -1496,7 +1496,6 @@ elif st.session_state.pagina == "Chat Eónico":
     # GESTIÓN DEL REFLEJO (PERSISTENTE)
     # ========================================================
 
-    # Inicializar banderas si no existen
     if "reflejo_activo" not in st.session_state:
         st.session_state.reflejo_activo = False
 
@@ -1523,7 +1522,6 @@ elif st.session_state.pagina == "Chat Eónico":
         texto = mensaje.text or ""
         archivos = mensaje.files
 
-        # Normalizar texto
         import unicodedata
         def normalizar_texto(txt):
             txt = txt.lower().strip()
@@ -1533,14 +1531,12 @@ elif st.session_state.pagina == "Chat Eónico":
 
         texto_normalizado = normalizar_texto(texto)
 
-        # Mostrar mensaje del usuario
         with st.chat_message("user"):
             if texto:
                 st.write(texto)
             for archivo in archivos:
                 st.image(archivo, caption=f"🖼️ {archivo.name}", use_container_width=True)
 
-        # Verificar si es solicitud de reflejo
         es_reflejo = (
             texto_normalizado in [
                 "muestrame mi reflejo", "reflejo", "quiero ver mi reflejo",
@@ -1548,30 +1544,24 @@ elif st.session_state.pagina == "Chat Eónico":
             ]
         )
 
-        # Guardar mensaje en historial
         if texto:
             chat_mensajes.append({"role": "user", "content": texto})
         elif archivos:
             nombres = ", ".join(a.name for a in archivos)
             chat_mensajes.append({"role": "user", "content": f"[🖼️ Imagen: {nombres}]"})
 
-        # ====================================================
-        # ACTIVAR REFLEJO
-        # ====================================================
-
         if es_reflejo:
             st.session_state.reflejo_activo = True
             with st.chat_message("assistant"):
                 st.write("Para crear tu **Reflejo Eónico**, necesito una fotografía tuya. Sube una selfie abajo y la IA transformará tu esencia.")
-            st.rerun()  # Recargar para mostrar el file_uploader
+            st.rerun()
 
-    # ====================================================
+    # ========================================================
     # MOSTRAR FILE_UPLOADER SI REFLEJO ESTÁ ACTIVO
-    # ====================================================
+    # ========================================================
 
     if st.session_state.reflejo_activo:
         
-        # Mostrar el uploader SIEMPRE que esté activo
         selfie = st.file_uploader(
             "📸 Sube tu selfie aquí (jpg, png, webp)",
             type=["jpg", "jpeg", "png", "webp"],
@@ -1590,18 +1580,50 @@ elif st.session_state.pagina == "Chat Eónico":
                 mime = selfie.type or "image/jpeg"
                 selfie_url = f"data:{mime};base64,{selfie_b64}"
 
-                # PASO 1: ANALIZAR RASGOS
-                with st.spinner("🔍 Analizando tu esencia..."):
+                # ================================================
+                # PASO 1: ANÁLISIS DETALLADO CON GPT-4o
+                # ================================================
+                
+                with st.spinner("🔍 Analizando tu esencia con precisión..."):
                     analisis_resp = requests.post(
                         OPENAI_CHAT_API_URL,
                         headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
                         json={
-                            "model": "gpt-4o-mini",
+                            "model": "gpt-4o",  # <-- CAMBIO: usar GPT-4o en lugar de mini
                             "messages": [{"role": "user", "content": [
-                                {"type": "text", "text": "Describe brevemente los rasgos faciales de esta persona. Incluye: edad aproximada, género, color de piel, estilo de cabello, expresión y estilo de vestir. Responde en español, máximo 60 palabras."},
+                                {"type": "text", "text": """
+                                Analiza esta fotografía en DETALLE EXTREMO. Necesito que describas con máxima precisión:
+                                1. FORMA DE LA CARA (redonda, ovalada, cuadrada, alargada)
+                                2. OJOS (color, forma, tamaño, distancia entre ellos, tipo de párpado)
+                                3. CEJAS (grosor, forma, ángulo)
+                                4. NARIZ (forma, tamaño, ancho, tipo de punta)
+                                5. BOCA (grosor de labios, forma, sonrisa)
+                                6. MANDÍBULA (definición, forma)
+                                7. MEJILLAS (prominencia, pómulos)
+                                8. FRENTE (altura, forma)
+                                9. CABELLO (color, estilo, largo, textura)
+                                10. PIEL (tono, textura, características)
+                                11. BARBILLA (forma, prominencia)
+                                12. OREJAS (tamaño, forma)
+                                13. EXPRESIÓN FACIAL (seria, sonriente, neutral, intensa)
+                                14. EDAD APROXIMADA (rango)
+                                15. GÉNERO APARENTE
+                                16. ESTILO GENERAL (rasgos distintivos, cicatrices, tatuajes, gafas, etc.)
+                                17. COLOR DE PIEL EXACTO (tono, subtono)
+                                18. PROPORCIONES FACIALES (simetría, distancia entre elementos)
+                                
+                                Responde en español, con el formato:
+                                "CARACTERÍSTICAS: [lista detallada]"
+                                "ESTILO: [descripción del estilo]"
+                                "EXPRESIÓN: [descripción de la expresión]"
+                                "DETALLES ÚNICOS: [cualquier característica especial]"
+                                
+                                Máximo 200 palabras.
+                                """},
                                 {"type": "image_url", "image_url": {"url": selfie_url}}
                             ]}],
-                            "max_tokens": 250
+                            "max_tokens": 500,
+                            "temperature": 0.1  # <-- Baja temperatura para precisión
                         },
                         timeout=60
                     )
@@ -1610,32 +1632,84 @@ elif st.session_state.pagina == "Chat Eónico":
                         st.warning(f"No se pudo analizar la selfie. Error: {analisis_resp.text}")
                         st.stop()
 
-                    rasgos = analisis_resp.json()["choices"][0]["message"]["content"]
+                    analisis_completo = analisis_resp.json()["choices"][0]["message"]["content"]
 
-                # PASO 2: GENERAR IMAGEN
-                prompt_imagen = (
-                    f"Retrato futurista de un Creador Eónico basado en estos rasgos: {rasgos}. "
-                    "Ropa tecnológica oscura con circuitos dorados. Partículas de luz alrededor. "
-                    "Fondo negro. Estilo cyberpunk elegante. Sin texto. Sin elementos religiosos."
-                )
+                # ================================================
+                # PASO 2: PROMPT MEJORADO PARA IMAGEN
+                # ================================================
 
-                with st.spinner("🌟 Forjando tu Reflejo..."):
+                prompt_imagen = f"""
+                Crea un retrato futurista hiperrealista de un Creador Eónico basado en:
+                
+                {analisis_completo}
+                
+                INSTRUCCIONES CRÍTICAS:
+                - La persona DEBE parecerse EXACTAMENTE a la descripción facial proporcionada
+                - Mantener los rasgos faciales IDÉNTICOS (forma de ojos, nariz, boca, mandíbula)
+                - Conservar el mismo tono de piel, cabello y expresión
+                - Ropa tecnológica elegante con detalles dorados/cian
+                - Partículas de luz flotando alrededor
+                - Fondo futurista oscuro con neón sutil
+                - Estilo: cyberpunk elegante, hiperrealista, 8K
+                - Iluminación cinematográfica
+                - Sin texto, sin marcas de agua
+                - El sujeto mira directamente a la cámara con expresión de poder
+                - Añadir elementos de IA visibles (hologramas, circuitos en la ropa)
+                """
+
+                # ================================================
+                # PASO 3: GENERAR IMAGEN CON MEJOR PROMPT
+                # ================================================
+
+                with st.spinner("🌟 Forjando tu Reflejo Eónico..."):
                     img_resp = requests.post(
                         OPENAI_IMAGE_API_URL,
                         headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
-                        json={"model": "gpt-image-1", "prompt": prompt_imagen, "size": "1024x1024"},
-                        timeout=90
+                        json={
+                            "model": "gpt-image-1",
+                            "prompt": prompt_imagen,
+                            "size": "1024x1024",
+                            "quality": "hd",  # <-- Alta calidad
+                            "n": 1
+                        },
+                        timeout=120
                     )
 
                     if img_resp.status_code != 200:
                         st.warning(f"No se pudo generar la imagen. Error: {img_resp.text}")
-                        st.stop()
+                        # Intentar con DALL-E 3 como respaldo
+                        st.info("Intentando con DALL-E 3...")
+                        img_resp = requests.post(
+                            OPENAI_IMAGE_API_URL,
+                            headers={"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"},
+                            json={
+                                "model": "dall-e-3",
+                                "prompt": prompt_imagen,
+                                "size": "1024x1024",
+                                "quality": "hd"
+                            },
+                            timeout=120
+                        )
+                        if img_resp.status_code != 200:
+                            st.warning(f"Error final: {img_resp.text}")
+                            st.stop()
 
                     data_imagen = img_resp.json()
-                    img_b64 = data_imagen.get("data", [{}])[0].get("b64_json")
-
-                    if not img_b64:
-                        st.warning("No se pudo decodificar la imagen.")
+                    
+                    # Manejar diferentes formatos de respuesta
+                    if "data" in data_imagen and data_imagen["data"]:
+                        if "b64_json" in data_imagen["data"][0]:
+                            img_b64 = data_imagen["data"][0]["b64_json"]
+                        elif "url" in data_imagen["data"][0]:
+                            # Descargar imagen desde URL
+                            import requests as req
+                            img_resp = req.get(data_imagen["data"][0]["url"])
+                            img_b64 = base64.b64encode(img_resp.content).decode("utf-8")
+                        else:
+                            st.warning("Formato de respuesta no esperado")
+                            st.stop()
+                    else:
+                        st.warning("No se pudo decodificar la imagen")
                         st.stop()
 
                     # DECODIFICAR Y MOSTRAR
@@ -1645,10 +1719,10 @@ elif st.session_state.pagina == "Chat Eónico":
                     img = Image.open(io.BytesIO(img_bytes))
 
                     st.image(img, caption="🌟 Tu Reflejo Eónico", use_container_width=True)
-                    st.success("Tu Reflejo ha sido forjado. Eres la visión del futuro.")
+                    st.success("Tu Reflejo ha sido forjado con precisión. Eres la visión del futuro.")
 
                     # Guardar en historial
-                    chat_mensajes.append({"role": "assistant", "content": "🌌 Tu Reflejo Eónico ha sido creado. Guarda esta imagen como recordatorio de tu potencial."})
+                    chat_mensajes.append({"role": "assistant", "content": "🌌 Tu Reflejo Eónico ha sido creado con máxima fidelidad. Guarda esta imagen como recordatorio de tu potencial."})
 
                     # Resetear
                     st.session_state.reflejo_activo = False
@@ -1659,22 +1733,18 @@ elif st.session_state.pagina == "Chat Eónico":
                 st.session_state.reflejo_selfie_subida = False
                 st.session_state.reflejo_activo = False
         
-        # Botón para cancelar
         if st.button("❌ Cancelar Reflejo", key="cancelar_reflejo"):
             st.session_state.reflejo_activo = False
             st.session_state.reflejo_selfie_subida = False
             st.rerun()
 
-        # Detener flujo para no llamar al mentor
         st.stop()
 
     # ========================================================
     # CASO NORMAL: LLAMAR AL MENTOR
     # ========================================================
-
-    # (Aquí va el código normal del mentor con DeepSeek/OpenAI)
-    # ... (el código que ya tienes para procesar mensajes normales)
-# ============================================================
+    
+    # ... (tu código normal del mentor aquí)# ============================================================
 # PAGINA: CONCILIO EÓNICO
 # ============================================================
 
