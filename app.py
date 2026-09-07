@@ -3,8 +3,52 @@ import requests
 import streamlit as st
 from textwrap import dedent
 
+
+# ============================================================
+# RENDERIZADOR HTML EÓNICO
+# ============================================================
+
+_original_markdown = st.markdown
+
+
 def html(content):
     st.html(dedent(content))
+
+
+def _eonia_markdown(body, *args, **kwargs):
+
+    # Si el contenido permite HTML y realmente contiene HTML,
+    # lo enviamos al motor HTML de Streamlit.
+    if (
+        kwargs.get("unsafe_allow_html", False)
+        and isinstance(body, str)
+        and (
+            "<div" in body
+            or "<span" in body
+            or "<h1" in body
+            or "<h2" in body
+            or "<h3" in body
+            or "<p" in body
+            or "<style" in body
+            or "<section" in body
+            or "<img" in body
+        )
+    ):
+
+        return st.html(
+            dedent(body)
+        )
+
+    # Todo Markdown normal continúa funcionando
+    # exactamente como antes.
+    return _original_markdown(
+        body,
+        *args,
+        **kwargs
+    )
+
+
+st.markdown = _eonia_markdown
 
 # ============================================================
 # EONIA UNIVERSITY — CRM
