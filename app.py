@@ -12,151 +12,6 @@ DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # ============================================================
-# MENTORES (ESTRUCTURA DE AIÓN)
-# ============================================================
-MENTORES = {
-    1: {
-        "nombre": "Sabio Sereno",
-        "modelo_analisis": "deepseek-chat",
-        "identidad": "Eres el Sabio Sereno, mentor de EONIA. Hablas con calma y metáforas. Nunca juzgas.",
-        "principios": ["Calma", "Integridad", "Espiritualidad"],
-        "metodo": "Evalúa con preguntas introspectivas y metáforas.",
-        "sombra": "A veces demasiado contemplativo.",
-        "prueba": "Prueba_Bioma1.txt",
-        "fragmento": "Serenidad"
-    },
-    2: {
-        "nombre": "Kael",
-        "modelo_analisis": "deepseek-chat",
-        "identidad": "Eres Kael, el Guardián del Método. Hablas con disciplina y paciencia.",
-        "principios": ["Disciplina", "Constancia", "Método"],
-        "metodo": "Evalúa con pasos concretos y celebra pequeños logros.",
-        "sombra": "Puede ser rígido si el Creador no avanza.",
-        "prueba": "Prueba_Bioma2.txt",
-        "fragmento": "Método"
-    },
-    3: {
-        "nombre": "Némesis",
-        "modelo_analisis": "deepseek-chat",
-        "identidad": "Eres Némesis, la Estratega Astuta. Hablas directo y sin rodeos.",
-        "principios": ["Efectividad", "Astucia", "Resultados"],
-        "metodo": "Evalúa con retos prácticos y feedback directo.",
-        "sombra": "Puede ser implacable si el Creador no entrega.",
-        "prueba": "Prueba_Bioma3.txt",
-        "fragmento": "Efectividad"
-    },
-    4: {
-        "nombre": "Vórtice",
-        "modelo_analisis": "deepseek-chat",
-        "identidad": "Eres Vórtice, el Artista Caótico. Hablas con energía explosiva y creativa.",
-        "principios": ["Creatividad", "Caos", "Rebeldía"],
-        "metodo": "Evalúa con desafíos absurdos y creaciones originales.",
-        "sombra": "A veces se pierde en el caos.",
-        "prueba": "Prueba_Bioma4.txt",
-        "fragmento": "Creación"
-    }
-}
-
-# ============================================================
-# FUNCIONES DEL CHAT
-# ============================================================
-def hablar_con_mentor(bioma, mensaje, historial):
-    mentor = MENTORES[bioma]
-    system_prompt = (
-        mentor["identidad"] + "\n"
-        "Principios: " + ", ".join(mentor["principios"]) + "\n"
-        "Método: " + mentor["metodo"] + "\n"
-        "Sombra: " + mentor["sombra"] + "\n"
-        "Archivo de prueba: " + mentor["prueba"] + "\n"
-        "Historial de conversación:\n" + "\n".join(historial)
-    )
-
-    headers = {
-        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": mentor["modelo_analisis"],
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": mensaje}
-        ]
-    }
-
-    try:
-        respuesta = requests.post(DEEPSEEK_API_URL, headers=headers, json=payload, timeout=30)
-        respuesta.raise_for_status()
-        data = respuesta.json()
-        return data["choices"][0]["message"]["content"]
-    except Exception as e:
-        return f"Error de conexión con el mentor: {e}"
-
-def generar_imagen(prompt):
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": "dall-e-3",
-        "prompt": prompt,
-        "size": "1024x1024"
-    }
-    try:
-        respuesta = requests.post(OPENAI_IMAGE_API_URL, headers=headers, json=payload, timeout=60)
-        respuesta.raise_for_status()
-        data = respuesta.json()
-        return data["data"][0]["url"]
-    except:
-        return None
-
-# ============================================================
-# INTERFAZ DEL CHAT EÓNICO
-# ============================================================
-st.subheader("🜂 CHAT EÓNICO")
-
-# Inicializar historial
-if "historial_chat" not in st.session_state:
-    st.session_state.historial_chat = []
-
-# Selector de Bioma
-bioma_seleccionado = st.selectbox(
-    "Selecciona tu Bioma",
-    options=list(MENTORES.keys()),
-    format_func=lambda x: f"Bioma {x}: {MENTORES[x]['nombre']}"
-)
-
-# Mensaje inicial del mentor
-with st.chat_message("assistant"):
-    st.write(f"Soy **{MENTORES[bioma_seleccionado]['nombre']}**. ¿Qué deseas aprender hoy?")
-
-# Mostrar historial
-for mensaje in st.session_state.historial_chat:
-    with st.chat_message(mensaje["role"]):
-        st.write(mensaje["content"])
-
-# Entrada del usuario
-prompt = st.chat_input("Escribe tu mensaje...")
-if prompt:
-    st.session_state.historial_chat.append({"role": "user", "content": prompt})
-
-    respuesta = hablar_con_mentor(
-        bioma_seleccionado,
-        prompt,
-        [m["content"] for m in st.session_state.historial_chat]
-    )
-
-    st.session_state.historial_chat.append({"role": "assistant", "content": respuesta})
-
-    with st.chat_message("assistant"):
-        st.write(respuesta)
-
-    # Si la respuesta sugiere una imagen, se genera
-    if "imagen" in respuesta.lower() and OPENAI_API_KEY:
-        imagen_url = generar_imagen(prompt)
-        if imagen_url:
-            st.image(imagen_url, caption="Reflejo de EONIA")
-
-# ============================================================
 # RENDERIZADOR HTML EÓNICO
 # ============================================================
 
@@ -1550,225 +1405,152 @@ elif st.session_state.pagina == "Biomas":
 elif st.session_state.pagina == "Chat Eónico":
 
     st.title("CHAT EÓNICO")
+    st.caption("Un solo portal. Múltiples inteligencias.")
 
-    st.caption(
-        "Un solo portal. Múltiples inteligencias."
+    # MENTORES Y BIOMAS
+    MENTORES = {
+        1: {
+            "nombre": "Sabio Sereno",
+            "identidad": "Eres el Sabio Sereno, mentor de EONIA. Hablas con calma y metáforas. Nunca juzgas.",
+            "principios": ["Calma", "Integridad", "Espiritualidad"],
+            "metodo": "Evalúa con preguntas introspectivas y metáforas.",
+            "sombra": "A veces demasiado contemplativo.",
+            "prueba": "Prueba_Bioma1.txt",
+            "fragmento": "Serenidad"
+        },
+        2: {
+            "nombre": "Kael",
+            "identidad": "Eres Kael, el Guardián del Método. Hablas con disciplina y paciencia.",
+            "principios": ["Disciplina", "Constancia", "Método"],
+            "metodo": "Evalúa con pasos concretos y celebra pequeños logros.",
+            "sombra": "Puede ser rígido si el Creador no avanza.",
+            "prueba": "Prueba_Bioma2.txt",
+            "fragmento": "Método"
+        },
+        3: {
+            "nombre": "Némesis",
+            "identidad": "Eres Némesis, la Estratega Astuta. Hablas directo y sin rodeos.",
+            "principios": ["Efectividad", "Astucia", "Resultados"],
+            "metodo": "Evalúa con retos prácticos y feedback directo.",
+            "sombra": "Puede ser implacable si el Creador no entrega.",
+            "prueba": "Prueba_Bioma3.txt",
+            "fragmento": "Efectividad"
+        },
+        4: {
+            "nombre": "Vórtice",
+            "identidad": "Eres Vórtice, el Artista Caótico. Hablas con energía explosiva y creativa.",
+            "principios": ["Creatividad", "Caos", "Rebeldía"],
+            "metodo": "Evalúa con desafíos absurdos y creaciones originales.",
+            "sombra": "A veces se pierde en el caos.",
+            "prueba": "Prueba_Bioma4.txt",
+            "fragmento": "Creación"
+        }
+    }
+
+    bioma_seleccionado = st.selectbox(
+        "Selecciona tu Bioma",
+        options=list(MENTORES.keys()),
+        format_func=lambda x: f"Bioma {x}: {MENTORES[x]['nombre']}"
     )
 
-    mentors = [
-        (
-            "AION",
-            "Núcleo",
-            "Síntesis y equilibrio"
-        ),
-        (
-            "LUMINA",
-            "Visión",
-            "Propósito e integridad"
-        ),
-        (
-            "DATAC",
-            "Análisis",
-            "Datos y evidencia"
-        ),
-        (
-            "SYNTIA",
-            "Creatividad",
-            "Lenguaje y formulación"
-        ),
-        (
-            "CODEX",
-            "Construcción",
-            "Código y método"
-        ),
-        (
-            "VÓRTICE",
-            "Evaluación",
-            "Contradicción y desafío"
-        )
-    ]
+    mentor = MENTORES[bioma_seleccionado]
 
-    mentor_names = [
-        mentor[0]
-        for mentor in mentors
-    ]
+    # Historial
+    if "chat_mensajes" not in st.session_state:
+        st.session_state.chat_mensajes = []
 
-    seleccionado = st.selectbox(
-        "Mentor activo",
-        mentor_names,
-        index=mentor_names.index(
-            st.session_state.mentor_activo
-        )
-        if st.session_state.mentor_activo
-        in mentor_names
-        else 0
-    )
+    # Saludo inicial
+    if not st.session_state.chat_mensajes:
+        st.session_state.chat_mensajes.append({
+            "role": "assistant",
+            "content": f"Soy **{mentor['nombre']}**. ¿Qué deseas aprender hoy?"
+        })
 
-    st.session_state.mentor_activo = seleccionado
+    # Mostrar historial
+    for mensaje in st.session_state.chat_mensajes:
+        with st.chat_message(mensaje["role"]):
+            st.write(mensaje["content"])
 
-    mentor_info = next(
-        (
-            item
-            for item in mentors
-            if item[0] == seleccionado
-        ),
-        mentors[0]
-    )
+    # Entrada
+    mensaje = st.chat_input("Habla con tu mentor...")
 
-    col1, col2 = st.columns(
-        [3, 1]
-    )
+    if mensaje:
+        st.session_state.chat_mensajes.append({
+            "role": "user",
+            "content": mensaje
+        })
 
-    with col1:
+        with st.chat_message("user"):
+            st.write(mensaje)
 
-        st.markdown(
-            f"""
-            <div class="eonia-card">
-
-                <div class="small-gold">
-                    MENTOR ACTIVO
-                </div>
-
-                <h1>
-                    {mentor_info[0]}
-                </h1>
-
-                <h3>
-                    {mentor_info[1]}
-                </h3>
-
-                <p>
-                    {mentor_info[2]}
-                </p>
-
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        if (
-            "chat_mensajes"
-            not in st.session_state
-        ):
-
-            st.session_state.chat_mensajes = []
-
-        for mensaje in st.session_state.chat_mensajes:
-
-            with st.chat_message(
-                mensaje["role"]
-            ):
-
-                st.write(
-                    mensaje["content"]
-                )
-
-        mensaje = st.chat_input(
-            "Habla con tu mentor..."
-        )
-
-        if mensaje:
-
-            st.session_state.chat_mensajes.append(
-                {
-                    "role": "user",
-                    "content": mensaje
-                }
+        try:
+            respuesta = requests.post(
+                DEEPSEEK_API_URL,
+                headers={
+                    "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "deepseek-chat",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": (
+                                mentor["identidad"] + "\n"
+                                "Principios: " + ", ".join(mentor["principios"]) + "\n"
+                                "Método: " + mentor["metodo"] + "\n"
+                                "Sombra: " + mentor["sombra"] + "\n"
+                                "Prueba: " + mentor["prueba"] + "\n"
+                                "Fragmento a otorgar: " + mentor["fragmento"]
+                            )
+                        },
+                        *[
+                            {"role": m["role"], "content": m["content"]}
+                            for m in st.session_state.chat_mensajes
+                        ]
+                    ]
+                },
+                timeout=60
             )
 
-            with st.chat_message("user"):
-                st.write(mensaje)
+            if respuesta.status_code == 200:
+                data = respuesta.json()
+                respuesta_texto = data["choices"][0]["message"]["content"]
+            else:
+                respuesta_texto = f"Error {respuesta.status_code}: {respuesta.text}"
 
-            respuesta = (
-                f"{seleccionado} ha recibido tu mensaje. "
-                "El Mentor Engine será conectado "
-                "en la siguiente fase."
-            )
+        except Exception as e:
+            respuesta_texto = f"Error de conexión: {e}"
 
-            st.session_state.chat_mensajes.append(
-                {
-                    "role": "assistant",
-                    "content": respuesta
-                }
-            )
+        st.session_state.chat_mensajes.append({
+            "role": "assistant",
+            "content": respuesta_texto
+        })
 
-            with st.chat_message("assistant"):
-                st.write(respuesta)
+        with st.chat_message("assistant"):
+            st.write(respuesta_texto)
 
-
-    with col2:
-
-        st.markdown(
-            f"""
-            <div class="eonia-card">
-
-                <div class="small-gold">
-                    PERSPECTIVA
-                </div>
-
-                <h2>
-                    {mentor_info[0]}
-                </h2>
-
-                <p>
-                    {mentor_info[1]}
-                </p>
-
-                <hr>
-
-                <p style="
-                    color:#9da8b2;
-                ">
-                    La identidad del mentor
-                    permanecerá separada del
-                    modelo de IA que lo impulse.
-                </p>
-
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    st.markdown("### MENTORES EÓNICOS")
-
-    mentor_cols = st.columns(6)
-
-    for col, (
-        nombre,
-        rol,
-        descripcion
-    ) in zip(
-        mentor_cols,
-        mentors
-    ):
-
-        with col:
-
-            st.markdown(
-                f"""
-                <div class="mentor-card">
-
-                    <div style="
-                        font-size:24px;
-                        color:#dcb75b;
-                    ">
-                        ◉
-                    </div>
-
-                    <div class="mentor-name">
-                        {nombre}
-                    </div>
-
-                    <div class="mentor-role">
-                        {rol}
-                    </div>
-
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-
+        if "imagen" in mensaje.lower() and OPENAI_API_KEY:
+            with st.spinner("Generando imagen..."):
+                try:
+                    img_resp = requests.post(
+                        OPENAI_IMAGE_API_URL,
+                        headers={
+                            "Authorization": f"Bearer {OPENAI_API_KEY}",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "model": "dall-e-3",
+                            "prompt": mensaje,
+                            "size": "1024x1024"
+                        },
+                        timeout=60
+                    )
+                    if img_resp.status_code == 200:
+                        img_url = img_resp.json()["data"][0]["url"]
+                        st.image(img_url, caption="Reflejo de EONIA")
+                except:
+                    pass
 # ============================================================
 # PAGINA: CONCILIO EONICO
 # ============================================================
