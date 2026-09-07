@@ -1595,7 +1595,8 @@ elif st.session_state.pagina == "Chat Eónico":
                         img_url = img_resp.json()["data"][0]["url"]
                         st.image(img_url, caption="Reflejo de EONIA")
                 except:
-                    pass# ============================================================
+                    pass
+# ============================================================
 # PAGINA: CONCILIO EONICO
 # ============================================================
 
