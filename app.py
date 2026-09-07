@@ -2078,6 +2078,7 @@ elif st.session_state.pagina == "Chat Eónico":
         # ========================================================
         
         informacion_usuario = ""
+        biomas_completados = []
         
         if user_id:
             try:
@@ -2094,10 +2095,28 @@ elif st.session_state.pagina == "Chat Eónico":
                         progreso = estado.get("progreso_biomas", [])
                         certificados = estado.get("certificados", [])
                         
+                        # CALCULAR BIOMAS COMPLETADOS
+                        fragmentos_por_bioma = {}
+                        for registro in fragmentos:
+                            bioma = registro.get("bioma")
+                            if bioma is not None:
+                                if bioma not in fragmentos_por_bioma:
+                                    fragmentos_por_bioma[bioma] = []
+                                fragmentos_por_bioma[bioma].append(registro)
+                        
+                        # Contar biomas con 5 o más fragmentos
+                        for bioma_num, fragmentos_bioma in fragmentos_por_bioma.items():
+                            if len(fragmentos_bioma) >= 5:
+                                biomas_completados.append(bioma_num)
+                        
+                        # Ordenar biomas completados
+                        biomas_completados.sort()
+                        
                         informacion_usuario = f"""
                         **Creador:** {user_id}
                         **Fragmentos obtenidos:** {len(fragmentos)}
-                        **Biomas completados:** {len(progreso)}
+                        **Biomas completados:** {len(biomas_completados)}
+                        **Biomas completados (lista):** {', '.join(str(b) for b in biomas_completados) if biomas_completados else 'Ninguno aún'}
                         **Certificados:** {len(certificados)}
                         """
             except Exception as e:
@@ -2123,7 +2142,7 @@ elif st.session_state.pagina == "Chat Eónico":
         {mentor['sombra']}
         
         DOCUMENTACIÓN DE EONIA (CONTEXTO):
-        {DOCUMENTACION_EONIA[:5000]}  # Limitar a 5000 caracteres para no saturar
+        {DOCUMENTACION_EONIA[:5000]}
         
         INFORMACIÓN DEL CREADOR:
         {informacion_usuario}
@@ -2135,6 +2154,7 @@ elif st.session_state.pagina == "Chat Eónico":
         Responde de manera natural y personalizada, usando la información del Creador.
         Si el usuario pregunta por su ID, información o progreso, usa los datos de Supabase.
         Sé fiel a tu personalidad de mentor.
+        Menciona los biomas completados si los hay, o motiva al usuario a completarlos.
         """
         
         # ========================================================
@@ -2192,7 +2212,7 @@ elif st.session_state.pagina == "Chat Eónico":
         
         # Guardar en historial
         chat_mensajes.append({"role": "assistant", "content": respuesta_mentor})
-
+        
 # ============================================================
 # PAGINA: CONCILIO EÓNICO
 # ============================================================
