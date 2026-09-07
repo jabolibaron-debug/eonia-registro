@@ -2025,10 +2025,6 @@ elif st.session_state.pagina == "Chat Eónico":
 
         # ----------------------------------------------------
         # 12. GENERAR REFLEJO
-        #
-        # IMPORTANTE:
-        # usamos texto_lower.
-        # Nunca mensaje.lower().
         # ----------------------------------------------------
 
         if (
@@ -2077,8 +2073,13 @@ elif st.session_state.pagina == "Chat Eónico":
                             import io
                             from PIL import Image
 
-                            img_bytes = base64.b64decode(img_b64)
-                            img = Image.open(io.BytesIO(img_bytes))
+                            img_bytes = base64.b64decode(
+                                img_b64
+                            )
+
+                            img = Image.open(
+                                io.BytesIO(img_bytes)
+                            )
 
                             st.image(
                                 img,
@@ -2097,6 +2098,11 @@ elif st.session_state.pagina == "Chat Eónico":
                             "No se pudo generar el Reflejo."
                         )
 
+                except Exception as e:
+
+                    st.warning(
+                        f"Error: {e}"
+                    )
         # ----------------------------------------------------
         # 13. LIMPIAR PREGUNTA INICIAL
         # ----------------------------------------------------
