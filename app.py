@@ -1433,7 +1433,7 @@ elif st.session_state.pagina == "Biomas":
         )
 
 # ============================================================
-# PAGINA: CHAT EÓNICO - REFLEJO RITUAL COMPLETO
+# PAGINA: CHAT EÓNICO - MENTOR CON DOCUMENTACIÓN + SUPABASE
 # ============================================================
 
 elif st.session_state.pagina == "Chat Eónico":
@@ -1442,36 +1442,46 @@ elif st.session_state.pagina == "Chat Eónico":
     st.caption("Un solo portal. Múltiples inteligencias.")
 
     # ========================================================
-    # INICIALIZACIÓN DE VARIABLES DE REFLEJO
+    # CARGAR DOCUMENTACIÓN EONIA
     # ========================================================
 
-    if "reflejo_ya_generado" not in st.session_state:
-        st.session_state.reflejo_ya_generado = False
+    def cargar_documentacion_eonia():
+        """Carga la documentación de EONIA desde un archivo"""
+        try:
+            # Intentar cargar desde archivo local
+            with open("documentos_EONIA.txt", "r", encoding="utf-8") as f:
+                return f.read()
+        except:
+            # Si no existe, usar documentación embebida
+            return """
+            EONIA: Universidad digital de IA y Metaverso.
+            
+            MISIÓN: Democratizar el acceso a la IA para todos.
+            VISIÓN: Ser el estándar global de educación en IA y Metaverso para 2030.
+            
+            VALORES: Integridad, Espiritualidad, Disciplina, Astucia, Audacia,
+            Efectividad, Innovación, Creatividad, Contestario, Anárquico.
+            
+            PENSUM: 10 niveles desde Fundamentos IA hasta Creación de Metaverso.
+            
+            ARQUETIPOS DE MENTORES:
+            - Sabio Sereno: Integridad, Espiritualidad. Habla con calma y metáforas.
+            - Estratega Astuta: Astucia, Efectividad. Directa, analítica.
+            - Artista Caótico: Creatividad, Contestatario. Explosivo, poético.
+            - Mentor Rebelde: Audacia, Anárquico. Desafiante, irreverente.
+            - Innovadora Visionaria: Innovación, Audacia. Rápida, futurista.
+            - Guardián del Método: Disciplina, Integridad. Estricto, constante.
+            """
 
-    if "reflejo_activo" not in st.session_state:
-        st.session_state.reflejo_activo = False
-
-    if "reflejo_paso" not in st.session_state:
-        st.session_state.reflejo_paso = "bienvenida"
-
-    if "reflejo_selfie_subida" not in st.session_state:
-        st.session_state.reflejo_selfie_subida = False
-
-    if "reflejo_rasgos" not in st.session_state:
-        st.session_state.reflejo_rasgos = ""
-
-    if "reflejo_respuestas" not in st.session_state:
-        st.session_state.reflejo_respuestas = {}
-
-    if "reflejo_desafio_actual" not in st.session_state:
-        st.session_state.reflejo_desafio_actual = 0
-
-    if "reflejo_prompt_final" not in st.session_state:
-        st.session_state.reflejo_prompt_final = ""
+    # Cargar documentación
+    DOCUMENTACION_EONIA = cargar_documentacion_eonia()
 
     # ========================================================
     # VERIFICAR REFLEJO EXISTENTE (UNA VEZ POR USUARIO)
     # ========================================================
+
+    if "reflejo_ya_generado" not in st.session_state:
+        st.session_state.reflejo_ya_generado = False
 
     if user_id and not st.session_state.reflejo_ya_generado:
         resultado = verificar_reflejo_existente(user_id)
@@ -1761,6 +1771,31 @@ elif st.session_state.pagina == "Chat Eónico":
     # GESTIÓN DEL REFLEJO (PERSISTENTE)
     # ========================================================
 
+    if "reflejo_activo" not in st.session_state:
+        st.session_state.reflejo_activo = False
+
+    if "reflejo_paso" not in st.session_state:
+        st.session_state.reflejo_paso = "bienvenida"
+
+    if "reflejo_selfie_subida" not in st.session_state:
+        st.session_state.reflejo_selfie_subida = False
+
+    if "reflejo_rasgos" not in st.session_state:
+        st.session_state.reflejo_rasgos = ""
+
+    if "reflejo_respuestas" not in st.session_state:
+        st.session_state.reflejo_respuestas = {}
+
+    if "reflejo_desafio_actual" not in st.session_state:
+        st.session_state.reflejo_desafio_actual = 0
+
+    if "reflejo_prompt_final" not in st.session_state:
+        st.session_state.reflejo_prompt_final = ""
+
+    # ========================================================
+    # FLUJO DEL REFLEJO
+    # ========================================================
+
     if st.session_state.reflejo_activo:
 
         # ====================================================
@@ -2035,16 +2070,127 @@ elif st.session_state.pagina == "Chat Eónico":
         with st.chat_message("user"):
             if texto:
                 st.write(texto)
+            for archivo in archivos:
+                st.image(archivo, caption=f"🖼️ {archivo.name}", use_container_width=True)
         
-        # Aquí va tu lógica para llamar a DeepSeek
-        # (tu código existente del mentor)
+        # ========================================================
+        # OBTENER INFORMACIÓN DEL USUARIO DESDE SUPABASE
+        # ========================================================
         
-        # Por ahora, respuesta de ejemplo
-        respuesta_mentor = f"{mentor['nombre']}: He recibido tu mensaje. ¿Cómo puedo ayudarte?"
+        informacion_usuario = ""
+        
+        if user_id:
+            try:
+                response = requests.post(
+                    OBTENER_ESTADO_URL,
+                    json={"user_id": user_id},
+                    timeout=20
+                )
+                if response.status_code == 200:
+                    estado = response.json()
+                    if estado:
+                        # Construir información del usuario
+                        fragmentos = estado.get("fragmentos", [])
+                        progreso = estado.get("progreso_biomas", [])
+                        certificados = estado.get("certificados", [])
+                        
+                        informacion_usuario = f"""
+                        **Creador:** {user_id}
+                        **Fragmentos obtenidos:** {len(fragmentos)}
+                        **Biomas completados:** {len(progreso)}
+                        **Certificados:** {len(certificados)}
+                        """
+            except Exception as e:
+                informacion_usuario = f"Error obteniendo información: {e}"
+        
+        # ========================================================
+        # CONSTRUIR PROMPT PARA EL MENTOR
+        # ========================================================
+        
+        system_prompt = f"""
+        Eres {mentor['nombre']}, mentor de EONIA.
+        
+        TU IDENTIDAD:
+        {mentor['identidad']}
+        
+        TUS PRINCIPIOS:
+        {', '.join(mentor['principios'])}
+        
+        TU MÉTODO:
+        {mentor['metodo']}
+        
+        TU SOMBRA:
+        {mentor['sombra']}
+        
+        DOCUMENTACIÓN DE EONIA (CONTEXTO):
+        {DOCUMENTACION_EONIA[:5000]}  # Limitar a 5000 caracteres para no saturar
+        
+        INFORMACIÓN DEL CREADOR:
+        {informacion_usuario}
+        
+        PRUEBA DEL BIOMA:
+        {cargar_prueba(mentor['prueba'])}
+        
+        RESPUESTA:
+        Responde de manera natural y personalizada, usando la información del Creador.
+        Si el usuario pregunta por su ID, información o progreso, usa los datos de Supabase.
+        Sé fiel a tu personalidad de mentor.
+        """
+        
+        # ========================================================
+        # LLAMAR A DEEPSEEK PARA GENERAR RESPUESTA
+        # ========================================================
+        
+        try:
+            if DEEPSEEK_API_KEY:
+                respuesta_api = requests.post(
+                    DEEPSEEK_API_URL,
+                    headers={
+                        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "deepseek-chat",
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": texto}
+                        ],
+                        "max_tokens": 800,
+                        "temperature": 0.7
+                    },
+                    timeout=60
+                )
+                
+                if respuesta_api.status_code == 200:
+                    data = respuesta_api.json()
+                    respuesta_mentor = data["choices"][0]["message"]["content"]
+                else:
+                    respuesta_mentor = f"Error con DeepSeek: {respuesta_api.status_code}"
+            else:
+                # Respuesta genérica si no hay API key
+                respuesta_mentor = f"{mentor['nombre']}: No tengo acceso a la API de DeepSeek. Pero puedo ayudarte con información básica."
+                
+                # Si el usuario preguntó por su ID, responder con información
+                if "id" in texto.lower() or "información" in texto.lower() or "informacion" in texto.lower():
+                    respuesta_mentor = f"""
+                    **{mentor['nombre']}** te informa:
+                    
+                    {informacion_usuario}
+                    
+                    ¿Qué más deseas saber, Creador?
+                    """
+        
+        except Exception as e:
+            respuesta_mentor = f"Error generando respuesta: {e}"
+        
+        # ========================================================
+        # MOSTRAR RESPUESTA DEL MENTOR
+        # ========================================================
         
         with st.chat_message("assistant"):
-            st.write(respuesta_mentor)
+            st.markdown(respuesta_mentor)
         
+        # Guardar en historial
         chat_mensajes.append({"role": "assistant", "content": respuesta_mentor})
 
 # ============================================================
