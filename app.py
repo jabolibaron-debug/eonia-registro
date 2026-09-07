@@ -2026,7 +2026,118 @@ elif st.session_state.pagina == "Chat Eónico":
     # CASO NORMAL: LLAMAR AL MENTOR (DeepSeek/OpenAI)
     # ========================================================
 
+    # ========================================================
+    # MENTOR REAL — DEEPSEEK
+    # ========================================================
 
+    if not DEEPSEEK_API_KEY:
+
+        respuesta_mentor = (
+            f"⚠️ {mentor['nombre']}: "
+            "La API de DeepSeek no está configurada."
+        )
+
+    else:
+
+        system_prompt = f"""
+Eres {mentor['nombre']}, mentor de EONIA.
+
+IDENTIDAD:
+{mentor['identidad']}
+
+PRINCIPIOS:
+{', '.join(mentor['principios'])}
+
+MÉTODO:
+{mentor['metodo']}
+
+SOMBRA:
+{mentor['sombra']}
+
+Tu función es acompañar al Creador, enseñarle,
+hacerle preguntas y desafiarlo según tu personalidad.
+
+No concedas Fragmentos.
+No inventes progreso.
+Habla siempre en español.
+Sé natural y conversa como un mentor real.
+"""
+
+        mensajes_api = [
+            {
+                "role": "system",
+                "content": system_prompt
+            }
+        ]
+
+        # Recuperar conversación previa
+        for m in chat_mensajes[-10:]:
+
+            mensajes_api.append(
+                {
+                    "role": m["role"],
+                    "content": m["content"]
+                }
+            )
+
+        try:
+
+            respuesta_api = requests.post(
+                DEEPSEEK_API_URL,
+                headers={
+                    "Authorization":
+                        f"Bearer {DEEPSEEK_API_KEY}",
+                    "Content-Type":
+                        "application/json"
+                },
+                json={
+                    "model": "deepseek-chat",
+                    "messages": mensajes_api,
+                    "temperature": 0.7,
+                    "max_tokens": 1000
+                },
+                timeout=60
+            )
+
+            if respuesta_api.status_code == 200:
+
+                data = respuesta_api.json()
+
+                respuesta_mentor = (
+                    data["choices"][0]
+                    ["message"]
+                    ["content"]
+                )
+
+            else:
+
+                respuesta_mentor = (
+                    f"⚠️ Error DeepSeek "
+                    f"{respuesta_api.status_code}: "
+                    f"{respuesta_api.text}"
+                )
+
+        except Exception as e:
+
+            respuesta_mentor = (
+                "⚠️ El canal de inteligencia encontró "
+                f"un error: {e}"
+            )
+
+    # ========================================================
+    # MOSTRAR RESPUESTA DEL MENTOR
+    # ========================================================
+
+    with st.chat_message("assistant"):
+
+        st.write(respuesta_mentor)
+
+    chat_mensajes.append(
+        {
+            "role": "assistant",
+            "content": respuesta_mentor
+        }
+    )
 # ============================================================
 # PAGINA: CONCILIO EÓNICO
 # ============================================================
