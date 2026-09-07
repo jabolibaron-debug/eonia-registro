@@ -1407,6 +1407,15 @@ elif st.session_state.pagina == "Chat Eónico":
     st.title("CHAT EÓNICO")
     st.caption("Un solo portal. Múltiples inteligencias.")
 
+    import urllib.request
+
+    def cargar_prueba(url):
+        try:
+            with urllib.request.urlopen(url) as f:
+                return f.read().decode("utf-8")
+        except:
+            return "Prueba no disponible"
+
     # MENTORES Y BIOMAS
     MENTORES = {
         1: {
@@ -1415,7 +1424,7 @@ elif st.session_state.pagina == "Chat Eónico":
             "principios": ["Calma", "Integridad", "Espiritualidad"],
             "metodo": "Evalúa con preguntas introspectivas y metáforas.",
             "sombra": "A veces demasiado contemplativo.",
-            "prueba": "Prueba_Bioma1.txt",
+            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma1.txt",
             "fragmento": "Serenidad"
         },
         2: {
@@ -1424,7 +1433,7 @@ elif st.session_state.pagina == "Chat Eónico":
             "principios": ["Disciplina", "Constancia", "Método"],
             "metodo": "Evalúa con pasos concretos y celebra pequeños logros.",
             "sombra": "Puede ser rígido si el Creador no avanza.",
-            "prueba": "Prueba_Bioma2.txt",
+            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma2.txt",
             "fragmento": "Método"
         },
         3: {
@@ -1433,7 +1442,7 @@ elif st.session_state.pagina == "Chat Eónico":
             "principios": ["Efectividad", "Astucia", "Resultados"],
             "metodo": "Evalúa con retos prácticos y feedback directo.",
             "sombra": "Puede ser implacable si el Creador no entrega.",
-            "prueba": "Prueba_Bioma3.txt",
+            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma3.txt",
             "fragmento": "Efectividad"
         },
         4: {
@@ -1442,7 +1451,7 @@ elif st.session_state.pagina == "Chat Eónico":
             "principios": ["Creatividad", "Caos", "Rebeldía"],
             "metodo": "Evalúa con desafíos absurdos y creaciones originales.",
             "sombra": "A veces se pierde en el caos.",
-            "prueba": "Prueba_Bioma4.txt",
+            "prueba": "https://pmshpvjtiauhbuexdjev.supabase.co/storage/v1/object/public/pruebas/Prueba_Bioma4.txt",
             "fragmento": "Creación"
         }
     }
@@ -1484,7 +1493,7 @@ elif st.session_state.pagina == "Chat Eónico":
             st.write(mensaje)
 
         # ============================================
-        # LÓGICA DEL REFLEJO (NUEVO)
+        # LÓGICA DEL REFLEJO
         # ============================================
         if "reflejo" in mensaje.lower():
             with st.spinner("Generando tu Reflejo..."):
@@ -1512,7 +1521,12 @@ elif st.session_state.pagina == "Chat Eónico":
                     st.warning("No se pudo generar el Reflejo.")
 
         # ============================================
-        # LLAMADA A DEEPSEEK (YA EXISTE)
+        # CARGA DE PRUEBA
+        # ============================================
+        contenido_prueba = cargar_prueba(mentor["prueba"])
+
+        # ============================================
+        # LLAMADA A DEEPSEEK
         # ============================================
         try:
             respuesta = requests.post(
@@ -1531,7 +1545,7 @@ elif st.session_state.pagina == "Chat Eónico":
                                 "Principios: " + ", ".join(mentor["principios"]) + "\n"
                                 "Método: " + mentor["metodo"] + "\n"
                                 "Sombra: " + mentor["sombra"] + "\n"
-                                "Prueba: " + mentor["prueba"] + "\n"
+                                "Prueba: " + contenido_prueba + "\n"
                                 "Fragmento a otorgar: " + mentor["fragmento"]
                             )
                         },
@@ -1581,8 +1595,7 @@ elif st.session_state.pagina == "Chat Eónico":
                         img_url = img_resp.json()["data"][0]["url"]
                         st.image(img_url, caption="Reflejo de EONIA")
                 except:
-                    pass
-# ============================================================
+                    pass# ============================================================
 # PAGINA: CONCILIO EONICO
 # ============================================================
 
