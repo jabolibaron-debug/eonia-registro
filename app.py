@@ -2252,55 +2252,51 @@ elif st.session_state.pagina == "Mi Progreso":
     if estado:
 
         fragmentos = estado.get(
-    "fragmentos",
-    []
-)
+            "fragmentos",
+            []
+        )
 
-progreso = estado.get(
-    "progreso_biomas",
-    []
-)
+        progreso = estado.get(
+            "progreso_biomas",
+            []
+        )
 
-certificados = estado.get(
-    "certificados",
-    []
-)
+        certificados = estado.get(
+            "certificados",
+            []
+        )
 
-# ============================================================
-# RECONSTRUCCIÓN DEL PROGRESO
-# ============================================================
-# Cada Bioma se completa con 5 Fragmentos.
-# Si Supabase todavía no devuelve progreso_biomas,
-# reconstruimos los Biomas a partir de los Fragmentos reales.
+        # ====================================================
+        # RECONSTRUIR BIOMAS A PARTIR DE LOS FRAGMENTOS
+        # ====================================================
 
-biomas_por_fragmentos = {}
+        biomas_por_fragmentos = {}
 
-for fragmento in fragmentos:
+        for fragmento in fragmentos:
 
-    bioma_numero = fragmento.get("bioma")
+            bioma_numero = fragmento.get("bioma")
 
-    if bioma_numero is not None:
+            if bioma_numero is not None:
 
-        if bioma_numero not in biomas_por_fragmentos:
-            biomas_por_fragmentos[bioma_numero] = 0
+                if bioma_numero not in biomas_por_fragmentos:
+                    biomas_por_fragmentos[bioma_numero] = 0
 
-        biomas_por_fragmentos[bioma_numero] += 1
+                biomas_por_fragmentos[bioma_numero] += 1
 
+        biomas_completados = sum(
+            1
+            for cantidad in biomas_por_fragmentos.values()
+            if cantidad >= 5
+        )
 
-# Biomas realmente completados
-biomas_completados = sum(
-    1
-    for cantidad in biomas_por_fragmentos.values()
-    if cantidad >= 5
-)
+        biomas_registrados = max(
+            len(progreso),
+            biomas_completados
+        )
 
-
-# Si Supabase ya tiene registros correctos,
-# utilizamos el valor mayor.
-biomas_registrados = max(
-    len(progreso),
-    biomas_completados
-)
+        # ====================================================
+        # METRICAS
+        # ====================================================
 
         col1, col2, col3 = st.columns(3)
 
@@ -2332,7 +2328,7 @@ biomas_registrados = max(
                      style="text-align:center;">
 
                     <div class="metric-number">
-                        {len(progreso)}
+                        {biomas_registrados}
                     </div>
 
                     <div class="metric-label">
@@ -2374,7 +2370,6 @@ biomas_registrados = max(
             "Introduce el UUID del Creador "
             "para consultar el estado real del CRM."
         )
-
 
 # ============================================================
 # PAGINA: CONFIGURACION
