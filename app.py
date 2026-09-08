@@ -18,7 +18,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-
 # ============================================================
 # CONFIGURACIÓN DE APIS
 # ============================================================
@@ -162,7 +161,14 @@ def registrar_usuario(email, password, nombre, apellido=""):
 
 
 def iniciar_sesion(email, password):
-    """Inicia sesión en EONIA"""
+    """Inicia sesión en EONIA - Primero manual, luego Supabase"""
+    
+    # 1. Intentar con usuarios manuales
+    resultado_manual = iniciar_sesion_manual(email, password)
+    if resultado_manual.get("success"):
+        return resultado_manual
+    
+    # 2. Si no, intentar con Supabase
     try:
         response = requests.post(
             f"{SUPABASE_FUNCTIONS_URL}/iniciar_sesion",
@@ -192,6 +198,48 @@ def verificar_sesion(user_id):
         return {"success": False, "error": response.text}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+# ============================================================
+# USUARIOS MANUALES (TEMPORAL)
+# ============================================================
+
+   
+USUARIOS_MANUALES = {
+    "jabolibaron@gmail.com": {
+        "password": "bolibaron123",
+        "user_id": "bd32fafa-aa54-4c72-be80-73d8330205c5",
+        "nombre": "Bolibaron",
+        "apellido": "EÓNICO"
+    }
+}
+def iniciar_sesion_manual(email, password):
+    """Inicia sesión con usuarios manuales"""
+    if email in USUARIOS_MANUALES:
+        usuario = USUARIOS_MANUALES[email]
+        if usuario["password"] == password:
+            return {
+                "success": True,
+                "user_id": usuario["user_id"],
+                "email": email,
+                "nombre": usuario["nombre"],
+                "apellido": usuario["apellido"]
+            }
+    
+    return {"success": False, "error": "Credenciales inválidas"}
+def iniciar_sesion_manual(email, password):
+    """Inicia sesión con usuarios manuales"""
+    if email in USUARIOS_MANUALES:
+        usuario = USUARIOS_MANUALES[email]
+        if usuario["password"] == password:
+            return {
+                "success": True,
+                "user_id": usuario["user_id"],
+                "email": email,
+                "nombre": usuario["nombre"],
+                "apellido": usuario["apellido"]
+            }
+    
+    return {"success": False, "error": "Credenciales inválidas"}
         
 # ============================================================
 # SESSION STATE
@@ -622,6 +670,11 @@ def asignar_fragmento(
 # ============================================================
 
 with st.sidebar:
+# ============================================================
+# SINCRONIZAR USER_ID GLOBAL
+# ============================================================
+
+    user_id = st.session_state.user_id
 
     st.html(
         """
@@ -944,9 +997,8 @@ st.divider()
 
 estado = None
 
-if user_id:
-    estado = obtener_estado(user_id)
-
+if st.session_state.user_id:
+    estado = obtener_estado(st.session_state.user_id)
 
 # ============================================================
 # PAGINA: INICIO
@@ -1667,7 +1719,7 @@ elif st.session_state.pagina == "Chat Eónico":
         st.session_state.reflejo_ya_generado = False
 
     # 🔥 BOLIBARON YA TIENE REFLEJO - NO GENERAR OTRO
-    if st.session_state.user_id == "a74d8d1e-0613-42a5-8be5-4094cf84ed9b":
+    if st.session_state.user_id == "bd32fafa-aa54-4c72-be80-73d8330205c5":
         st.session_state.reflejo_ya_generado = True
         st.session_state.reflejo_activo = False
 
@@ -1696,7 +1748,7 @@ elif st.session_state.pagina == "Chat Eónico":
     # VERIFICAR REFLEJO EXISTENTE (SOLO PARA NUEVOS USUARIOS)
     # ========================================================
 
-    if not st.session_state.reflejo_ya_generado and st.session_state.user_id != "a74d8d1e-0613-42a5-8be5-4094cf84ed9b":
+    if not st.session_state.reflejo_ya_generado and st.session_state.user_id != "bd32fafa-aa54-4c72-be80-73d8330205c5":
         resultado = verificar_reflejo_existente(st.session_state.user_id)
         if resultado and resultado.get("existe"):
             st.session_state.reflejo_ya_generado = True
@@ -1706,18 +1758,17 @@ elif st.session_state.pagina == "Chat Eónico":
     # ========================================================
 
     if not st.session_state.reflejo_ya_generado and not st.session_state.reflejo_activo:
+    # Verificar si el usuario ya tiene reflejo generado en Supabase
+    if st.session_state.user_id:
+        resultado = verificar_reflejo_existente(st.session_state.user_id)
+        if resultado and resultado.get("existe"):
+            st.session_state.reflejo_ya_generado = True
+        else:
+            st.session_state.reflejo_activo = True
+            st.session_state.reflejo_paso = "bienvenida"
+    else:
         st.session_state.reflejo_activo = True
         st.session_state.reflejo_paso = "bienvenida"
-        with st.chat_message("assistant"):
-            st.write("🌟 **¡Bienvenido, Creador Eónico!**")
-            st.write("")
-            st.write("Antes de comenzar tu viaje, necesitamos forjar tu **Reflejo Eónico**.")
-            st.write("")
-            st.write("Este ritual tiene **4 desafíos** que determinarán la imagen de tu Yo Futuro.")
-            st.write("")
-            st.write("📸 **Paso 1:** Sube una selfie para que la Gran Examinadora conozca tu esencia.")
-            st.write("")
-            st.write("*Este proceso solo se realiza **una vez** por Creador.*")  
             
     # ========================================================
     # FUNCIONES AUXILIARES
