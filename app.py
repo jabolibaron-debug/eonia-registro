@@ -40,43 +40,8 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # RENDERIZADOR HTML EÓNICO
 # ============================================================
 
-_original_markdown = st.markdown
-
-
 def html(content):
     st.html(dedent(content))
-
-
-def _eonia_markdown(body, *args, **kwargs):
-
-    if (
-        kwargs.get("unsafe_allow_html", False)
-        and isinstance(body, str)
-        and (
-            "<div" in body
-            or "<span" in body
-            or "<h1" in body
-            or "<h2" in body
-            or "<h3" in body
-            or "<p" in body
-            or "<style" in body
-            or "<section" in body
-            or "<img" in body
-        )
-    ):
-
-        return st.html(
-            dedent(body)
-        )
-
-    return _original_markdown(
-        body,
-        *args,
-        **kwargs
-    )
-
-
-st.markdown = _eonia_markdown
 
 
 # ============================================================
@@ -1433,7 +1398,7 @@ elif st.session_state.pagina == "Biomas":
         )
 
 # ============================================================
-# PAGINA: CHAT EÓNICO - REFLEJO RITUAL COMPLETO
+# PAGINA: CHAT EÓNICO - MENTOR CON DOCUMENTACIÓN + SUPABASE
 # ============================================================
 
 elif st.session_state.pagina == "Chat Eónico":
@@ -1447,11 +1412,6 @@ elif st.session_state.pagina == "Chat Eónico":
 
     if "reflejo_ya_generado" not in st.session_state:
         st.session_state.reflejo_ya_generado = False
-
-    # 🔥 BOLIBARON YA TIENE REFLEJO - NO GENERAR OTRO
-    if st.session_state.user_id == "a74d8d1e-0613-42a5-8be5-4094cf84ed9b":
-        st.session_state.reflejo_ya_generado = True
-        st.session_state.reflejo_activo = False
 
     if "reflejo_activo" not in st.session_state:
         st.session_state.reflejo_activo = False
@@ -1474,14 +1434,58 @@ elif st.session_state.pagina == "Chat Eónico":
     if "reflejo_prompt_final" not in st.session_state:
         st.session_state.reflejo_prompt_final = ""
 
+# ========================================================
+# VERIFICAR REFLEJO EXISTENTE (AUTOMÁTICO PARA TODOS)
+# ========================================================
+
+if user_id and not st.session_state.reflejo_ya_generado:
+    
+    # 🔥 DIAGNÓSTICO: Mostrar qué user_id se está enviando
+    st.write(f"🔍 Debug: user_id = {user_id}")
+    
+    resultado = verificar_reflejo_existente(user_id)
+    
+    # 🔥 DIAGNÓSTICO: Mostrar resultado completo
+    st.write(f"🔍 Debug: resultado = {resultado}")
+    
+    if resultado and resultado.get("existe"):
+        st.session_state.reflejo_ya_generado = True
+        st.write(f"✅ Debug: reflejo_ya_generado = True")
+    else:
+        st.write(f"❌ Debug: reflejo_ya_generado = False (No se encontró registro)")
+
     # ========================================================
-    # VERIFICAR REFLEJO EXISTENTE (SOLO PARA NUEVOS USUARIOS)
+    # CARGAR DOCUMENTACIÓN EONIA
     # ========================================================
 
-    if not st.session_state.reflejo_ya_generado and st.session_state.user_id != "a74d8d1e-0613-42a5-8be5-4094cf84ed9b":
-        resultado = verificar_reflejo_existente(st.session_state.user_id)
-        if resultado and resultado.get("existe"):
-            st.session_state.reflejo_ya_generado = True
+    def cargar_documentacion_eonia():
+        """Carga la documentación de EONIA desde un archivo"""
+        try:
+            with open("documentos_EONIA.txt", "r", encoding="utf-8") as f:
+                return f.read()
+        except:
+            return """
+            EONIA: Universidad digital de IA y Metaverso.
+            
+            MISIÓN: Democratizar el acceso a la IA para todos.
+            VISIÓN: Ser el estándar global de educación en IA y Metaverso para 2030.
+            
+            VALORES: Integridad, Espiritualidad, Disciplina, Astucia, Audacia,
+            Efectividad, Innovación, Creatividad, Contestario, Anárquico.
+            
+            PENSUM: 10 niveles desde Fundamentos IA hasta Creación de Metaverso.
+            
+            ARQUETIPOS DE MENTORES:
+            - Sabio Sereno: Integridad, Espiritualidad. Habla con calma y metáforas.
+            - Estratega Astuta: Astucia, Efectividad. Directa, analítica.
+            - Artista Caótico: Creatividad, Contestatario. Explosivo, poético.
+            - Mentor Rebelde: Audacia, Anárquico. Desafiante, irreverente.
+            - Innovadora Visionaria: Innovación, Audacia. Rápida, futurista.
+            - Guardián del Método: Disciplina, Integridad. Estricto, constante.
+            """
+
+    # Cargar documentación
+    DOCUMENTACION_EONIA = cargar_documentacion_eonia()
 
     # ========================================================
     # SI ES NUEVO INSCRITO → SOLICITAR REFLEJO AUTOMÁTICAMENTE
@@ -1499,7 +1503,7 @@ elif st.session_state.pagina == "Chat Eónico":
             st.write("")
             st.write("📸 **Paso 1:** Sube una selfie para que la Gran Examinadora conozca tu esencia.")
             st.write("")
-            st.write("*Este proceso solo se realiza **una vez** por Creador.*")  
+            st.write("*Este proceso solo se realiza **una vez** por Creador.*")
             
     # ========================================================
     # FUNCIONES AUXILIARES
@@ -1766,6 +1770,31 @@ elif st.session_state.pagina == "Chat Eónico":
     # GESTIÓN DEL REFLEJO (PERSISTENTE)
     # ========================================================
 
+    if "reflejo_activo" not in st.session_state:
+        st.session_state.reflejo_activo = False
+
+    if "reflejo_paso" not in st.session_state:
+        st.session_state.reflejo_paso = "bienvenida"
+
+    if "reflejo_selfie_subida" not in st.session_state:
+        st.session_state.reflejo_selfie_subida = False
+
+    if "reflejo_rasgos" not in st.session_state:
+        st.session_state.reflejo_rasgos = ""
+
+    if "reflejo_respuestas" not in st.session_state:
+        st.session_state.reflejo_respuestas = {}
+
+    if "reflejo_desafio_actual" not in st.session_state:
+        st.session_state.reflejo_desafio_actual = 0
+
+    if "reflejo_prompt_final" not in st.session_state:
+        st.session_state.reflejo_prompt_final = ""
+
+        # ========================================================
+    # FLUJO DEL REFLEJO
+    # ========================================================
+
     if st.session_state.reflejo_activo:
 
         # ====================================================
@@ -1955,14 +1984,14 @@ elif st.session_state.pagina == "Chat Eónico":
             if st.button("Continuar al Chat", key="continuar_chat"):
                 st.rerun()
 
-        # Botón para cancelar
-        if st.button("❌ Cancelar Reflejo", key="cancelar_reflejo"):
-            st.session_state.reflejo_activo = False
-            st.session_state.reflejo_paso = "bienvenida"
-            st.rerun()
+        # Botón para cancelar (SOLO SI YA TIENE REFLEJO)
+        if st.session_state.reflejo_ya_generado:
+            if st.button("❌ Cancelar Reflejo", key="cancelar_reflejo"):
+                st.session_state.reflejo_activo = False
+                st.session_state.reflejo_paso = "bienvenida"
+                st.rerun()
 
         st.stop()
-
     # ========================================================
     # INPUT DEL CHAT (PARA MENSAJES NORMALES)
     # ========================================================
@@ -2040,18 +2069,149 @@ elif st.session_state.pagina == "Chat Eónico":
         with st.chat_message("user"):
             if texto:
                 st.write(texto)
+            for archivo in archivos:
+                st.image(archivo, caption=f"🖼️ {archivo.name}", use_container_width=True)
         
-        # Aquí va tu lógica para llamar a DeepSeek
-        # (tu código existente del mentor)
+        # ========================================================
+        # OBTENER INFORMACIÓN DEL USUARIO DESDE SUPABASE
+        # ========================================================
         
-        # Por ahora, respuesta de ejemplo
-        respuesta_mentor = f"{mentor['nombre']}: He recibido tu mensaje. ¿Cómo puedo ayudarte?"
+        informacion_usuario = ""
+        biomas_completados = []
+        
+        if user_id:
+            try:
+                response = requests.post(
+                    OBTENER_ESTADO_URL,
+                    json={"user_id": user_id},
+                    timeout=20
+                )
+                if response.status_code == 200:
+                    estado = response.json()
+                    if estado:
+                        # Construir información del usuario
+                        fragmentos = estado.get("fragmentos", [])
+                        progreso = estado.get("progreso_biomas", [])
+                        certificados = estado.get("certificados", [])
+                        
+                        # CALCULAR BIOMAS COMPLETADOS
+                        fragmentos_por_bioma = {}
+                        for registro in fragmentos:
+                            bioma = registro.get("bioma")
+                            if bioma is not None:
+                                if bioma not in fragmentos_por_bioma:
+                                    fragmentos_por_bioma[bioma] = []
+                                fragmentos_por_bioma[bioma].append(registro)
+                        
+                        # Contar biomas con 5 o más fragmentos
+                        for bioma_num, fragmentos_bioma in fragmentos_por_bioma.items():
+                            if len(fragmentos_bioma) >= 5:
+                                biomas_completados.append(bioma_num)
+                        
+                        # Ordenar biomas completados
+                        biomas_completados.sort()
+                        
+                        informacion_usuario = f"""
+                        **Creador:** {user_id}
+                        **Fragmentos obtenidos:** {len(fragmentos)}
+                        **Biomas completados:** {len(biomas_completados)}
+                        **Biomas completados (lista):** {', '.join(str(b) for b in biomas_completados) if biomas_completados else 'Ninguno aún'}
+                        **Certificados:** {len(certificados)}
+                        """
+            except Exception as e:
+                informacion_usuario = f"Error obteniendo información: {e}"
+        
+        # ========================================================
+        # CONSTRUIR PROMPT PARA EL MENTOR
+        # ========================================================
+        
+        system_prompt = f"""
+        Eres {mentor['nombre']}, mentor de EONIA.
+        
+        TU IDENTIDAD:
+        {mentor['identidad']}
+        
+        TUS PRINCIPIOS:
+        {', '.join(mentor['principios'])}
+        
+        TU MÉTODO:
+        {mentor['metodo']}
+        
+        TU SOMBRA:
+        {mentor['sombra']}
+        
+        DOCUMENTACIÓN DE EONIA (CONTEXTO):
+        {DOCUMENTACION_EONIA[:5000]}
+        
+        INFORMACIÓN DEL CREADOR:
+        {informacion_usuario}
+        
+        PRUEBA DEL BIOMA:
+        {cargar_prueba(mentor['prueba'])}
+        
+        RESPUESTA:
+        Responde de manera natural y personalizada, usando la información del Creador.
+        Si el usuario pregunta por su ID, información o progreso, usa los datos de Supabase.
+        Sé fiel a tu personalidad de mentor.
+        Menciona los biomas completados si los hay, o motiva al usuario a completarlos.
+        """
+        
+        # ========================================================
+        # LLAMAR A DEEPSEEK PARA GENERAR RESPUESTA
+        # ========================================================
+        
+        try:
+            if DEEPSEEK_API_KEY:
+                respuesta_api = requests.post(
+                    DEEPSEEK_API_URL,
+                    headers={
+                        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "deepseek-chat",
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": texto}
+                        ],
+                        "max_tokens": 800,
+                        "temperature": 0.7
+                    },
+                    timeout=60
+                )
+                
+                if respuesta_api.status_code == 200:
+                    data = respuesta_api.json()
+                    respuesta_mentor = data["choices"][0]["message"]["content"]
+                else:
+                    respuesta_mentor = f"Error con DeepSeek: {respuesta_api.status_code}"
+            else:
+                # Respuesta genérica si no hay API key
+                respuesta_mentor = f"{mentor['nombre']}: No tengo acceso a la API de DeepSeek. Pero puedo ayudarte con información básica."
+                
+                # Si el usuario preguntó por su ID, responder con información
+                if "id" in texto.lower() or "información" in texto.lower() or "informacion" in texto.lower():
+                    respuesta_mentor = f"""
+                    **{mentor['nombre']}** te informa:
+                    
+                    {informacion_usuario}
+                    
+                    ¿Qué más deseas saber, Creador?
+                    """
+        
+        except Exception as e:
+            respuesta_mentor = f"Error generando respuesta: {e}"
+        
+        # ========================================================
+        # MOSTRAR RESPUESTA DEL MENTOR
+        # ========================================================
         
         with st.chat_message("assistant"):
-            st.write(respuesta_mentor)
+            st.markdown(respuesta_mentor)
         
+        # Guardar en historial
         chat_mensajes.append({"role": "assistant", "content": respuesta_mentor})
-
+        
 # ============================================================
 # PAGINA: CONCILIO EÓNICO
 # ============================================================
