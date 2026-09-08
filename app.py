@@ -100,11 +100,11 @@ ASIGNAR_FRAGMENTO_URL = (
 # FUNCIÓN PARA VERIFICAR SI YA TIENE REFLEJO
 # ============================================================
 
-def verificar_reflejo_existente(st.session_state.user_id):
+def verificar_reflejo_existente(user_id):
     """Verifica si el usuario ya tiene un Reflejo generado"""
-    if not st.session_state.user_id:
+    if not user_id:
         return None
-    
+      
     try:
         response = requests.post(
             f"{SUPABASE_FUNCTIONS_URL}/verificar_reflejo",
