@@ -626,7 +626,7 @@ with st.sidebar:
 # SINCRONIZAR USER_ID GLOBAL
 # ============================================================
 
-user_id = st.session_state.user_id
+    user_id = st.session_state.user_id
 
     st.html(
         """
