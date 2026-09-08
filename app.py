@@ -1442,14 +1442,44 @@ elif st.session_state.pagina == "Chat Eónico":
     st.caption("Un solo portal. Múltiples inteligencias.")
 
     # ========================================================
-    # VERIFICAR REFLEJO EXISTENTE (UNA VEZ POR USUARIO)
+    # INICIALIZACIÓN DE VARIABLES DE REFLEJO
     # ========================================================
 
     if "reflejo_ya_generado" not in st.session_state:
         st.session_state.reflejo_ya_generado = False
 
-    if user_id and not st.session_state.reflejo_ya_generado:
-        resultado = verificar_reflejo_existente(user_id)
+    # 🔥 BOLIBARON YA TIENE REFLEJO - NO GENERAR OTRO
+    if st.session_state.user_id == "a74d8d1e-0613-42a5-8be5-4094cf84ed9b":
+        st.session_state.reflejo_ya_generado = True
+        st.session_state.reflejo_activo = False
+
+    if "reflejo_activo" not in st.session_state:
+        st.session_state.reflejo_activo = False
+
+    if "reflejo_paso" not in st.session_state:
+        st.session_state.reflejo_paso = "bienvenida"
+
+    if "reflejo_selfie_subida" not in st.session_state:
+        st.session_state.reflejo_selfie_subida = False
+
+    if "reflejo_rasgos" not in st.session_state:
+        st.session_state.reflejo_rasgos = ""
+
+    if "reflejo_respuestas" not in st.session_state:
+        st.session_state.reflejo_respuestas = {}
+
+    if "reflejo_desafio_actual" not in st.session_state:
+        st.session_state.reflejo_desafio_actual = 0
+
+    if "reflejo_prompt_final" not in st.session_state:
+        st.session_state.reflejo_prompt_final = ""
+
+    # ========================================================
+    # VERIFICAR REFLEJO EXISTENTE (SOLO PARA NUEVOS USUARIOS)
+    # ========================================================
+
+    if not st.session_state.reflejo_ya_generado and st.session_state.user_id != "a74d8d1e-0613-42a5-8be5-4094cf84ed9b":
+        resultado = verificar_reflejo_existente(st.session_state.user_id)
         if resultado and resultado.get("existe"):
             st.session_state.reflejo_ya_generado = True
 
@@ -1469,8 +1499,8 @@ elif st.session_state.pagina == "Chat Eónico":
             st.write("")
             st.write("📸 **Paso 1:** Sube una selfie para que la Gran Examinadora conozca tu esencia.")
             st.write("")
-            st.write("*Este proceso solo se realiza **una vez** por Creador.*")
-
+            st.write("*Este proceso solo se realiza **una vez** por Creador.*")  
+            
     # ========================================================
     # FUNCIONES AUXILIARES
     # ========================================================
@@ -1736,31 +1766,6 @@ elif st.session_state.pagina == "Chat Eónico":
     # GESTIÓN DEL REFLEJO (PERSISTENTE)
     # ========================================================
 
-    if "reflejo_activo" not in st.session_state:
-        st.session_state.reflejo_activo = False
-
-    if "reflejo_paso" not in st.session_state:
-        st.session_state.reflejo_paso = "bienvenida"
-
-    if "reflejo_selfie_subida" not in st.session_state:
-        st.session_state.reflejo_selfie_subida = False
-
-    if "reflejo_rasgos" not in st.session_state:
-        st.session_state.reflejo_rasgos = ""
-
-    if "reflejo_respuestas" not in st.session_state:
-        st.session_state.reflejo_respuestas = {}
-
-    if "reflejo_desafio_actual" not in st.session_state:
-        st.session_state.reflejo_desafio_actual = 0
-
-    if "reflejo_prompt_final" not in st.session_state:
-        st.session_state.reflejo_prompt_final = ""
-
-    # ========================================================
-    # FLUJO DEL REFLEJO
-    # ========================================================
-
     if st.session_state.reflejo_activo:
 
         # ====================================================
@@ -2021,42 +2026,46 @@ elif st.session_state.pagina == "Chat Eónico":
     # CASO NORMAL: LLAMAR AL MENTOR (DeepSeek/OpenAI)
     # ========================================================
 
-    # ... aquí va el código del mentor para procesar mensajes normales
+    if mensaje and not st.session_state.reflejo_activo:
+
+        # Procesar mensaje normal
+        texto = mensaje.text or ""
+        archivos = mensaje.files
+        
+        # Guardar en historial
+        if texto:
+            chat_mensajes.append({"role": "user", "content": texto})
+        
+        # Mostrar mensaje del usuario
+        with st.chat_message("user"):
+            if texto:
+                st.write(texto)
+        
+        # Aquí va tu lógica para llamar a DeepSeek
+        # (tu código existente del mentor)
+        
+        # Por ahora, respuesta de ejemplo
+        respuesta_mentor = f"{mentor['nombre']}: He recibido tu mensaje. ¿Cómo puedo ayudarte?"
+        
+        with st.chat_message("assistant"):
+            st.write(respuesta_mentor)
+        
+        chat_mensajes.append({"role": "assistant", "content": respuesta_mentor})
 
 # ============================================================
 # PAGINA: CONCILIO EÓNICO
 # ============================================================
 
 elif st.session_state.pagina == "Concilio Eónico":
-    # ... código del Concilio
-
-# ============================================================
-# PAGINA: CONCILIO EÓNICO
-# ============================================================
-
-elif st.session_state.pagina == "Concilio Eónico":
-    # ... código del Concilio
 
     st.title("CONCILIO EÓNICO")
 
     st.markdown(
         """
         <div class="eonia-card">
-
-            <div class="small-gold">
-                DELIBERACIÓN
-            </div>
-
-            <h1>
-                Grandes ideas merecen ser deliberadas.
-            </h1>
-
-            <p>
-                Presenta una creación para que las
-                distintas perspectivas de EONIA
-                puedan analizarla.
-            </p>
-
+            <div class="small-gold">DELIBERACIÓN</div>
+            <h1>Grandes ideas merecen ser deliberadas.</h1>
+            <p>Presenta una creación para que las distintas perspectivas de EONIA puedan analizarla.</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -2065,63 +2074,28 @@ elif st.session_state.pagina == "Concilio Eónico":
     proyecto = st.text_area(
         "Describe tu proyecto",
         height=220,
-        placeholder=(
-            "¿Qué estás creando?\n\n"
-            "¿Qué problema resuelve?\n\n"
-            "¿Por qué debería existir?"
-        )
+        placeholder="¿Qué estás creando?\n\n¿Qué problema resuelve?\n\n¿Por qué debería existir?"
     )
 
-    st.markdown(
-        "### CONSEJO DEL CONCILIO"
-    )
+    st.markdown("### CONSEJO DEL CONCILIO")
 
     c1, c2, c3, c4, c5 = st.columns(5)
 
     consejeros = [
-        (
-            c1,
-            "LUMINA",
-            "Propósito"
-        ),
-        (
-            c2,
-            "DATAC",
-            "Evidencia"
-        ),
-        (
-            c3,
-            "SYNTIA",
-            "Concepto"
-        ),
-        (
-            c4,
-            "CODEX",
-            "Construcción"
-        ),
-        (
-            c5,
-            "VÓRTICE",
-            "Contradicción"
-        )
+        (c1, "LUMINA", "Propósito"),
+        (c2, "DATAC", "Evidencia"),
+        (c3, "SYNTIA", "Concepto"),
+        (c4, "CODEX", "Construcción"),
+        (c5, "VÓRTICE", "Contradicción")
     ]
 
     for col, nombre, rol in consejeros:
-
         with col:
-
             st.markdown(
                 f"""
                 <div class="mentor-card">
-
-                    <div class="mentor-name">
-                        {nombre}
-                    </div>
-
-                    <div class="mentor-role">
-                        {rol}
-                    </div>
-
+                    <div class="mentor-name">{nombre}</div>
+                    <div class="mentor-role">{rol}</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -2129,30 +2103,14 @@ elif st.session_state.pagina == "Concilio Eónico":
 
     st.write("")
 
-    if st.button(
-        "Presentar al Concilio ⚖️",
-        use_container_width=True
-    ):
+    if st.button("Presentar al Concilio ⚖️", use_container_width=True):
 
         if proyecto.strip():
-
-            st.success(
-                "Proyecto registrado para deliberación."
-            )
-
-            st.info(
-                "El Concilio analizará la creación "
-                "desde múltiples perspectivas. "
-                "AION podrá intervenir en caso de empate."
-            )
-
+            st.success("Proyecto registrado para deliberación.")
+            st.info("El Concilio analizará la creación desde múltiples perspectivas. AION podrá intervenir en caso de empate.")
         else:
-
-            st.warning(
-                "Describe primero el proyecto."
-            )
-
-
+            st.warning("Describe primero el proyecto.")
+            
 # ============================================================
 # PAGINA: MIS PROYECTOS
 # ============================================================
