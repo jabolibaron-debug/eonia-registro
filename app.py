@@ -137,7 +137,62 @@ def guardar_reflejo(user_id, imagen_base64):
     except Exception as e:
         st.warning(f"Error guardando Reflejo: {e}")
         return False
+# ============================================================
+# FUNCIONES DE AUTENTICACIÓN
+# ============================================================
 
+def registrar_usuario(email, password, nombre, apellido=""):
+    """Registra un nuevo usuario en EONIA"""
+    try:
+        response = requests.post(
+            f"{SUPABASE_FUNCTIONS_URL}/registrar_usuario",
+            json={
+                "email": email,
+                "password": password,
+                "nombre": nombre,
+                "apellido": apellido
+            },
+            timeout=30
+        )
+        if response.status_code == 200:
+            return response.json()
+        return {"success": False, "error": response.text}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def iniciar_sesion(email, password):
+    """Inicia sesión en EONIA"""
+    try:
+        response = requests.post(
+            f"{SUPABASE_FUNCTIONS_URL}/iniciar_sesion",
+            json={
+                "email": email,
+                "password": password
+            },
+            timeout=30
+        )
+        if response.status_code == 200:
+            return response.json()
+        return {"success": False, "error": response.text}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def verificar_sesion(user_id):
+    """Verifica si la sesión es válida"""
+    try:
+        response = requests.post(
+            f"{SUPABASE_FUNCTIONS_URL}/verificar_sesion",
+            json={"user_id": user_id},
+            timeout=20
+        )
+        if response.status_code == 200:
+            return response.json()
+        return {"success": False, "error": response.text}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+        
 # ============================================================
 # SESSION STATE
 # ============================================================
@@ -568,7 +623,7 @@ def asignar_fragmento(
 
 with st.sidebar:
 
-    st.markdown(
+    st.html(
         """
         <div style="
             text-align:center;
@@ -599,53 +654,215 @@ with st.sidebar:
             </div>
 
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
     st.divider()
 
-    st.markdown("### 👤 CREADOR")
+    # ========================================================
+    # AUTENTICACIÓN
+    # ========================================================
 
-    user_id = st.text_input(
-        "ID del Creador",
-        value=st.session_state.user_id,
-        placeholder="UUID del Creador",
-        label_visibility="collapsed"
-    )
+    if "autenticado" not in st.session_state:
+        st.session_state.autenticado = False
 
-    st.session_state.user_id = user_id
+    if "user_id" not in st.session_state:
+        st.session_state.user_id = ""
 
-    st.divider()
+    if "nombre_usuario" not in st.session_state:
+        st.session_state.nombre_usuario = ""
 
-    opciones = [
-        ("⌂", "Inicio"),
-        ("◉", "Mi Perfil"),
-        ("◈", "Biomas"),
-        ("◌", "Chat Eónico"),
-        ("♜", "Concilio Eónico"),
-        ("◆", "Mis Proyectos"),
-        ("◇", "Mis Becas"),
-        ("▣", "Museo de EONIA"),
-        ("✦", "Metaverso"),
-        ("♧", "Comunidad"),
-        ("◷", "Eventos"),
-        ("⌁", "Rutas Personalizadas"),
-        ("◒", "Mi Progreso"),
-        ("⚙", "Configuración")
-    ]
+    if "email_usuario" not in st.session_state:
+        st.session_state.email_usuario = ""
 
-    for icono, nombre in opciones:
+    # ========================================================
+    # SI NO ESTÁ AUTENTICADO → MOSTRAR LOGIN/REGISTRO
+    # ========================================================
 
-        if st.button(
-            f"{icono}  {nombre}",
-            key=f"nav_{nombre}",
-            use_container_width=True
-        ):
+    if not st.session_state.autenticado:
 
-            st.session_state.pagina = nombre
+        st.markdown("### 👤 ACCESO")
 
+        tab_login, tab_registro = st.tabs(["Iniciar Sesión", "Crear Cuenta"])
+
+        with tab_login:
+
+            email_login = st.text_input(
+                "Email",
+                key="email_login",
+                placeholder="tu@email.com"
+            )
+
+            password_login = st.text_input(
+                "Contraseña",
+                type="password",
+                key="password_login"
+            )
+
+            if st.button("🔓 Iniciar Sesión", use_container_width=True, key="btn_login"):
+
+                if email_login and password_login:
+                    resultado = iniciar_sesion(email_login, password_login)
+
+                    if resultado.get("success"):
+                        st.session_state.autenticado = True
+                        st.session_state.user_id = resultado["user_id"]
+                        st.session_state.nombre_usuario = resultado.get("nombre", "Creador")
+                        st.session_state.email_usuario = resultado.get("email", "")
+                        st.rerun()
+                    else:
+                        st.error(f"Error: {resultado.get('error', 'Credenciales inválidas')}")
+                else:
+                    st.warning("Ingresa email y contraseña.")
+
+        with tab_registro:
+
+            nombre_reg = st.text_input(
+                "Nombre",
+                key="nombre_reg",
+                placeholder="Tu nombre"
+            )
+
+            apellido_reg = st.text_input(
+                "Apellido",
+                key="apellido_reg",
+                placeholder="Tu apellido"
+            )
+
+            email_reg = st.text_input(
+                "Email",
+                key="email_reg",
+                placeholder="tu@email.com"
+            )
+
+            password_reg = st.text_input(
+                "Contraseña",
+                type="password",
+                key="password_reg"
+            )
+
+            password_confirm = st.text_input(
+                "Confirmar Contraseña",
+                type="password",
+                key="password_confirm"
+            )
+
+            if st.button("✨ Crear Cuenta", use_container_width=True, key="btn_registro"):
+
+                if nombre_reg and email_reg and password_reg:
+                    if password_reg == password_confirm:
+                        resultado = registrar_usuario(
+                            email_reg,
+                            password_reg,
+                            nombre_reg,
+                            apellido_reg
+                        )
+
+                        if resultado.get("success"):
+                            st.success("¡Cuenta creada! Inicia sesión para continuar.")
+                            st.session_state.email_registro = email_reg
+                            st.session_state.password_registro = password_reg
+                        else:
+                            st.error(f"Error: {resultado.get('error', 'No se pudo crear la cuenta')}")
+                    else:
+                        st.warning("Las contraseñas no coinciden.")
+                else:
+                    st.warning("Completa todos los campos obligatorios.")
+
+    else:
+
+        # ========================================================
+        # SI ESTÁ AUTENTICADO → MOSTRAR PERFIL
+        # ========================================================
+
+        st.markdown("### 👤 CREADOR")
+
+        st.html(
+            f"""
+            <div style="
+                text-align:center;
+                padding:10px;
+                background:rgba(228,189,92,.1);
+                border-radius:8px;
+                border:1px solid rgba(228,189,92,.3);
+                margin-bottom:10px;
+            ">
+
+                <div style="
+                    font-size:24px;
+                    margin-bottom:5px;
+                ">
+                    ⚡
+                </div>
+
+                <div style="
+                    font-weight:bold;
+                    color:#e4bd5c;
+                ">
+                    {st.session_state.nombre_usuario}
+                </div>
+
+                <div style="
+                    font-size:12px;
+                    color:#9da8b2;
+                ">
+                    {st.session_state.email_usuario}
+                </div>
+
+            </div>
+            """
+        )
+
+        st.caption(f"ID: {st.session_state.user_id[:8]}...")
+
+        if st.button("🚪 Cerrar Sesión", use_container_width=True, key="btn_logout"):
+
+            st.session_state.autenticado = False
+            st.session_state.user_id = ""
+            st.session_state.nombre_usuario = ""
+            st.session_state.email_usuario = ""
             st.rerun()
+
+    st.divider()
+
+    # ========================================================
+    # NAVEGACIÓN (SOLO SI ESTÁ AUTENTICADO)
+    # ========================================================
+
+    if st.session_state.autenticado:
+
+        opciones = [
+            ("⌂", "Inicio"),
+            ("◉", "Mi Perfil"),
+            ("◈", "Biomas"),
+            ("◌", "Chat Eónico"),
+            ("♜", "Concilio Eónico"),
+            ("◆", "Mis Proyectos"),
+            ("◇", "Mis Becas"),
+            ("▣", "Museo de EONIA"),
+            ("✦", "Metaverso"),
+            ("♧", "Comunidad"),
+            ("◷", "Eventos"),
+            ("⌁", "Rutas Personalizadas"),
+            ("◒", "Mi Progreso"),
+            ("⚙", "Configuración")
+        ]
+
+        for icono, nombre in opciones:
+
+            if st.button(
+                f"{icono}  {nombre}",
+                key=f"nav_{nombre}",
+                use_container_width=True
+            ):
+
+                st.session_state.pagina = nombre
+
+                st.rerun()
+
+    else:
+
+        st.info("🔒 Inicia sesión para acceder a EONIA.")
 
 
 # ============================================================
