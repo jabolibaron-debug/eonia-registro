@@ -206,13 +206,14 @@ def verificar_sesion(user_id):
 
    
 USUARIOS_MANUALES = {
-    "jabolibaron@gmail.com": {
+    "jabo.bolibaron@gmail.com": {
         "password": "bolibaron123",
-        "user_id": "bd32fafa-aa54-4c72-be80-73d8330205c5",
+        "user_id": "a74d8d1e-0613-42a5-8be5-4094cf84ed9b",
         "nombre": "Bolibaron",
         "apellido": "EÓNICO"
     }
 }
+
 def iniciar_sesion_manual(email, password):
     """Inicia sesión con usuarios manuales"""
     if email in USUARIOS_MANUALES:
