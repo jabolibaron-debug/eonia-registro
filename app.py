@@ -162,14 +162,7 @@ def registrar_usuario(email, password, nombre, apellido=""):
 
 
 def iniciar_sesion(email, password):
-    """Inicia sesión en EONIA - Primero manual, luego Supabase"""
-    
-    # 1. Intentar con usuarios manuales
-    resultado_manual = iniciar_sesion_manual(email, password)
-    if resultado_manual.get("success"):
-        return resultado_manual
-    
-    # 2. Si no, intentar con Supabase
+    """Inicia sesión en EONIA"""
     try:
         response = requests.post(
             f"{SUPABASE_FUNCTIONS_URL}/iniciar_sesion",
@@ -199,49 +192,6 @@ def verificar_sesion(user_id):
         return {"success": False, "error": response.text}
     except Exception as e:
         return {"success": False, "error": str(e)}
-
-# ============================================================
-# USUARIOS MANUALES (TEMPORAL)
-# ============================================================
-
-   
-USUARIOS_MANUALES = {
-    "jabo.bolibaron@gmail.com": {
-        "password": "bolibaron123",
-        "user_id": "a74d8d1e-0613-42a5-8be5-4094cf84ed9b",
-        "nombre": "Bolibaron",
-        "apellido": "EÓNICO"
-    }
-}
-
-def iniciar_sesion_manual(email, password):
-    """Inicia sesión con usuarios manuales"""
-    if email in USUARIOS_MANUALES:
-        usuario = USUARIOS_MANUALES[email]
-        if usuario["password"] == password:
-            return {
-                "success": True,
-                "user_id": usuario["user_id"],
-                "email": email,
-                "nombre": usuario["nombre"],
-                "apellido": usuario["apellido"]
-            }
-    
-    return {"success": False, "error": "Credenciales inválidas"}
-def iniciar_sesion_manual(email, password):
-    """Inicia sesión con usuarios manuales"""
-    if email in USUARIOS_MANUALES:
-        usuario = USUARIOS_MANUALES[email]
-        if usuario["password"] == password:
-            return {
-                "success": True,
-                "user_id": usuario["user_id"],
-                "email": email,
-                "nombre": usuario["nombre"],
-                "apellido": usuario["apellido"]
-            }
-    
-    return {"success": False, "error": "Credenciales inválidas"}
         
 # ============================================================
 # SESSION STATE
