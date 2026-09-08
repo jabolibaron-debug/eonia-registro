@@ -1758,17 +1758,17 @@ elif st.session_state.pagina == "Chat Eónico":
     # ========================================================
 
     if not st.session_state.reflejo_ya_generado and not st.session_state.reflejo_activo:
-    # Verificar si el usuario ya tiene reflejo generado en Supabase
-    if st.session_state.user_id:
-        resultado = verificar_reflejo_existente(st.session_state.user_id)
-        if resultado and resultado.get("existe"):
-            st.session_state.reflejo_ya_generado = True
+        # Verificar si el usuario ya tiene reflejo generado en Supabase
+        if st.session_state.user_id:
+            resultado = verificar_reflejo_existente(st.session_state.user_id)
+            if resultado and resultado.get("existe"):
+                st.session_state.reflejo_ya_generado = True
+            else:
+                st.session_state.reflejo_activo = True
+                st.session_state.reflejo_paso = "bienvenida"
         else:
             st.session_state.reflejo_activo = True
             st.session_state.reflejo_paso = "bienvenida"
-    else:
-        st.session_state.reflejo_activo = True
-        st.session_state.reflejo_paso = "bienvenida"
             
     # ========================================================
     # FUNCIONES AUXILIARES
