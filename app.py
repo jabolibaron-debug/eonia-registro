@@ -35,48 +35,12 @@ OPENAI_CHAT_API_URL = (
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-
 # ============================================================
 # RENDERIZADOR HTML EÓNICO
 # ============================================================
 
-_original_markdown = st.markdown
-
-
 def html(content):
     st.html(dedent(content))
-
-
-def _eonia_markdown(body, *args, **kwargs):
-
-    if (
-        kwargs.get("unsafe_allow_html", False)
-        and isinstance(body, str)
-        and (
-            "<div" in body
-            or "<span" in body
-            or "<h1" in body
-            or "<h2" in body
-            or "<h3" in body
-            or "<p" in body
-            or "<style" in body
-            or "<section" in body
-            or "<img" in body
-        )
-    ):
-
-        return st.html(
-            dedent(body)
-        )
-
-    return _original_markdown(
-        body,
-        *args,
-        **kwargs
-    )
-
-
-st.markdown = _eonia_markdown
 
 
 # ============================================================
@@ -1719,7 +1683,7 @@ elif st.session_state.pagina == "Chat Eónico":
         st.session_state.reflejo_ya_generado = False
 
     # 🔥 BOLIBARON YA TIENE REFLEJO - NO GENERAR OTRO
-    if st.session_state.user_id == "a74d8d1e-0613-42a5-8be5-4094cf84ed9b":
+    if st.session_state.user_id == "bd32fafa-aa54-4c72-be80-73d8330205c5":
         st.session_state.reflejo_ya_generado = True
         st.session_state.reflejo_activo = False
 
@@ -1748,7 +1712,7 @@ elif st.session_state.pagina == "Chat Eónico":
     # VERIFICAR REFLEJO EXISTENTE (SOLO PARA NUEVOS USUARIOS)
     # ========================================================
 
-    if not st.session_state.reflejo_ya_generado and st.session_state.user_id != "a74d8d1e-0613-42a5-8be5-4094cf84ed9b":
+    if not st.session_state.reflejo_ya_generado and st.session_state.user_id != "bd32fafa-aa54-4c72-be80-73d8330205c5":
         resultado = verificar_reflejo_existente(st.session_state.user_id)
         if resultado and resultado.get("existe"):
             st.session_state.reflejo_ya_generado = True
@@ -1758,18 +1722,17 @@ elif st.session_state.pagina == "Chat Eónico":
     # ========================================================
 
     if not st.session_state.reflejo_ya_generado and not st.session_state.reflejo_activo:
+    # Verificar si el usuario ya tiene reflejo generado en Supabase
+    if st.session_state.user_id:
+        resultado = verificar_reflejo_existente(st.session_state.user_id)
+        if resultado and resultado.get("existe"):
+            st.session_state.reflejo_ya_generado = True
+        else:
+            st.session_state.reflejo_activo = True
+            st.session_state.reflejo_paso = "bienvenida"
+    else:
         st.session_state.reflejo_activo = True
         st.session_state.reflejo_paso = "bienvenida"
-        with st.chat_message("assistant"):
-            st.write("🌟 **¡Bienvenido, Creador Eónico!**")
-            st.write("")
-            st.write("Antes de comenzar tu viaje, necesitamos forjar tu **Reflejo Eónico**.")
-            st.write("")
-            st.write("Este ritual tiene **4 desafíos** que determinarán la imagen de tu Yo Futuro.")
-            st.write("")
-            st.write("📸 **Paso 1:** Sube una selfie para que la Gran Examinadora conozca tu esencia.")
-            st.write("")
-            st.write("*Este proceso solo se realiza **una vez** por Creador.*")  
             
     # ========================================================
     # FUNCIONES AUXILIARES
