@@ -40,8 +40,43 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # RENDERIZADOR HTML EÓNICO
 # ============================================================
 
+_original_markdown = st.markdown
+
+
 def html(content):
     st.html(dedent(content))
+
+
+def _eonia_markdown(body, *args, **kwargs):
+
+    if (
+        kwargs.get("unsafe_allow_html", False)
+        and isinstance(body, str)
+        and (
+            "<div" in body
+            or "<span" in body
+            or "<h1" in body
+            or "<h2" in body
+            or "<h3" in body
+            or "<p" in body
+            or "<style" in body
+            or "<section" in body
+            or "<img" in body
+        )
+    ):
+
+        return st.html(
+            dedent(body)
+        )
+
+    return _original_markdown(
+        body,
+        *args,
+        **kwargs
+    )
+
+
+st.markdown = _eonia_markdown
 
 
 # ============================================================
@@ -1434,25 +1469,21 @@ elif st.session_state.pagina == "Chat Eónico":
     if "reflejo_prompt_final" not in st.session_state:
         st.session_state.reflejo_prompt_final = ""
 
-# ========================================================
-# VERIFICAR REFLEJO EXISTENTE (AUTOMÁTICO PARA TODOS)
-# ========================================================
+    # ========================================================
+    # VERIFICAR REFLEJO EXISTENTE (AUTOMÁTICO PARA TODOS)
+    # ========================================================
 
-if user_id and not st.session_state.reflejo_ya_generado:
-    
-    # 🔥 DIAGNÓSTICO: Mostrar qué user_id se está enviando
-    st.write(f"🔍 Debug: user_id = {user_id}")
-    
-    resultado = verificar_reflejo_existente(user_id)
-    
-    # 🔥 DIAGNÓSTICO: Mostrar resultado completo
-    st.write(f"🔍 Debug: resultado = {resultado}")
-    
-    if resultado and resultado.get("existe"):
-        st.session_state.reflejo_ya_generado = True
-        st.write(f"✅ Debug: reflejo_ya_generado = True")
-    else:
-        st.write(f"❌ Debug: reflejo_ya_generado = False (No se encontró registro)")
+    if user_id and not st.session_state.reflejo_ya_generado:
+        resultado = verificar_reflejo_existente(user_id)
+        
+        # 🔥 DIAGNÓSTICO TEMPORAL
+        if resultado:
+            st.write(f"🔍 Debug: resultado = {resultado}")
+        else:
+            st.write(f"🔍 Debug: resultado = None (no se encontró)")
+        
+        if resultado and resultado.get("existe"):
+            st.session_state.reflejo_ya_generado = True
 
     # ========================================================
     # CARGAR DOCUMENTACIÓN EONIA
