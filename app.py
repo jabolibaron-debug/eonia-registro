@@ -622,6 +622,11 @@ def asignar_fragmento(
 # ============================================================
 
 with st.sidebar:
+# ============================================================
+# SINCRONIZAR USER_ID GLOBAL
+# ============================================================
+
+user_id = st.session_state.user_id
 
     st.html(
         """
@@ -944,9 +949,8 @@ st.divider()
 
 estado = None
 
-if user_id:
-    estado = obtener_estado(user_id)
-
+if st.session_state.user_id:
+    estado = obtener_estado(st.session_state.user_id)
 
 # ============================================================
 # PAGINA: INICIO
