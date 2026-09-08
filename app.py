@@ -100,15 +100,15 @@ ASIGNAR_FRAGMENTO_URL = (
 # FUNCIÓN PARA VERIFICAR SI YA TIENE REFLEJO
 # ============================================================
 
-def verificar_reflejo_existente(user_id):
+def verificar_reflejo_existente(st.session_state.user_id):
     """Verifica si el usuario ya tiene un Reflejo generado"""
-    if not user_id:
+    if not st.session_state.user_id:
         return None
     
     try:
         response = requests.post(
             f"{SUPABASE_FUNCTIONS_URL}/verificar_reflejo",
-            json={"user_id": user_id},
+            json={"st.session_state.user_id": st.session_state.user_id},
             timeout=20
         )
         if response.status_code == 200:
@@ -119,16 +119,16 @@ def verificar_reflejo_existente(user_id):
         return None
 
 
-def guardar_reflejo(user_id, imagen_base64):
+def guardar_reflejo(st.session_state.user_id, imagen_base64):
     """Guarda el Reflejo en Supabase"""
-    if not user_id:
+    if not st.session_state.user_id:
         return False
     
     try:
         response = requests.post(
             f"{SUPABASE_FUNCTIONS_URL}/guardar_reflejo",
             json={
-                "user_id": user_id,
+                "st.session_state.user_id": st.session_state.user_id,
                 "imagen_base64": imagen_base64
             },
             timeout=30
@@ -179,12 +179,12 @@ def iniciar_sesion(email, password):
         return {"success": False, "error": str(e)}
 
 
-def verificar_sesion(user_id):
+def verificar_sesion(st.session_state.user_id):
     """Verifica si la sesión es válida"""
     try:
         response = requests.post(
             f"{SUPABASE_FUNCTIONS_URL}/verificar_sesion",
-            json={"user_id": user_id},
+            json={"st.session_state.user_id": st.session_state.user_id},
             timeout=20
         )
         if response.status_code == 200:
@@ -200,7 +200,7 @@ def verificar_sesion(user_id):
 if "pagina" not in st.session_state:
     st.session_state.pagina = "Inicio"
 
-if "user_id" not in st.session_state:
+if "st.session_state.user_id" not in st.session_state:
     st.session_state.user_id = ""
 
 if "mentor_activo" not in st.session_state:
@@ -554,9 +554,9 @@ st.markdown(
 # FUNCIONES CRM
 # ============================================================
 
-def obtener_estado(user_id):
+def obtener_estado(st.session_state.user_id):
 
-    if not user_id:
+    if not st.session_state.user_id:
         return None
 
     try:
@@ -564,7 +564,7 @@ def obtener_estado(user_id):
         response = requests.post(
             OBTENER_ESTADO_URL,
             json={
-                "user_id": user_id
+                "st.session_state.user_id": st.session_state.user_id
             },
             timeout=20
         )
@@ -584,12 +584,12 @@ def obtener_estado(user_id):
 
 
 def asignar_fragmento(
-    user_id,
+    st.session_state.user_id,
     bioma,
     fragmento
 ):
 
-    if not user_id:
+    if not st.session_state.user_id:
         return {
             "success": False,
             "error": "No hay Creador conectado."
@@ -600,7 +600,7 @@ def asignar_fragmento(
         response = requests.post(
             ASIGNAR_FRAGMENTO_URL,
             json={
-                "user_id": user_id,
+                "st.session_state.user_id": st.session_state.user_id,
                 "bioma": bioma,
                 "fragmento": fragmento
             },
@@ -666,7 +666,7 @@ with st.sidebar:
     if "autenticado" not in st.session_state:
         st.session_state.autenticado = False
 
-    if "user_id" not in st.session_state:
+    if "" not in st.session_state:
         st.session_state.user_id = ""
 
     if "nombre_usuario" not in st.session_state:
@@ -706,7 +706,7 @@ with st.sidebar:
 
                     if resultado.get("success"):
                         st.session_state.autenticado = True
-                        st.session_state.user_id = resultado["user_id"]
+                        st.session_state.user_id = resultado["st.session_state.user_id"]
                         st.session_state.nombre_usuario = resultado.get("nombre", "Creador")
                         st.session_state.email_usuario = resultado.get("email", "")
                         st.rerun()
@@ -944,8 +944,8 @@ st.divider()
 
 estado = None
 
-if user_id:
-    estado = obtener_estado(user_id)
+if :
+    estado = obtener_estado(st.session_state.user_id)
 
 
 # ============================================================
@@ -1491,14 +1491,14 @@ elif st.session_state.pagina == "Mi Perfil":
         unsafe_allow_html=True
     )
 
-    if user_id:
+    if st.session_state.user_id:
 
         st.success(
             "Creador conectado al CRM."
         )
 
         st.code(
-            user_id,
+            st.session_state.user_id,
             language="text"
         )
 
@@ -2155,8 +2155,8 @@ elif st.session_state.pagina == "Chat Eónico":
                         st.write("3. 💬 Dime: ¿qué desafío te costó más superar?")
 
                     # Guardar en Supabase
-                    if user_id:
-                        if guardar_reflejo(user_id, img_b64):
+                    if st.session_state.user_id:
+                        if guardar_reflejo(st.session_state.user_id, img_b64):
                             st.success("✅ Reflejo guardado en tu perfil.")
                             st.session_state.reflejo_ya_generado = True
                         else:
@@ -3406,7 +3406,7 @@ elif st.session_state.pagina == "Configuración":
         "### ESTADO"
     )
 
-    if user_id:
+    if st.session_state.user_id:
 
         st.success(
             "UUID del Creador configurado."
